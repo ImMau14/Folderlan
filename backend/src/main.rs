@@ -2,12 +2,22 @@ mod controllers;
 mod middleware;
 mod utils;
 
-use actix_web::{App, web, HttpServer};
+use actix_web::{
+    web::Data, 
+    App, 
+    web, 
+    HttpServer
+};
 use actix_cors::Cors;
-use tracing_subscriber::{prelude::*, fmt, EnvFilter};
+use tracing_subscriber::{
+    prelude::*,
+    fmt,
+    EnvFilter
+};
 use tracing_actix_web::TracingLogger;
 
 use middleware::simple_access_logger::SimpleAccessLogger;
+use middleware::jwt_middleware;
 
 use sqlx::SqlitePool;
 use sqlx::sqlite::SqliteConnectOptions;
@@ -25,27 +35,24 @@ async fn main() -> std::io::Result<()> {
     );
 
     tracing_subscriber::registry().with(env_filter).with(fmt_layer).init();
-
     tracing::info!("Starting Actix-web server");
 
     // OFF_CORS env var
     let off_cors: bool = match std::env::var("OFF_CORS") {
         Ok(val) => val.trim().parse().unwrap_or(false),
-        Err(_) => false,
+        Err(_) => false
     };
-
     tracing::info!("OFF_CORS: {}", off_cors);
 
     // PORT env var
     let port: u16 = match std::env::var("PORT") {
         Ok(val) => val.trim().parse().unwrap_or(8080),
-        Err(_) => 8080,
+        Err(_) => 8080
     };
-
     tracing::info!("Server will bind to http://127.0.0.1:{}", port);
 
+    // DB connect
     let db_file = std::env::var("SQLITE_FILE").unwrap_or_else(|_| "db/app.db".to_string());
-
     let connect_opts = SqliteConnectOptions::new()
         .filename(&db_file)
         .create_if_missing(true);
@@ -57,10 +64,17 @@ async fn main() -> std::io::Result<()> {
     if let Err(e) = sqlx::query("PRAGMA journal_mode = WAL;").execute(&pool).await {
         tracing::warn!("Could not set journal_mode=WAL: {}", e);
     }
-
     if let Err(e) = sqlx::query("PRAGMA busy_timeout = 5000;").execute(&pool).await {
         tracing::warn!("Could not set busy_timeout: {}", e);
     }
+
+    // PORT env var
+    let secret_jwt: String = match std::env::var("SECRET_JWT") {
+        Ok(val) => val.trim().parse().unwrap_or("12345".to_string()),
+        Err(_) => "12345".to_string()
+    };
+
+    let jwt_cfg = Data::new(jwt_middleware::JwtConfig { secret: secret_jwt });
 
     HttpServer::new(move || {
         let cors = if off_cors {
@@ -74,16 +88,20 @@ async fn main() -> std::io::Result<()> {
         };
 
         App::new()
-            .app_data(web::Data::new(pool.clone()))
+            .app_data(Data::new(pool.clone()))
+            .app_data(jwt_cfg.clone())
             .wrap(cors)
             .wrap(TracingLogger::default())
             .wrap(SimpleAccessLogger)
             .service(
                 web::scope("/api")
+                    .wrap(actix_web_httpauth::middleware::HttpAuthentication::bearer(
+                        middleware::jwt_middleware::jwt_validator_adapter
+                    ))
                     .configure(controllers::db::db_config)
             )
     })
-        .bind(("127.0.0.1", port))?
-        .run()
-        .await
+    .bind(("127.0.0.1", port))?
+    .run()
+    .await
 }
