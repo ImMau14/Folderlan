@@ -1,0 +1,6 @@
+.env
+dist
+target
+app.db
+app.db-shm
+app.db-wal
