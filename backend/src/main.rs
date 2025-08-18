@@ -35,23 +35,34 @@ async fn main() -> std::io::Result<()> {
     );
 
     tracing_subscriber::registry().with(env_filter).with(fmt_layer).init();
-    tracing::info!("Starting Actix-web server");
+    tracing::info!("Starting server");
 
     // OFF_CORS env var
     let off_cors: bool = match std::env::var("OFF_CORS") {
-        Ok(val) => val.trim().parse().unwrap_or(false),
+        Ok(val) => {
+            let used_off_cors: bool = val.trim().parse().unwrap_or(false);
+            tracing::info!("OFF_CORS: {}", used_off_cors);
+            used_off_cors
+        },
         Err(_) => false
     };
-    tracing::info!("OFF_CORS: {}", off_cors);
 
     // PORT env var
     let port: u16 = match std::env::var("PORT") {
-        Ok(val) => val.trim().parse().unwrap_or(8080),
+        Ok(val) => {
+            let used_port: u16 = val.trim().parse().unwrap_or(8080);
+            tracing::info!("PORT: {}", used_port);
+            used_port
+        },
         Err(_) => 8080
     };
     // ADDRESS env var
     let address: String = match std::env::var("ADDRESS") {
-        Ok(val) => val.trim().parse().unwrap_or("0.0.0.0".to_string()),
+        Ok(val) => {
+            let used_address: String = val.trim().parse().unwrap_or("0.0.0.0".to_string());
+            tracing::info!("ADDRESS: {}", used_address);
+            used_address
+        },
         Err(_) => "0.0.0.0".to_string()
     };
     tracing::info!("Server will bind to http://{}:{}", address, port);
