@@ -49,7 +49,12 @@ async fn main() -> std::io::Result<()> {
         Ok(val) => val.trim().parse().unwrap_or(8080),
         Err(_) => 8080
     };
-    tracing::info!("Server will bind to http://127.0.0.1:{}", port);
+    // ADDRESS env var
+    let address: String = match std::env::var("ADDRESS") {
+        Ok(val) => val.trim().parse().unwrap_or("0.0.0.0".to_string()),
+        Err(_) => "0.0.0.0".to_string()
+    };
+    tracing::info!("Server will bind to http://{}:{}", address, port);
 
     // DB connect
     let db_file = std::env::var("SQLITE_FILE").unwrap_or_else(|_| "db/app.db".to_string());
@@ -68,7 +73,7 @@ async fn main() -> std::io::Result<()> {
         tracing::warn!("Could not set busy_timeout: {}", e);
     }
 
-    // PORT env var
+    // SECRET_JWT env var
     let secret_jwt: String = match std::env::var("SECRET_JWT") {
         Ok(val) => val.trim().parse().unwrap_or("12345".to_string()),
         Err(_) => "12345".to_string()
@@ -95,13 +100,14 @@ async fn main() -> std::io::Result<()> {
             .wrap(SimpleAccessLogger)
             .service(
                 web::scope("/api")
-                    .wrap(actix_web_httpauth::middleware::HttpAuthentication::bearer(
-                        middleware::jwt_middleware::jwt_validator_adapter
-                    ))
+                    .wrap(middleware::server_ip_only::LocalOnly)
+                    // .wrap(actix_web_httpauth::middleware::HttpAuthentication::bearer(
+                        // middleware::jwt_middleware::jwt_validator_adapter
+                    // ))
                     .configure(controllers::db::db_config)
             )
     })
-    .bind(("127.0.0.1", port))?
+    .bind((address, port))?
     .run()
     .await
 }
