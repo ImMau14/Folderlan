@@ -1,5 +1,6 @@
-use actix_web::{post, get, web, HttpResponse, Responder, http::StatusCode};
+use actix_web::{web, HttpResponse, Responder, http::StatusCode};
 use crate::utils::get_array_of_sentences;
+use crate::middleware::server_ip_only::LocalOnly;
 use sqlx::SqlitePool;
 use serde::Serialize;
 
@@ -15,7 +16,6 @@ struct ExistResponse {
     exist: bool
 }
 
-#[post("/db")]
 pub async fn init_db(pool: web::Data<SqlitePool>) -> impl Responder {
     let pool_ref: &SqlitePool = pool.get_ref();
 
@@ -48,7 +48,6 @@ pub async fn init_db(pool: web::Data<SqlitePool>) -> impl Responder {
         })
 }
 
-#[get("/db")]
 pub async fn db_exists(pool: web::Data<SqlitePool>) -> impl Responder {
     let pool_ref: &SqlitePool = pool.get_ref();
 
@@ -69,7 +68,10 @@ pub async fn db_exists(pool: web::Data<SqlitePool>) -> impl Responder {
 }
 
 pub fn db_config(cfg: &mut web::ServiceConfig) {
-    cfg
-        .service(init_db)
-        .service(db_exists);
+    cfg.service(
+        web::scope("/db")
+            .wrap(LocalOnly)
+            .route("", web::get().to(db_exists))
+            .route("", web::post().to(init_db))
+    );
 }
