@@ -17,7 +17,7 @@ use tracing_subscriber::{
 use tracing_actix_web::TracingLogger;
 
 use middleware::simple_access_logger::SimpleAccessLogger;
-use middleware::jwt_middleware;
+use middleware::jwt_middleware::JwtConfig;
 
 use sqlx::SqlitePool;
 use sqlx::sqlite::SqliteConnectOptions;
@@ -90,35 +90,34 @@ async fn main() -> std::io::Result<()> {
         Err(_) => "12345".to_string()
     };
 
-    let jwt_cfg = Data::new(jwt_middleware::JwtConfig { secret: secret_jwt });
+    let jwt_cfg = JwtConfig { secret: secret_jwt };
+
+    let bind_address : String = address.clone();
 
     HttpServer::new(move || {
         let cors = if off_cors {
             Cors::permissive()
         } else {
             Cors::default()
-                .allowed_origin(&format!("http://localhost:{}", port))
-                .allowed_methods(vec!["GET"])
+                .allowed_origin(&format!("http://{}:{}", address, port))
+                .allowed_methods(vec!["GET", "POST"])
                 .allowed_header(actix_web::http::header::CONTENT_TYPE)
                 .max_age(3600)
         };
 
         App::new()
             .app_data(Data::new(pool.clone()))
-            .app_data(jwt_cfg.clone())
+            .app_data(Data::new(jwt_cfg.clone()))
             .wrap(cors)
             .wrap(TracingLogger::default())
             .wrap(SimpleAccessLogger)
             .service(
                 web::scope("/api")
-                    .wrap(middleware::server_ip_only::LocalOnly)
-                    // .wrap(actix_web_httpauth::middleware::HttpAuthentication::bearer(
-                        // middleware::jwt_middleware::jwt_validator_adapter
-                    // ))
+                    .configure(controllers::auth::auth_config)
                     .configure(controllers::db::db_config)
             )
     })
-    .bind((address, port))?
+    .bind((bind_address, port))?
     .run()
     .await
 }
