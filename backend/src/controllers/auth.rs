@@ -1,21 +1,21 @@
 use actix_web::{web, HttpResponse};
 use actix_web_httpauth::middleware::HttpAuthentication;
-use argon2::{password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString}, Argon2};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
-use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use sqlx::{SqlitePool, Row};
+use sqlx::{Row, SqlitePool};
+use argon2::{Argon2, PasswordHash, PasswordVerifier};
 
 use crate::middleware::jwt_middleware::{jwt_validator_adapter, Claims, JwtConfig};
 use crate::middleware::role_middleware::RoleAuth;
 use crate::middleware::server_ip_only::LocalOnly;
+use crate::utils::{register_user, RegisterPayload};
 
 #[derive(Deserialize, Debug)]
-pub(crate) struct AuthPayload {
+pub(crate) struct LoginPayload {
     pub username: String,
-    pub password: String,
+    pub password: String
 }
 
 #[derive(Serialize)]
@@ -23,13 +23,13 @@ struct LoginResponse {
     success: bool,
     message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    token: Option<String>,
+    token: Option<String>
 }
 
 pub async fn login(
     pool: web::Data<SqlitePool>,
     jwt_cfg: web::Data<JwtConfig>,
-    credentials: web::Json<AuthPayload>
+    credentials: web::Json<LoginPayload>,
 ) -> HttpResponse {
     let query_result = sqlx::query(
         "SELECT id, username, password_hash, role FROM Users WHERE username = ?"
@@ -40,14 +40,18 @@ pub async fn login(
 
     let user = match query_result {
         Ok(Some(row)) => row,
-        Ok(None) => return HttpResponse::Unauthorized().json(json!({
-            "success": false,
-            "message": "Invalid credentials"
-        })),
-        Err(e) => return HttpResponse::InternalServerError().json(json!({
-            "success": false,
-            "message": e.to_string()
-        }))
+        Ok(None) => {
+            return HttpResponse::Unauthorized().json(json!({
+                "success": false,
+                "message": "Invalid credentials"
+            }))
+        }
+        Err(e) => {
+            return HttpResponse::InternalServerError().json(json!({
+                "success": false,
+                "message": e.to_string()
+            }))
+        }
     };
 
     let id: i64 = user.get("id");
@@ -57,10 +61,12 @@ pub async fn login(
 
     let parsed_hash = match PasswordHash::new(&password_hash) {
         Ok(parsed) => parsed,
-        Err(e) => return HttpResponse::InternalServerError().json(json!({
-            "success": false,
-            "message": e.to_string()
-        }))
+        Err(e) => {
+            return HttpResponse::InternalServerError().json(json!({
+                "success": false,
+                "message": e.to_string()
+            }))
+        }
     };
 
     let argon2 = Argon2::default();
@@ -71,7 +77,7 @@ pub async fn login(
         return HttpResponse::Unauthorized().json(json!({
             "success": false,
             "message": "Invalid credentials"
-        }))
+        }));
     }
 
     let expiration = Utc::now()
@@ -92,10 +98,12 @@ pub async fn login(
         &EncodingKey::from_secret(jwt_cfg.secret.as_bytes())
     ) {
         Ok(t) => t,
-        Err(e) => return HttpResponse::InternalServerError().json(json!({
-            "success": false,
-            "message": e.to_string()
-        }))
+        Err(e) => {
+            return HttpResponse::InternalServerError().json(json!({
+                "success": false,
+                "message": e.to_string()
+            }))
+        }
     };
 
     HttpResponse::Ok().json(LoginResponse {
@@ -107,57 +115,40 @@ pub async fn login(
 
 pub async fn register(
     pool: web::Data<SqlitePool>,
-    item: web::Json<AuthPayload>
+    user: web::Json<RegisterPayload>,
 ) -> HttpResponse {
-    register_user(pool, item, "visitor").await
+    let user_data = user.into_inner();
+
+    match user_data {
+        RegisterPayload::Owner(_) => {
+            return HttpResponse::InternalServerError().json(json!({
+                "success": false,
+                "message": "Cannot make owner user from this endpoint"
+            }))
+        }
+        RegisterPayload::Visitor(visitor_data) => {
+            register_user(pool.get_ref(), RegisterPayload::Visitor(visitor_data)).await
+        }
+    }
 }
 
 pub async fn owner_register(
     pool: web::Data<SqlitePool>,
-    item: web::Json<AuthPayload>
+    user: web::Json<RegisterPayload>,
 ) -> HttpResponse {
-    register_user(pool, item, "owner").await
-}
+    let user_data = user.into_inner();
 
-async fn register_user(
-    pool: web::Data<SqlitePool>,
-    item: web::Json<AuthPayload>,
-    role: &str
-) -> HttpResponse {
-    let salt = SaltString::generate(&mut OsRng);
-    let argon2 = Argon2::default();
-
-    let password_hash = match argon2.hash_password(item.password.as_bytes(), &salt) {
-        Ok(hash) => hash.to_string(),
-        Err(e) => return HttpResponse::InternalServerError().json(json!({
-            "success": false,
-            "message": &format!("Password hash error: {}", e)
-        }))
-    };
-
-    match sqlx::query(
-        "INSERT INTO Users (username, password_hash, role) VALUES (?, ?, ?)"
-    )
-        .bind(&item.username)
-        .bind(&password_hash)
-        .bind(role)
-        .execute(pool.get_ref())
-        .await {
-            Ok(result) if result.rows_affected() == 1 => {
-                HttpResponse::Created().json(json!({
-                    "success": true,
-                    "message": &format!("{} user created successfully", role)
-                }))
-            }
-            Ok(_) => return HttpResponse::InternalServerError().json(json!({
+    match user_data {
+        RegisterPayload::Visitor(_) => {
+            return HttpResponse::InternalServerError().json(json!({
                 "success": false,
-                "message": "No record was inserted"
-            })),
-            Err(e) => return HttpResponse::InternalServerError().json(json!({
-                "success": false,
-                "message": &format!("Database error: {}", e)
+                "message": "Cannot make visitor user from this endpoint"
             }))
         }
+        RegisterPayload::Owner(owner_data) => {
+            register_user(pool.get_ref(), RegisterPayload::Owner(owner_data)).await
+        }
+    }
 }
 
 pub fn auth_config(cfg: &mut web::ServiceConfig) {
