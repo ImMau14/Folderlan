@@ -1,79 +1,63 @@
 erDiagram
-    %% ---------- USERS ----------
     Users {
-        INTEGER id PK "AUTOINCREMENT, NOT NULL"
-        TEXT username UK "NOT NULL, UNIQUE"
-        TEXT password_hash "NOT NULL"
-        TEXT role "NOT NULL, CHECK(role IN ('owner','visitor'))"
-        DATETIME created_at "DEFAULT CURRENT_TIMESTAMP"
-        DATETIME last_login_at
-        DATETIME expiration_date
-        BOOLEAN can_download "DEFAULT FALSE"
-        BOOLEAN can_upload "DEFAULT FALSE"
-        BOOLEAN is_active "DEFAULT TRUE"
-        BOOLEAN can_access_all_files "DEFAULT FALSE"
-        BOOLEAN can_edit "DEFAULT FALSE"
-        BOOLEAN can_delete "DEFAULT FALSE"
-        INTEGER is_deleted "DEFAULT 0 NOT NULL CHECK(is_deleted IN (0,1))"
-        DATETIME deleted_at
+        int id PK
+        string username
+        string password_hash
+        string role
+        datetime created_at
+        datetime last_login_at
+        datetime expiration_date
+        boolean is_active
+        boolean can_access_all_files
+        boolean can_download
+        boolean can_upload
+        boolean can_edit
+        boolean can_delete
+        boolean is_deleted
+        datetime deleted_at
+        boolean has_upload_limits
+        int upload_limit
     }
 
-    %% ---------- FILES ----------
     Files {
-        INTEGER id PK "AUTOINCREMENT, NOT NULL"
-        TEXT name "NOT NULL"
-        TEXT internal_path UK "NOT NULL, UNIQUE"
-        INTEGER size_bytes "NOT NULL DEFAULT 0"
-        TEXT mime_type
-        INTEGER uploaded_by FK "NOT NULL; FK->Users(id) ON DELETE RESTRICT"
-        DATETIME uploaded_at "DEFAULT CURRENT_TIMESTAMP"
-        TEXT description
-        TEXT uploader_username "snapshot: username at upload"
-        TEXT uploader_role "snapshot: role at upload"
-        INTEGER is_deleted "DEFAULT 0 NOT NULL CHECK(is_deleted IN (0,1))"
-        DATETIME deleted_at
+        int id PK
+        string name
+        string internal_path
+        int size_bytes
+        string mime_type
+        int uploaded_by FK
+        datetime uploaded_at
+        string description
+        boolean is_deleted
+        datetime deleted_at
     }
 
-    %% ---------- FILEVISIBILITYGRANTS ----------
-    FileVisibilityGrants {
-        INTEGER file_id PK, FK "composite PK(file_id,visitor_id); FK->Files(id) ON DELETE CASCADE"
-        INTEGER visitor_id PK, FK "composite PK(file_id,visitor_id); FK->Users(id) ON DELETE CASCADE"
-        DATETIME granted_at "DEFAULT CURRENT_TIMESTAMP"
-        INTEGER granted_by FK "FK->Users(id) ON DELETE SET NULL"
+    FilePermissions {
+        int id PK
+        int file_id FK
+        int user_id FK
+        boolean can_view
+        boolean can_download
+        boolean can_edit
+        boolean can_delete
+        datetime granted_at
+        int granted_by FK
     }
 
-    %% ---------- FILEACCESSOVERRIDES ----------
-    FileAccessOverrides {
-        INTEGER file_id PK, FK "composite PK(file_id,visitor_id,action); FK->Files(id) ON DELETE CASCADE"
-        INTEGER visitor_id PK, FK "composite PK(file_id,visitor_id,action); FK->Users(id) ON DELETE CASCADE"
-        TEXT action PK "composite PK(file_id,visitor_id,action); CHECK(action IN ('view','download','edit','delete'))"
-        TEXT permission "NOT NULL CHECK(permission IN ('allow','deny'))"
-        INTEGER changed_by FK "FK->Users(id) ON DELETE SET NULL"
-        DATETIME changed_at "DEFAULT CURRENT_TIMESTAMP"
-    }
-
-    %% ---------- AUDITLOG ----------
     AuditLog {
-        INTEGER id PK "AUTOINCREMENT, NOT NULL"
-        DATETIME timestamp "DEFAULT CURRENT_TIMESTAMP"
-        INTEGER user_id FK "FK->Users(id) ON DELETE SET NULL"
-        TEXT event_type "NOT NULL"
-        TEXT description
-        TEXT ip_address
-        INTEGER file_id FK "FK->Files(id) ON DELETE SET NULL"
-        BOOLEAN success
+        int id PK
+        datetime timestamp
+        int user_id FK
+        string event_type
+        string description
+        string ip_address
+        int file_id FK
+        boolean success
     }
 
-    %% ---------- RELATIONSHIPS ----------
-    Users ||--o{ FileVisibilityGrants : "visitor_id"
-    Files ||--o{ FileVisibilityGrants : "file_id"
-    Users ||--o{ FileVisibilityGrants : "granted_by"
-
-    Users ||--o{ Files : "uploaded_by (FK, RESTRICT)"
-
-    Files ||--o{ FileAccessOverrides : "file_id"
-    Users ||--o{ FileAccessOverrides : "visitor_id"
-    Users ||--o{ FileAccessOverrides : "changed_by"
-
-    Users ||--o{ AuditLog : "user_id"
-    Files ||--o{ AuditLog : "file_id"
+    Users ||--o{ Files : uploaded_by
+    Users ||--o{ FilePermissions : user_id
+    Users ||--o{ FilePermissions : granted_by
+    Users ||--o{ AuditLog : user_id
+    Files ||--o{ FilePermissions : file_id
+    Files ||--o{ AuditLog : file_id
