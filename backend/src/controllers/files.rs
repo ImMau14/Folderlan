@@ -1,0 +1,136 @@
+use actix_multipart::Multipart;
+use actix_web::{web, HttpResponse, Responder};
+use futures_util::TryStreamExt as _;
+use std::path::PathBuf;
+use std::sync::Mutex;
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::Mutex as TokioMutex;
+
+use crate::utils::storage;
+use crate::models::types::{Response, ChunkMeta};
+
+// Global map for per-file locks
+static FILE_LOCKS: Lazy<Mutex<HashMap<String, Arc<TokioMutex<()>>>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+
+pub async fn upload_file(mut payload: Multipart) -> impl Responder {
+    let base = PathBuf::from("./uploads");
+
+    if let Err(e) = storage::ensure_base(&base).await {
+        return HttpResponse::InternalServerError().json(Response {
+            success: false,
+            message: format!("cannot create upload dir: {}", e)
+        });
+    }
+
+    let mut meta_opt: Option<ChunkMeta> = None;
+
+    while let Ok(Some(mut field)) = payload.try_next().await {
+        let content_disposition = field.content_disposition();
+        let field_name = content_disposition.and_then(|cd| cd.get_name()).map(|s| s.to_string());
+
+        match field_name.as_deref() {
+            Some("metadata") => {
+                if meta_opt.is_some() {
+                    return HttpResponse::BadRequest().json(Response {
+                        success: false,
+                        message: "metadata already provided".into()
+                    });
+                }
+
+                let mut buf = Vec::new();
+                while let Ok(Some(chunk)) = field.try_next().await {
+                    buf.extend_from_slice(&chunk);
+                }
+
+                match serde_json::from_slice::<ChunkMeta>(&buf) {
+                    Ok(m) => meta_opt = Some(m),
+                    Err(e) => {
+                        return HttpResponse::BadRequest().json(Response {
+                            success: false,
+                            message: format!("invalid metadata JSON: {}", e)
+                        });
+                    }
+                }
+            }
+
+            Some("chunk") => {
+                let meta = match meta_opt.take() {
+                    Some(m) => m,
+                    None => {
+                        return HttpResponse::BadRequest().json(Response {
+                            success: false,
+                            message: "metadata must be sent before chunk".into()
+                        });
+                    }
+                };
+
+                // Get the lock for this file_id
+                let lock = {
+                    let mut locks = FILE_LOCKS.lock().unwrap();
+                    locks.entry(meta.file_id.clone()).or_insert_with(|| Arc::new(TokioMutex::new(()))).clone()
+                };
+                let _guard = lock.lock().await;
+
+                match storage::save_chunk_to(&base, &meta, field).await {
+                    Ok(_saved_path) => {
+                        if storage::all_parts_present(&base, &meta).await {
+                            match storage::assemble_file(&base, &meta).await {
+                                Ok(final_path) => {
+                                    storage::cleanup_tmp_files(&base, &meta.file_id).await;
+                                    return HttpResponse::Ok().json(Response {
+                                        success: true,
+                                        message: format!("file assembled at {}", final_path.display())
+                                    });
+                                }
+                                Err(e) => {
+                                    storage::cleanup_tmp_files(&base, &meta.file_id).await;
+                                    return HttpResponse::InternalServerError().json(Response {
+                                        success: false,
+                                        message: e
+                                    });
+                                }
+                            }
+                        } else {
+                            // Not all parts yet: acknowledge this chunk saved
+                            return HttpResponse::Ok().json(Response {
+                                success: true,
+                                message: format!("chunk {} saved for file_id={}", meta.chunk_index, meta.file_id)
+                            });
+                        }
+                    }
+                    Err(e) => {
+                        storage::cleanup_tmp_files(&base, &meta.file_id).await;
+                        return HttpResponse::InternalServerError().json(Response {
+                            success: false,
+                            message: e
+                        });
+                    }
+                }
+            }
+
+            _ => {
+                // ignore unknown/other fields
+                while let Ok(Some(_)) = field.try_next().await { /* consume */ }
+            }
+        }
+    }
+
+    // If metadata was received but no chunk in the same request
+    if meta_opt.is_some() {
+        HttpResponse::BadRequest().json(Response {
+            success: false,
+            message: "chunk not received".into()
+        })
+    } else {
+        HttpResponse::BadRequest().json(Response {
+            success: false,
+            message: "no valid fields found".into()
+        })
+    }
+}
+
+pub fn files_config(cfg: &mut web::ServiceConfig) {
+    cfg.service(web::scope("/files").route("", web::post().to(upload_file)));
+}
