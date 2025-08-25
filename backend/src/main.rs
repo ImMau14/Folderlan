@@ -1,6 +1,7 @@
 mod controllers;
 mod middleware;
 mod utils;
+mod models;
 
 use actix_web::{
     web::Data, 
@@ -115,6 +116,7 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/api")
                     .configure(controllers::auth::auth_config)
                     .configure(controllers::db::db_config)
+                    .configure(controllers::files::files_config)
             )
     })
     .bind((bind_address, port))?
