@@ -33,7 +33,6 @@ CREATE TABLE IF NOT EXISTS Files (
     mime_type TEXT,
     uploaded_by INTEGER NOT NULL,
     uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    description TEXT,
     is_deleted BOOLEAN DEFAULT 0 CHECK(is_deleted IN (0, 1)),
     deleted_at DATETIME,
     FOREIGN KEY (uploaded_by) REFERENCES Users(id) ON DELETE RESTRICT

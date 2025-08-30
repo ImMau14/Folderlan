@@ -1,9 +1,12 @@
 use crate::models::types::ChunkMeta;
 use tokio::fs::{self, File};
-use tokio::io::{AsyncWriteExt, copy};
+use tokio::io::AsyncWriteExt;
 use actix_multipart::Field;
 use futures_util::TryStreamExt as _;
 use std::path::PathBuf;
+use mime_guess::from_path;
+
+use crate::utils::sanitize;
 
 /// Ensure base dir and tmp exists creating it if not exists
 pub async fn ensure_base(base: &PathBuf) -> Result<(), std::io::Error> {
@@ -12,15 +15,24 @@ pub async fn ensure_base(base: &PathBuf) -> Result<(), std::io::Error> {
     Ok(())
 }
 
-/// Path for the part
-pub fn part_path(base: &PathBuf, file_id: &str, index: u64) -> PathBuf {
-    base.join("tmp").join(format!("{}.part.{}", file_id, index))
+/// Path for the part (tmp). Now validates file_id.
+/// Returns Err if file_id is invalid.
+pub fn tmp_part_path(base: &PathBuf, file_id: &str, index: u64) -> Result<PathBuf, String> {
+    if !sanitize::validate_file_id(file_id) {
+        return Err("invalid file_id".to_string());
+    }
+    Ok(base.join("tmp").join(format!("{}.part.{}", file_id, index)))
 }
 
 /// Save an incoming multipart `Field` (the chunk) to disk as a part file.
 /// Also verifies chunk size.
 pub async fn save_chunk_to(base: &PathBuf, meta: &ChunkMeta, mut field: Field) -> Result<PathBuf, String> {
-    let part = part_path(base, &meta.file_id, meta.chunk_index);
+    // validate file_id
+    if !sanitize::validate_file_id(&meta.file_id) {
+        return Err("invalid file_id".into());
+    }
+
+    let part = tmp_part_path(base, &meta.file_id, meta.chunk_index)?;
     let mut f = File::create(&part).await.map_err(|e| format!("cannot create chunk file: {}", e))?;
 
     let mut total_bytes = 0usize;
@@ -44,38 +56,86 @@ pub async fn save_chunk_to(base: &PathBuf, meta: &ChunkMeta, mut field: Field) -
 
 /// Check async whether all parts exist (0 .. total_chunks-1)
 pub async fn all_parts_present(base: &PathBuf, meta: &ChunkMeta) -> bool {
+    // quick validate
+    if !sanitize::validate_file_id(&meta.file_id) {
+        return false;
+    }
+
     for i in 0..meta.total_chunks {
-        let p = part_path(base, &meta.file_id, i);
-        if tokio::fs::metadata(&p).await.is_err() {
-            return false;
+        match tmp_part_path(base, &meta.file_id, i) {
+            Ok(p) => {
+                if tokio::fs::metadata(&p).await.is_err() {
+                    return false;
+                }
+            }
+            Err(_) => return false
         }
     }
     true
 }
 
-/// Assemble all parts in order into the final file.
-pub async fn assemble_file(base: &PathBuf, meta: &ChunkMeta) -> Result<PathBuf, String> {
-    let final_path = base.join(&meta.filename);
-    let mut dst = File::create(&final_path).await.map_err(|e| format!("cannot create final file: {}", e))?;
+/// Assemble all parts in order into the final file,
+/// returning (path_relative_to_base, sanitized_name, size_in_bytes, mime_type).
+pub async fn assemble_file(base: &PathBuf, meta: &ChunkMeta) -> Result<(PathBuf, String, u64, String), String> {
+    // validate file_id
+    if !sanitize::validate_file_id(&meta.file_id) {
+        return Err("invalid file_id".into());
+    }
 
+    // Generate a unique sanitized filename and the relative path that will be used on disk
+    let (sanitized_name, rel_path) = sanitize::generate_unique_sanitized_filename(base.as_path(), &meta.filename).await
+        .map_err(|e| format!("cannot generate filename: {}", e))?;
+
+    let final_path = base.join(&rel_path);
+
+    // Optional double-check that final_path remains within base (requires parents exist)
+    if let Err(e) = sanitize::ensure_path_within_base(base.as_path(), final_path.as_path()).await {
+        return Err(format!("security check failed: {}", e));
+    }
+
+    // create destination file (will create/overwrite only this unique name)
+    let mut dst = File::create(&final_path).await
+        .map_err(|e| format!("cannot create final file: {}", e))?;
+
+    // copy each part into dst
     for i in 0..meta.total_chunks {
-        let part = part_path(base, &meta.file_id, i);
-        let mut src = File::open(&part).await.map_err(|e| format!("failed opening part {}: {}", i, e))?;
-        copy(&mut src, &mut dst).await.map_err(|e| format!("failed copying part {}: {}", i, e))?;
+        let part = tmp_part_path(base, &meta.file_id, i)
+            .map_err(|e| format!("invalid file_id when reading part {}: {}", i, e))?;
+        let mut src = File::open(&part).await
+            .map_err(|e| format!("failed opening part {}: {}", i, e))?;
+        tokio::io::copy(&mut src, &mut dst).await
+            .map_err(|e| format!("failed copying part {}: {}", i, e))?;
 
+        // remove the part after copy (best-effort)
         let _ = fs::remove_file(&part).await;
     }
 
     dst.sync_all().await.map_err(|e| format!("failed syncing final file: {}", e))?;
-    Ok(final_path)
+
+    let metadata = tokio::fs::metadata(&final_path).await
+        .map_err(|e| format!("failed reading metadata of final file: {}", e))?;
+    let size: u64 = metadata.len();
+
+    let mime = from_path(&final_path)
+        .first_or_octet_stream()
+        .essence_str()
+        .to_string();
+
+    // rel_path already is relative to base (generated by generate_unique_sanitized_filename)
+    Ok((rel_path, sanitized_name, size, mime))
 }
 
 /// Clean up temporary files for a given file_id
 pub async fn cleanup_tmp_files(base: &PathBuf, file_id: &str) {
+    // validate file_id
+    if !sanitize::validate_file_id(file_id) {
+        return;
+    }
+
     let tmp_dir = base.join("tmp");
     let mut entries = match fs::read_dir(&tmp_dir).await {
         Ok(entries) => entries,
-        Err(_) => return,
+        Err(_) => return
     };
 
     while let Ok(Some(entry)) = entries.next_entry().await {

@@ -1,6 +1,6 @@
 use actix_web_httpauth::middleware::HttpAuthentication;
 use actix_multipart::Multipart;
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpResponse, HttpRequest, HttpMessage, Responder};
 use futures_util::TryStreamExt as _;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -8,17 +8,35 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex as TokioMutex;
+use sqlx::SqlitePool;
 
 use crate::utils::storage;
+use crate::utils::{register_file, RegisterFilePayload};
 use crate::models::types::{Response, ChunkMeta};
-use crate::middleware::jwt_middleware::jwt_validator_adapter; // path to your jwt validator
-use crate::middleware::perms_middleware::PermsAuth; // path to the PermsAuth we implemented
+use crate::middleware::jwt_middleware::jwt_validator_adapter;
+use crate::middleware::perms_middleware::PermsAuth;
+use crate::middleware::jwt_middleware::AuthUser;
 
 // Global map for per-file locks
 static FILE_LOCKS: Lazy<Mutex<HashMap<String, Arc<TokioMutex<()>>>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
-pub async fn upload_file(mut payload: Multipart) -> impl Responder {
+pub async fn upload_file(
+    mut payload: Multipart, 
+    req: HttpRequest, 
+    pool: web::Data<SqlitePool>
+) -> impl Responder {
     let base = PathBuf::from("./uploads");
+
+    let user_id : u64 = match req.extensions().get::<AuthUser>() {
+        Some(auth_user) => {
+            auth_user.id.try_into().unwrap()
+        },
+
+        None => return HttpResponse::InternalServerError().json(Response {
+            success: false,
+            message: "cannot upload without id (middleware failed)".into()
+        })
+    };
 
     if let Err(e) = storage::ensure_base(&base).await {
         return HttpResponse::InternalServerError().json(Response {
@@ -80,12 +98,18 @@ pub async fn upload_file(mut payload: Multipart) -> impl Responder {
                     Ok(_saved_path) => {
                         if storage::all_parts_present(&base, &meta).await {
                             match storage::assemble_file(&base, &meta).await {
-                                Ok(final_path) => {
-                                    storage::cleanup_tmp_files(&base, &meta.file_id).await;
-                                    return HttpResponse::Ok().json(Response {
-                                        success: true,
-                                        message: format!("file assembled at {}", final_path.display())
-                                    });
+                                Ok((final_path, file_name, file_size, mime_type)) => {
+                                    storage::cleanup_tmp_files(&base, &meta.file_id).await;                                    
+                                    return register_file(
+                                        pool.get_ref(),
+                                        RegisterFilePayload {
+                                            name: file_name,
+                                            internal_path: final_path.to_string_lossy().into_owned(),
+                                            size_bytes: file_size,
+                                            mime_type: mime_type,
+                                            uploaded_by: user_id
+                                        }
+                                    ).await;
                                 }
                                 Err(e) => {
                                     storage::cleanup_tmp_files(&base, &meta.file_id).await;
