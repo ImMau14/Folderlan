@@ -1,3 +1,4 @@
+use actix_web_httpauth::middleware::HttpAuthentication;
 use actix_multipart::Multipart;
 use actix_web::{web, HttpResponse, Responder};
 use futures_util::TryStreamExt as _;
@@ -10,6 +11,8 @@ use tokio::sync::Mutex as TokioMutex;
 
 use crate::utils::storage;
 use crate::models::types::{Response, ChunkMeta};
+use crate::middleware::jwt_middleware::jwt_validator_adapter; // path to your jwt validator
+use crate::middleware::perms_middleware::PermsAuth; // path to the PermsAuth we implemented
 
 // Global map for per-file locks
 static FILE_LOCKS: Lazy<Mutex<HashMap<String, Arc<TokioMutex<()>>>>> = Lazy::new(|| Mutex::new(HashMap::new()));
@@ -132,5 +135,10 @@ pub async fn upload_file(mut payload: Multipart) -> impl Responder {
 }
 
 pub fn files_config(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/files").route("", web::post().to(upload_file)));
+    cfg.service(
+        web::scope("/files")
+            .wrap(PermsAuth::new(&["can_upload"]))
+            .wrap(HttpAuthentication::bearer(jwt_validator_adapter))
+            .route("", web::post().to(upload_file)),
+    );
 }
