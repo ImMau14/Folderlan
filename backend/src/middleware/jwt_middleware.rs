@@ -1,27 +1,13 @@
-use actix_web::{
-    dev::ServiceRequest,
-    Error,
-    web::Data,
-    HttpMessage,
-    HttpResponse
-};
 use actix_web::error::InternalError;
+use actix_web::{Error, HttpMessage, HttpResponse, dev::ServiceRequest, web::Data};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
-use jsonwebtoken::{
-    decode,
-    DecodingKey,
-    Validation,
-    Algorithm
-};
-use serde::{
-    Deserialize,
-    Serialize
-};
+use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 #[derive(Clone, Debug)]
 pub struct JwtConfig {
-    pub secret: String
+    pub secret: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -29,7 +15,7 @@ pub struct Claims {
     pub sub: String,
     pub username: String,
     pub role: String,
-    pub exp: usize
+    pub exp: usize,
 }
 
 #[allow(dead_code)]
@@ -38,19 +24,21 @@ pub struct AuthUser {
     pub id: i64,
     pub username: String,
     pub role: String,
-    pub jwt_claims: Claims
+    pub jwt_claims: Claims,
 }
 
 pub async fn jwt_validator_adapter(
     req: ServiceRequest,
-    credentials: BearerAuth
+    credentials: BearerAuth,
 ) -> Result<ServiceRequest, (Error, ServiceRequest)> {
     let cfg = match req.app_data::<Data<JwtConfig>>() {
         Some(d) => d.get_ref().clone(),
         None => {
-            let body = json!({ "success": false, "message": "JwtConfig not registered in app_data" });
+            let body =
+                json!({ "success": false, "message": "JwtConfig not registered in app_data" });
             let resp = HttpResponse::InternalServerError().json(body);
-            let err: Error = InternalError::from_response("JwtConfig not registered in app_data", resp).into();
+            let err: Error =
+                InternalError::from_response("JwtConfig not registered in app_data", resp).into();
             return Err((err, req));
         }
     };
@@ -76,7 +64,7 @@ pub async fn jwt_validator_adapter(
         id,
         username: claims.username.clone(),
         role: claims.role.clone(),
-        jwt_claims: claims.clone()
+        jwt_claims: claims.clone(),
     };
 
     req.extensions_mut().insert(auth_user);

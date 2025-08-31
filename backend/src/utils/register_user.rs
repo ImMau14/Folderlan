@@ -1,7 +1,7 @@
-use serde::Deserialize;
-use sqlx::SqlitePool;
 use actix_web::HttpResponse;
+use serde::Deserialize;
 use serde_json::json;
+use sqlx::SqlitePool;
 
 use crate::utils::hash_password;
 
@@ -15,20 +15,20 @@ pub struct RegisterVisitorPayload {
     pub can_edit: bool,
     pub can_delete: bool,
     pub has_upload_limits: bool,
-    pub upload_limit: u64
+    pub upload_limit: u64,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct RegisterOwnerPayload {
     pub username: String,
-    pub password: String
+    pub password: String,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
 pub enum RegisterPayload {
     Visitor(RegisterVisitorPayload),
-    Owner(RegisterOwnerPayload)
+    Owner(RegisterOwnerPayload),
 }
 
 pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResponse {
@@ -42,7 +42,7 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
         can_edit: bool,
         can_delete: bool,
         has_upload_limits: bool,
-        upload_limit: u64
+        upload_limit: u64,
     }
 
     let user: Payload = match user {
@@ -54,7 +54,7 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
                     return HttpResponse::InternalServerError().json(json!({
                         "success": false,
                         "message": e.to_string()
-                    }))
+                    }));
                 }
             },
             role: "owner".to_string(),
@@ -74,7 +74,7 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
                     return HttpResponse::InternalServerError().json(json!({
                         "success": false,
                         "message": e.to_string()
-                    }))
+                    }));
                 }
             },
             role: "visitor".to_string(),
@@ -84,8 +84,8 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
             can_edit: item.can_edit,
             can_delete: item.can_delete,
             has_upload_limits: item.has_upload_limits,
-            upload_limit: item.upload_limit
-        }
+            upload_limit: item.upload_limit,
+        },
     };
 
     match sqlx::query(
@@ -102,7 +102,7 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
             has_upload_limits,
             upload_limit
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        "
+        ",
     )
     .bind(&user.username)
     .bind(&user.password_hash)
@@ -128,6 +128,6 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
         Err(e) => HttpResponse::InternalServerError().json(json!({
             "success": false,
             "message": &format!("Database error: {e}")
-        }))
+        })),
     }
 }

@@ -23,15 +23,15 @@ pub fn get_array_of_sentences(file_path: &str) -> Result<Vec<String>, Box<dyn Er
     let content = content_no_comments.into_owned();
 
     // prepared buffers and iterators
-    let mut stmts: Vec<String> = Vec::new();                 // collected statements
-    let mut buf = String::with_capacity(content.len());      // accumulates chars for current statement
-    let mut token_buf = String::new();                       // accumulates letters to detect keywords (begin/end)
+    let mut stmts: Vec<String> = Vec::new(); // collected statements
+    let mut buf = String::with_capacity(content.len()); // accumulates chars for current statement
+    let mut token_buf = String::new(); // accumulates letters to detect keywords (begin/end)
     let mut chars = content.chars().peekable();
 
     // parsing state flags
-    let mut in_single = false;   // inside single-quoted literal (')
-    let mut in_double = false;   // inside double-quoted literal (")
-    let mut in_bracket = false;  // inside bracket-quoted identifier ([...])
+    let mut in_single = false; // inside single-quoted literal (')
+    let mut in_double = false; // inside double-quoted literal (")
+    let mut in_bracket = false; // inside bracket-quoted identifier ([...])
     let mut block_level: i32 = 0; // nesting level for begin/end blocks
 
     // streaming character-by-character state machine
@@ -134,7 +134,8 @@ pub fn get_array_of_sentences(file_path: &str) -> Result<Vec<String>, Box<dyn Er
     }
 
     // final cleanup: trim each statement and remove empties
-    let stmts_clean: Vec<String> = stmts.into_iter()
+    let stmts_clean: Vec<String> = stmts
+        .into_iter()
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
         .collect();

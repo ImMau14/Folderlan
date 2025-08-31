@@ -1,14 +1,18 @@
 use actix_service::Service;
 use actix_web::{
+    Error, HttpMessage, HttpResponse,
     body::MessageBody,
     dev::{ServiceRequest, ServiceResponse, Transform},
     error::InternalError,
-    Error, HttpMessage, HttpResponse, web::Data,
+    web::Data,
 };
-use futures_util::future::{LocalBoxFuture, ready, Ready};
+use futures_util::future::{LocalBoxFuture, Ready, ready};
 use serde_json::json;
-use sqlx::{Row, sqlite::SqliteRow, SqlitePool};
-use std::{rc::Rc, task::{Context, Poll}};
+use sqlx::{Row, SqlitePool, sqlite::SqliteRow};
+use std::{
+    rc::Rc,
+    task::{Context, Poll},
+};
 
 use crate::middleware::jwt_middleware::AuthUser;
 
@@ -95,9 +99,11 @@ where
             let pool = match req.app_data::<Data<SqlitePool>>() {
                 Some(d) => d.get_ref().clone(),
                 None => {
-                    let body = json!({ "success": false, "message": "Database pool not configured" });
+                    let body =
+                        json!({ "success": false, "message": "Database pool not configured" });
                     let resp = HttpResponse::InternalServerError().json(body);
-                    let err: Error = InternalError::from_response("Database pool not configured", resp).into();
+                    let err: Error =
+                        InternalError::from_response("Database pool not configured", resp).into();
                     return Err(err);
                 }
             };
@@ -124,7 +130,8 @@ where
                 Err(sqlx::Error::RowNotFound) => {
                     let body = json!({ "success": false, "message": "User not found or inactive" });
                     let resp = HttpResponse::Unauthorized().json(body);
-                    let err: Error = InternalError::from_response("User not found or inactive", resp).into();
+                    let err: Error =
+                        InternalError::from_response("User not found or inactive", resp).into();
                     return Err(err);
                 }
                 Err(e) => {
@@ -145,7 +152,8 @@ where
                         tracing::error!("Error reading column `{}`: {:?}", col, e);
                         let body = json!({ "success": false, "message": "Database error" });
                         let resp = HttpResponse::InternalServerError().json(body);
-                        let err: Error = InternalError::from_response("Database error", resp).into();
+                        let err: Error =
+                            InternalError::from_response("Database error", resp).into();
                         return Err(err);
                     }
                 };
@@ -156,12 +164,12 @@ where
             for perm in required.iter() {
                 // Known permissions mapping: if you add DB permission columns, include here.
                 let has_perm = match perm.as_str() {
-                    "can_access_all_files" |
-                    "can_download" |
-                    "can_upload" |
-                    "can_edit" |
-                    "can_delete" |
-                    "has_upload_limits" => {
+                    "can_access_all_files"
+                    | "can_download"
+                    | "can_upload"
+                    | "can_edit"
+                    | "can_delete"
+                    | "has_upload_limits" => {
                         // check column value
                         read_bool_col(&row, perm.as_str())?
                     }
@@ -169,7 +177,9 @@ where
                         tracing::warn!("Unknown permission requested in middleware: {}", unknown);
                         let body = json!({ "success": false, "message": format!("Unknown permission: {}", unknown) });
                         let resp = HttpResponse::InternalServerError().json(body);
-                        let err: Error = InternalError::from_response("Unknown permission requested", resp).into();
+                        let err: Error =
+                            InternalError::from_response("Unknown permission requested", resp)
+                                .into();
                         return Err(err);
                     }
                 };
@@ -177,7 +187,11 @@ where
                 if !has_perm {
                     let body = json!({ "success": false, "message": "Access denied: insufficient permissions" });
                     let resp = HttpResponse::Forbidden().json(body);
-                    let err: Error = InternalError::from_response("Access denied: insufficient permissions", resp).into();
+                    let err: Error = InternalError::from_response(
+                        "Access denied: insufficient permissions",
+                        resp,
+                    )
+                    .into();
                     return Err(err);
                 }
             }
