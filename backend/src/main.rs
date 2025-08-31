@@ -1,30 +1,15 @@
-mod controllers;
-mod middleware;
-mod utils;
-mod models;
+use actix_web::{App, HttpServer, web::Data};
+use tracing_subscriber::{prelude::*, fmt, EnvFilter};
+use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 
-use actix_web::{
-    web::Data, 
-    App, 
-    web, 
-    HttpServer
-};
-use actix_cors::Cors;
-use tracing_subscriber::{
-    prelude::*,
-    fmt,
-    EnvFilter
-};
+use backend::{configure_services, build_cors};
+use backend::middleware::jwt_middleware::JwtConfig;
+use backend::middleware::simple_access_logger::SimpleAccessLogger;
 use tracing_actix_web::TracingLogger;
-
-use middleware::simple_access_logger::SimpleAccessLogger;
-use middleware::jwt_middleware::JwtConfig;
-
-use sqlx::SqlitePool;
-use sqlx::sqlite::SqliteConnectOptions;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // Tracing
     let env_filter = EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| EnvFilter::new("info,actix_server=warn,actix_web=info"));
 
@@ -32,41 +17,28 @@ async fn main() -> std::io::Result<()> {
         fmt::format()
             .compact()
             .without_time()
-            .with_target(false)
+            .with_target(false),
     );
 
     tracing_subscriber::registry().with(env_filter).with(fmt_layer).init();
     tracing::info!("Starting server");
 
-    // OFF_CORS env var
-    let off_cors: bool = match std::env::var("OFF_CORS") {
-        Ok(val) => {
-            let used_off_cors: bool = val.trim().parse().unwrap_or(false);
-            tracing::info!("OFF_CORS: {}", used_off_cors);
-            used_off_cors
-        },
-        Err(_) => false
-    };
+    // OFF_CORS
+    let off_cors: bool = std::env::var("OFF_CORS")
+        .ok()
+        .and_then(|v| v.trim().parse().ok())
+        .unwrap_or(false);
 
-    // PORT env var
-    let port: u16 = match std::env::var("PORT") {
-        Ok(val) => {
-            let used_port: u16 = val.trim().parse().unwrap_or(8080);
-            tracing::info!("PORT: {}", used_port);
-            used_port
-        },
-        Err(_) => 8080
-    };
-    // ADDRESS env var
-    let address: String = match std::env::var("ADDRESS") {
-        Ok(val) => {
-            let used_address: String = val.trim().parse().unwrap_or("0.0.0.0".to_string());
-            tracing::info!("ADDRESS: {}", used_address);
-            used_address
-        },
-        Err(_) => "0.0.0.0".to_string()
-    };
-    tracing::info!("Server will bind to http://{}:{}", address, port);
+    // PORT
+    let port: u16 = std::env::var("PORT")
+        .ok()
+        .and_then(|v| v.trim().parse().ok())
+        .unwrap_or(8080);
+
+    // ADDRESS
+    let address: String = std::env::var("ADDRESS").unwrap_or_else(|_| "0.0.0.0".to_string());
+
+    tracing::info!("OFF_CORS: {}  PORT: {}  ADDRESS: {}", off_cors, port, address);
 
     // DB connect
     let db_file = std::env::var("SQLITE_FILE").unwrap_or_else(|_| "db/app.db".to_string());
@@ -76,8 +48,9 @@ async fn main() -> std::io::Result<()> {
 
     let pool = SqlitePool::connect_with(connect_opts)
         .await
-        .expect("Could not connect to SQLite (SqlitePool::connect_with)");
+        .expect("Could not connect to SQLite");
 
+    // pragmas
     if let Err(e) = sqlx::query("PRAGMA journal_mode = WAL;").execute(&pool).await {
         tracing::warn!("Could not set journal_mode=WAL: {}", e);
     }
@@ -85,41 +58,26 @@ async fn main() -> std::io::Result<()> {
         tracing::warn!("Could not set busy_timeout: {}", e);
     }
 
-    // SECRET_JWT env var
-    let secret_jwt: String = match std::env::var("SECRET_JWT") {
-        Ok(val) => val.trim().parse().unwrap_or("12345".to_string()),
-        Err(_) => "12345".to_string()
-    };
-
+    // SECRET_JWT
+    let secret_jwt: String = std::env::var("SECRET_JWT").unwrap_or_else(|_| "12345".to_string());
     let jwt_cfg = JwtConfig { secret: secret_jwt };
 
-    let bind_address : String = address.clone();
+    tracing::info!("Server will bind to http://{}:{}", address, port);
 
-    HttpServer::new(move || {
-        let cors = if off_cors {
-            Cors::permissive()
-        } else {
-            Cors::default()
-                .allowed_origin(&format!("http://{}:{}", address, port))
-                .allowed_methods(vec!["GET", "POST"])
-                .allowed_header(actix_web::http::header::CONTENT_TYPE)
-                .max_age(3600)
-        };
-
+    let address_for_app = address.clone();
+    let app_factory = move || {
+        let cors = build_cors(off_cors, &address_for_app, port);
         App::new()
             .app_data(Data::new(pool.clone()))
             .app_data(Data::new(jwt_cfg.clone()))
             .wrap(cors)
             .wrap(TracingLogger::default())
             .wrap(SimpleAccessLogger)
-            .service(
-                web::scope("/api")
-                    .configure(controllers::auth::auth_config)
-                    .configure(controllers::db::db_config)
-                    .configure(controllers::files::files_config)
-            )
-    })
-    .bind((bind_address, port))?
-    .run()
-    .await
+            .configure(configure_services)
+    };
+
+    HttpServer::new(app_factory)
+        .bind((address.as_str(), port))?
+        .run()
+        .await
 }

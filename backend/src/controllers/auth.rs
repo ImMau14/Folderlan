@@ -13,7 +13,7 @@ use crate::middleware::server_ip_only::LocalOnly;
 use crate::utils::{register_user, RegisterPayload};
 
 #[derive(Deserialize, Debug)]
-pub(crate) struct LoginPayload {
+pub struct LoginPayload {
     pub username: String,
     pub password: String
 }
