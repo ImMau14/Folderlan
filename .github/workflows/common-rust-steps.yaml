@@ -1,0 +1,36 @@
+name: Common Rust Steps
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        description: "Cargo command to run (e.g., build, test, clippy, fmt)"
+        required: true
+        type: string
+
+jobs:
+  common:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        working-directory: ./backend
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ./backend/target
+          ~/.cargo/registry
+          ~/.cargo/git
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Run Cargo Command
+      run: cargo ${{ inputs.command }} --verbose
+      working-directory: ./backend
