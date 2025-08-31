@@ -54,9 +54,11 @@ pub async fn generate_unique_sanitized_filename(
 
     for i in 0..=MAX_TRIES {
         let candidate_name = if i == 0 {
-            if let Some(ref ext) = ext_opt { format!("{}.{}", stem, ext) } else { stem.clone() }
-        } else {
-            if let Some(ref ext) = ext_opt { format!("{} ({}).{}", stem, i, ext) } else { format!("{} ({})", stem, i) }
+            if let Some(ref ext) = ext_opt { format!("{stem}.{ext}") } else { stem.clone() }
+        } else if let Some(ref ext) = ext_opt {
+            format!("{stem} ({i}).{ext}")
+        } else { 
+            format!("{stem} ({i})") 
         };
 
         let candidate_path = base.join(&candidate_name);

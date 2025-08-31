@@ -22,7 +22,7 @@ pub async fn init_db(pool: web::Data<SqlitePool>) -> impl Responder {
     let stmts = match get_array_of_sentences("./db/schema.sql") {
         Ok(arr) => arr,
         Err(e) => {
-            let body = format!("Could not read ./db/schema.sql: {}", e);
+            let body = format!("Could not read ./db/schema.sql: {e}");
             return HttpResponse::InternalServerError().json(Response {
                 success: false,
                 message: body
@@ -32,7 +32,7 @@ pub async fn init_db(pool: web::Data<SqlitePool>) -> impl Responder {
 
     for (idx, sql) in stmts.iter().enumerate() {
         if let Err(e) = sqlx::query(sql).execute(pool_ref).await {
-            let body = format!("Error while executing #{}: {}\nSQL: {}", idx, e, sql);
+            let body = format!("Error while executing #{idx}: {e}\nSQL: {sql}");
             return HttpResponse::InternalServerError().json(Response {
                 success: false,
                 message: body

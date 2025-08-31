@@ -41,7 +41,7 @@ pub async fn register_file(pool: &SqlitePool, file: RegisterFilePayload) -> Http
         }),
         Err(e) => HttpResponse::InternalServerError().json(Response {
             success: false,
-            message: format!("Database error: {}", e)
+            message: format!("Database error: {e}")
         })
     }
 }
