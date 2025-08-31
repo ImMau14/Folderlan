@@ -27,8 +27,8 @@ pub struct RegisterOwnerPayload {
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
 pub enum RegisterPayload {
-    Owner(RegisterOwnerPayload),
-    Visitor(RegisterVisitorPayload)
+    Visitor(RegisterVisitorPayload),
+    Owner(RegisterOwnerPayload)
 }
 
 pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResponse {
