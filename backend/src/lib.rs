@@ -1,10 +1,10 @@
 pub mod controllers;
 pub mod middleware;
-pub mod utils;
 pub mod models;
+pub mod utils;
 
-use actix_web::{web};
 use actix_cors::Cors;
+use actix_web::web;
 
 /// Register routes and sub-scopes for the API.
 pub fn configure_services(cfg: &mut web::ServiceConfig) {

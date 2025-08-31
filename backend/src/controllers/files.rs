@@ -1,47 +1,48 @@
-use actix_web_httpauth::middleware::HttpAuthentication;
 use actix_multipart::Multipart;
-use actix_web::{web, HttpResponse, HttpRequest, HttpMessage, Responder};
+use actix_web::{HttpMessage, HttpRequest, HttpResponse, Responder, web};
+use actix_web_httpauth::middleware::HttpAuthentication;
 use futures_util::TryStreamExt as _;
-use std::path::PathBuf;
-use std::sync::Mutex;
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::Mutex as TokioMutex;
 use sqlx::SqlitePool;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::Mutex;
+use tokio::sync::Mutex as TokioMutex;
 
-use crate::utils::storage;
-use crate::utils::{register_file, RegisterFilePayload};
-use crate::models::types::{Response, ChunkMeta};
+use crate::middleware::jwt_middleware::AuthUser;
 use crate::middleware::jwt_middleware::jwt_validator_adapter;
 use crate::middleware::perms_middleware::PermsAuth;
-use crate::middleware::jwt_middleware::AuthUser;
+use crate::models::types::{ChunkMeta, Response};
+use crate::utils::storage;
+use crate::utils::{RegisterFilePayload, register_file};
 
 // Global map for per-file locks
-static FILE_LOCKS: Lazy<Mutex<HashMap<String, Arc<TokioMutex<()>>>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+static FILE_LOCKS: Lazy<Mutex<HashMap<String, Arc<TokioMutex<()>>>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 pub async fn upload_file(
-    mut payload: Multipart, 
-    req: HttpRequest, 
-    pool: web::Data<SqlitePool>
+    mut payload: Multipart,
+    req: HttpRequest,
+    pool: web::Data<SqlitePool>,
 ) -> impl Responder {
     let base = PathBuf::from("./uploads");
 
-    let user_id : u64 = match req.extensions().get::<AuthUser>() {
-        Some(auth_user) => {
-            auth_user.id.try_into().unwrap()
-        },
+    let user_id: u64 = match req.extensions().get::<AuthUser>() {
+        Some(auth_user) => auth_user.id.try_into().unwrap(),
 
-        None => return HttpResponse::InternalServerError().json(Response {
-            success: false,
-            message: "cannot upload without id (middleware failed)".into()
-        })
+        None => {
+            return HttpResponse::InternalServerError().json(Response {
+                success: false,
+                message: "cannot upload without id (middleware failed)".into(),
+            });
+        }
     };
 
     if let Err(e) = storage::ensure_base(&base).await {
         return HttpResponse::InternalServerError().json(Response {
             success: false,
-            message: format!("cannot create upload dir: {e}")
+            message: format!("cannot create upload dir: {e}"),
         });
     }
 
@@ -49,14 +50,16 @@ pub async fn upload_file(
 
     while let Ok(Some(mut field)) = payload.try_next().await {
         let content_disposition = field.content_disposition();
-        let field_name = content_disposition.and_then(|cd| cd.get_name()).map(|s| s.to_string());
+        let field_name = content_disposition
+            .and_then(|cd| cd.get_name())
+            .map(|s| s.to_string());
 
         match field_name.as_deref() {
             Some("metadata") => {
                 if meta_opt.is_some() {
                     return HttpResponse::BadRequest().json(Response {
                         success: false,
-                        message: "metadata already provided".into()
+                        message: "metadata already provided".into(),
                     });
                 }
 
@@ -70,7 +73,7 @@ pub async fn upload_file(
                     Err(e) => {
                         return HttpResponse::BadRequest().json(Response {
                             success: false,
-                            message: format!("invalid metadata JSON: {e}")
+                            message: format!("invalid metadata JSON: {e}"),
                         });
                     }
                 }
@@ -82,7 +85,7 @@ pub async fn upload_file(
                     None => {
                         return HttpResponse::BadRequest().json(Response {
                             success: false,
-                            message: "metadata must be sent before chunk".into()
+                            message: "metadata must be sent before chunk".into(),
                         });
                     }
                 };
@@ -90,7 +93,10 @@ pub async fn upload_file(
                 // Get the lock for this file_id
                 let lock = {
                     let mut locks = FILE_LOCKS.lock().unwrap();
-                    locks.entry(meta.file_id.clone()).or_insert_with(|| Arc::new(TokioMutex::new(()))).clone()
+                    locks
+                        .entry(meta.file_id.clone())
+                        .or_insert_with(|| Arc::new(TokioMutex::new(())))
+                        .clone()
                 };
                 let _guard = lock.lock().await;
 
@@ -99,23 +105,26 @@ pub async fn upload_file(
                         if storage::all_parts_present(&base, &meta).await {
                             match storage::assemble_file(&base, &meta).await {
                                 Ok((final_path, file_name, file_size, mime_type)) => {
-                                    storage::cleanup_tmp_files(&base, &meta.file_id).await;                                    
+                                    storage::cleanup_tmp_files(&base, &meta.file_id).await;
                                     return register_file(
                                         pool.get_ref(),
                                         RegisterFilePayload {
                                             name: file_name,
-                                            internal_path: final_path.to_string_lossy().into_owned(),
+                                            internal_path: final_path
+                                                .to_string_lossy()
+                                                .into_owned(),
                                             size_bytes: file_size,
                                             mime_type,
-                                            uploaded_by: user_id
-                                        }
-                                    ).await;
+                                            uploaded_by: user_id,
+                                        },
+                                    )
+                                    .await;
                                 }
                                 Err(e) => {
                                     storage::cleanup_tmp_files(&base, &meta.file_id).await;
                                     return HttpResponse::InternalServerError().json(Response {
                                         success: false,
-                                        message: e
+                                        message: e,
                                     });
                                 }
                             }
@@ -123,7 +132,10 @@ pub async fn upload_file(
                             // Not all parts yet: acknowledge this chunk saved
                             return HttpResponse::Ok().json(Response {
                                 success: true,
-                                message: format!("chunk {} saved for file_id={}", meta.chunk_index, meta.file_id)
+                                message: format!(
+                                    "chunk {} saved for file_id={}",
+                                    meta.chunk_index, meta.file_id
+                                ),
                             });
                         }
                     }
@@ -131,7 +143,7 @@ pub async fn upload_file(
                         storage::cleanup_tmp_files(&base, &meta.file_id).await;
                         return HttpResponse::InternalServerError().json(Response {
                             success: false,
-                            message: e
+                            message: e,
                         });
                     }
                 }
@@ -148,12 +160,12 @@ pub async fn upload_file(
     if meta_opt.is_some() {
         HttpResponse::BadRequest().json(Response {
             success: false,
-            message: "chunk not received".into()
+            message: "chunk not received".into(),
         })
     } else {
         HttpResponse::BadRequest().json(Response {
             success: false,
-            message: "no valid fields found".into()
+            message: "no valid fields found".into(),
         })
     }
 }

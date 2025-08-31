@@ -1,9 +1,9 @@
 use actix_web::{
-    dev::{Service, ServiceRequest, ServiceResponse, Transform},
     Error,
+    dev::{Service, ServiceRequest, ServiceResponse, Transform},
 };
 use std::{
-    future::{ready, Ready},
+    future::{Ready, ready},
     pin::Pin,
     rc::Rc,
     task::{Context, Poll},

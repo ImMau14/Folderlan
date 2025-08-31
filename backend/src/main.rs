@@ -1,10 +1,10 @@
 use actix_web::{App, HttpServer, web::Data};
-use tracing_subscriber::{prelude::*, fmt, EnvFilter};
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
+use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
-use backend::{configure_services, build_cors};
 use backend::middleware::jwt_middleware::JwtConfig;
 use backend::middleware::simple_access_logger::SimpleAccessLogger;
+use backend::{build_cors, configure_services};
 use tracing_actix_web::TracingLogger;
 
 #[actix_web::main]
@@ -13,14 +13,13 @@ async fn main() -> std::io::Result<()> {
     let env_filter = EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| EnvFilter::new("info,actix_server=warn,actix_web=info"));
 
-    let fmt_layer = fmt::layer().event_format(
-        fmt::format()
-            .compact()
-            .without_time()
-            .with_target(false),
-    );
+    let fmt_layer =
+        fmt::layer().event_format(fmt::format().compact().without_time().with_target(false));
 
-    tracing_subscriber::registry().with(env_filter).with(fmt_layer).init();
+    tracing_subscriber::registry()
+        .with(env_filter)
+        .with(fmt_layer)
+        .init();
     tracing::info!("Starting server");
 
     // OFF_CORS
@@ -38,7 +37,12 @@ async fn main() -> std::io::Result<()> {
     // ADDRESS
     let address: String = std::env::var("ADDRESS").unwrap_or_else(|_| "0.0.0.0".to_string());
 
-    tracing::info!("OFF_CORS: {}  PORT: {}  ADDRESS: {}", off_cors, port, address);
+    tracing::info!(
+        "OFF_CORS: {}  PORT: {}  ADDRESS: {}",
+        off_cors,
+        port,
+        address
+    );
 
     // DB connect
     let db_file = std::env::var("SQLITE_FILE").unwrap_or_else(|_| "db/app.db".to_string());
@@ -51,10 +55,16 @@ async fn main() -> std::io::Result<()> {
         .expect("Could not connect to SQLite");
 
     // pragmas
-    if let Err(e) = sqlx::query("PRAGMA journal_mode = WAL;").execute(&pool).await {
+    if let Err(e) = sqlx::query("PRAGMA journal_mode = WAL;")
+        .execute(&pool)
+        .await
+    {
         tracing::warn!("Could not set journal_mode=WAL: {}", e);
     }
-    if let Err(e) = sqlx::query("PRAGMA busy_timeout = 5000;").execute(&pool).await {
+    if let Err(e) = sqlx::query("PRAGMA busy_timeout = 5000;")
+        .execute(&pool)
+        .await
+    {
         tracing::warn!("Could not set busy_timeout: {}", e);
     }
 

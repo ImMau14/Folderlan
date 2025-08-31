@@ -1,5 +1,5 @@
-use sqlx::SqlitePool;
 use actix_web::HttpResponse;
+use sqlx::SqlitePool;
 
 use crate::models::types::Response;
 
@@ -8,7 +8,7 @@ pub struct RegisterFilePayload {
     pub internal_path: String,
     pub size_bytes: u64,
     pub mime_type: String,
-    pub uploaded_by: u64
+    pub uploaded_by: u64,
 }
 
 pub async fn register_file(pool: &SqlitePool, file: RegisterFilePayload) -> HttpResponse {
@@ -21,7 +21,7 @@ pub async fn register_file(pool: &SqlitePool, file: RegisterFilePayload) -> Http
             mime_type,
             uploaded_by
         ) VALUES (?, ?, ?, ?, ?)
-        "
+        ",
     )
     .bind(&file.name)
     .bind(&file.internal_path)
@@ -33,15 +33,15 @@ pub async fn register_file(pool: &SqlitePool, file: RegisterFilePayload) -> Http
     {
         Ok(result) if result.rows_affected() == 1 => HttpResponse::Created().json(Response {
             success: true,
-            message: "Saved file successfully".into()
+            message: "Saved file successfully".into(),
         }),
         Ok(_) => HttpResponse::InternalServerError().json(Response {
             success: false,
-            message: "No record was inserted".into()
+            message: "No record was inserted".into(),
         }),
         Err(e) => HttpResponse::InternalServerError().json(Response {
             success: false,
-            message: format!("Database error: {e}")
-        })
+            message: format!("Database error: {e}"),
+        }),
     }
 }

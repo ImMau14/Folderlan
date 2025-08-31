@@ -1,25 +1,13 @@
 use actix_service::Service;
 use actix_web::{
+    Error, HttpMessage,
     body::MessageBody,
-    dev::{
-        ServiceRequest,
-        ServiceResponse,
-        Transform
-    }, 
-    Error,
-    HttpMessage
+    dev::{ServiceRequest, ServiceResponse, Transform},
 };
-use futures_util::future::{
-    LocalBoxFuture,
-    ready,
-    Ready
-};
+use futures_util::future::{LocalBoxFuture, Ready, ready};
 use std::{
-    rc::Rc, 
-    task::{
-        Context,
-        Poll
-    }
+    rc::Rc,
+    task::{Context, Poll},
 };
 
 use crate::middleware::jwt_middleware::AuthUser;
@@ -31,27 +19,27 @@ use serde_json::json;
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct RoleAuth {
-    allowed_roles: Vec<String>
+    allowed_roles: Vec<String>,
 }
 
 impl RoleAuth {
-    #[allow(dead_code)]    
+    #[allow(dead_code)]
     pub fn new(roles: &[&str]) -> Self {
         Self {
-            allowed_roles: roles.iter().map(|s| s.to_string()).collect()
+            allowed_roles: roles.iter().map(|s| s.to_string()).collect(),
         }
     }
 }
 
 pub struct RoleAuthMiddleware<S> {
     service: Rc<S>,
-    allowed_roles: Vec<String>
+    allowed_roles: Vec<String>,
 }
 
 impl<S, B> Transform<S, ServiceRequest> for RoleAuth
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
-    B: MessageBody + 'static
+    B: MessageBody + 'static,
 {
     type Response = ServiceResponse<B>;
     type Error = Error;
@@ -70,7 +58,7 @@ where
 impl<S, B> Service<ServiceRequest> for RoleAuthMiddleware<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
-    B: MessageBody + 'static
+    B: MessageBody + 'static,
 {
     type Response = ServiceResponse<B>;
     type Error = Error;

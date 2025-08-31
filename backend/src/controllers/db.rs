@@ -1,19 +1,19 @@
-use actix_web::{web, HttpResponse, Responder, http::StatusCode};
-use crate::utils::get_array_of_sentences;
 use crate::middleware::server_ip_only::LocalOnly;
-use sqlx::SqlitePool;
+use crate::utils::get_array_of_sentences;
+use actix_web::{HttpResponse, Responder, http::StatusCode, web};
 use serde::Serialize;
+use sqlx::SqlitePool;
 
 #[derive(Serialize)]
 struct Response {
     success: bool,
-    message: String
+    message: String,
 }
 
 #[derive(Serialize)]
 struct ExistResponse {
     success: bool,
-    exist: bool
+    exist: bool,
 }
 
 pub async fn init_db(pool: web::Data<SqlitePool>) -> impl Responder {
@@ -25,7 +25,7 @@ pub async fn init_db(pool: web::Data<SqlitePool>) -> impl Responder {
             let body = format!("Could not read ./db/schema.sql: {e}");
             return HttpResponse::InternalServerError().json(Response {
                 success: false,
-                message: body
+                message: body,
             });
         }
     };
@@ -35,7 +35,7 @@ pub async fn init_db(pool: web::Data<SqlitePool>) -> impl Responder {
             let body = format!("Error while executing #{idx}: {e}\nSQL: {sql}");
             return HttpResponse::InternalServerError().json(Response {
                 success: false,
-                message: body
+                message: body,
             });
         }
     }
@@ -44,7 +44,7 @@ pub async fn init_db(pool: web::Data<SqlitePool>) -> impl Responder {
         .content_type("application/json")
         .json(Response {
             success: true,
-            message: "The database has been created".to_string()
+            message: "The database has been created".to_string(),
         })
 }
 
@@ -56,14 +56,12 @@ pub async fn db_exists(pool: web::Data<SqlitePool>) -> impl Responder {
     match sqlx::query_scalar::<_, i64>(sql).fetch_one(pool_ref).await {
         Ok(val) => HttpResponse::Ok().json(ExistResponse {
             success: true,
-            exist: val == 1 
+            exist: val == 1,
         }),
-        Err(e) => {
-            HttpResponse::InternalServerError().json(Response { 
-                success: false,
-                message: e.to_string()
-            })
-        }
+        Err(e) => HttpResponse::InternalServerError().json(Response {
+            success: false,
+            message: e.to_string(),
+        }),
     }
 }
 
@@ -72,6 +70,6 @@ pub fn db_config(cfg: &mut web::ServiceConfig) {
         web::scope("/db")
             .wrap(LocalOnly)
             .route("", web::get().to(db_exists))
-            .route("", web::post().to(init_db))
+            .route("", web::post().to(init_db)),
     );
 }

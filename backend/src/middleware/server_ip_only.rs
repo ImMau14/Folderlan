@@ -1,12 +1,12 @@
 use actix_web::{
-    body::EitherBody,
-    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
     Error, HttpResponse,
+    body::EitherBody,
+    dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready},
 };
 use futures_util::future::LocalBoxFuture;
 use serde_json::json;
 use std::{
-    future::{ready, Ready},
+    future::{Ready, ready},
     net::{IpAddr, Ipv4Addr, Ipv6Addr},
 };
 

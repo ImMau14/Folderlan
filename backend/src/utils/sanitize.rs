@@ -1,7 +1,7 @@
 use sanitize_filename::sanitize;
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use tokio::fs;
-use std::io::ErrorKind;
 
 pub fn sanitize_filename_input(name: &str) -> String {
     const MAX_LEN: usize = 255;
@@ -17,21 +17,21 @@ pub fn sanitize_filename_input(name: &str) -> String {
         s.truncate(MAX_LEN);
     }
 
-    if s.is_empty() {
-        "file".to_string()
-    } else {
-        s
-    }
+    if s.is_empty() { "file".to_string() } else { s }
 }
 
 pub fn validate_file_id(file_id: &str) -> bool {
-    if file_id.is_empty() || file_id.len() > 128 { return false; }
-    file_id.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+    if file_id.is_empty() || file_id.len() > 128 {
+        return false;
+    }
+    file_id
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
 }
 
 pub async fn generate_unique_sanitized_filename(
     base: &Path,
-    raw_name: &str
+    raw_name: &str,
 ) -> Result<(String, PathBuf), String> {
     let sanitized = sanitize_filename_input(raw_name);
 
@@ -45,8 +45,13 @@ pub async fn generate_unique_sanitized_filename(
         .extension()
         .and_then(|e| e.to_str())
         .map(|e| {
-            let mut s = e.chars().filter(|c| c.is_ascii_alphanumeric()).collect::<String>();
-            if s.len() > 16 { s.truncate(16); }
+            let mut s = e
+                .chars()
+                .filter(|c| c.is_ascii_alphanumeric())
+                .collect::<String>();
+            if s.len() > 16 {
+                s.truncate(16);
+            }
             s
         });
 
@@ -54,11 +59,15 @@ pub async fn generate_unique_sanitized_filename(
 
     for i in 0..=MAX_TRIES {
         let candidate_name = if i == 0 {
-            if let Some(ref ext) = ext_opt { format!("{stem}.{ext}") } else { stem.clone() }
+            if let Some(ref ext) = ext_opt {
+                format!("{stem}.{ext}")
+            } else {
+                stem.clone()
+            }
         } else if let Some(ref ext) = ext_opt {
             format!("{stem} ({i}).{ext}")
-        } else { 
-            format!("{stem} ({i})") 
+        } else {
+            format!("{stem} ({i})")
         };
 
         let candidate_path = base.join(&candidate_name);
@@ -73,7 +82,11 @@ pub async fn generate_unique_sanitized_filename(
                     return Ok((candidate_name, rel));
                 } else {
                     // error IO inesperado
-                    return Err(format!("failed checking existence of {}: {}", candidate_path.display(), e));
+                    return Err(format!(
+                        "failed checking existence of {}: {}",
+                        candidate_path.display(),
+                        e
+                    ));
                 }
             }
         }
@@ -83,11 +96,17 @@ pub async fn generate_unique_sanitized_filename(
 }
 
 pub async fn ensure_path_within_base(base: &Path, candidate: &Path) -> Result<(), String> {
-    let base_can = fs::canonicalize(base).await
+    let base_can = fs::canonicalize(base)
+        .await
         .map_err(|e| format!("cannot canonicalize base {}: {}", base.display(), e))?;
     let parent = candidate.parent().ok_or("candidate has no parent")?;
-    let parent_can = fs::canonicalize(parent).await
-        .map_err(|e| format!("cannot canonicalize candidate parent {}: {}", parent.display(), e))?;
+    let parent_can = fs::canonicalize(parent).await.map_err(|e| {
+        format!(
+            "cannot canonicalize candidate parent {}: {}",
+            parent.display(),
+            e
+        )
+    })?;
     if parent_can.starts_with(&base_can) {
         Ok(())
     } else {
