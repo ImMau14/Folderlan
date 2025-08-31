@@ -1,0 +1,32 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/common-rust-steps.yaml
+    with:
+      command: build
+
+  test:
+    uses: ./.github/workflows/common-rust-steps.yaml
+    with:
+      command: test
+
+  clippy:
+    uses: ./.github/workflows/common-rust-steps.yaml
+    with:
+      command: "clippy -- -D warnings"
+
+  formatting:
+    uses: ./.github/workflows/common-rust-steps.yaml
+    with:
+      command: "fmt -- --check"
