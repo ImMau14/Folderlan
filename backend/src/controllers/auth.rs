@@ -121,7 +121,7 @@ pub async fn register(
 
     match user_data {
         RegisterPayload::Owner(_) => {
-            return HttpResponse::InternalServerError().json(json!({
+            HttpResponse::InternalServerError().json(json!({
                 "success": false,
                 "message": "Cannot make owner user from this endpoint"
             }))
@@ -140,7 +140,7 @@ pub async fn owner_register(
 
     match user_data {
         RegisterPayload::Visitor(_) => {
-            return HttpResponse::InternalServerError().json(json!({
+            HttpResponse::InternalServerError().json(json!({
                 "success": false,
                 "message": "Cannot make visitor user from this endpoint"
             }))

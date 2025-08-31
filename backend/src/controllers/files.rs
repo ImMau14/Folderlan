@@ -41,7 +41,7 @@ pub async fn upload_file(
     if let Err(e) = storage::ensure_base(&base).await {
         return HttpResponse::InternalServerError().json(Response {
             success: false,
-            message: format!("cannot create upload dir: {}", e)
+            message: format!("cannot create upload dir: {e}")
         });
     }
 
@@ -70,7 +70,7 @@ pub async fn upload_file(
                     Err(e) => {
                         return HttpResponse::BadRequest().json(Response {
                             success: false,
-                            message: format!("invalid metadata JSON: {}", e)
+                            message: format!("invalid metadata JSON: {e}")
                         });
                     }
                 }
@@ -106,7 +106,7 @@ pub async fn upload_file(
                                             name: file_name,
                                             internal_path: final_path.to_string_lossy().into_owned(),
                                             size_bytes: file_size,
-                                            mime_type: mime_type,
+                                            mime_type,
                                             uploaded_by: user_id
                                         }
                                     ).await;

@@ -21,7 +21,7 @@ pub fn build_cors(off_cors: bool, address: &str, port: u16) -> Cors {
     if off_cors {
         Cors::permissive()
     } else {
-        let origin = format!("http://{}:{}", address, port);
+        let origin = format!("http://{address}:{port}");
         Cors::default()
             .allowed_origin(origin.as_str())
             .allowed_methods(vec!["GET", "POST"])

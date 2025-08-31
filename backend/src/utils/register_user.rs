@@ -53,7 +53,7 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
                 Err(e) => {
                     return HttpResponse::InternalServerError().json(json!({
                         "success": false,
-                        "message": &format!("{e}")
+                        "message": e.to_string()
                     }))
                 }
             },
@@ -73,7 +73,7 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
                 Err(e) => {
                     return HttpResponse::InternalServerError().json(json!({
                         "success": false,
-                        "message": &format!("{e}")
+                        "message": e.to_string()
                     }))
                 }
             },
@@ -107,12 +107,12 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
     .bind(&user.username)
     .bind(&user.password_hash)
     .bind(&user.role)
-    .bind(&user.can_access_all_files)
-    .bind(&user.can_download)
-    .bind(&user.can_upload)
-    .bind(&user.can_edit)
-    .bind(&user.can_delete)
-    .bind(&user.has_upload_limits)
+    .bind(user.can_access_all_files)
+    .bind(user.can_download)
+    .bind(user.can_upload)
+    .bind(user.can_edit)
+    .bind(user.can_delete)
+    .bind(user.has_upload_limits)
     .bind(user.upload_limit as i64)
     .execute(pool)
     .await
@@ -127,7 +127,7 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
         })),
         Err(e) => HttpResponse::InternalServerError().json(json!({
             "success": false,
-            "message": &format!("Database error: {}", e)
+            "message": &format!("Database error: {e}")
         }))
     }
 }
