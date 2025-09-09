@@ -16,6 +16,17 @@ use std::{
 
 use crate::middleware::jwt_middleware::AuthUser;
 
+/// Struct to hold user permissions extracted from database
+#[derive(Debug, Clone)]
+pub struct UserPermissions {
+    pub can_access_all_files: bool,
+    pub can_download: bool,
+    pub can_upload: bool,
+    pub can_edit: bool,
+    pub can_delete: bool,
+    pub has_upload_limits: bool,
+}
+
 /// Middleware that checks user permission flags stored in the database.
 /// - `required_perms` are column names from the Users table.
 /// - If user role == "owner", request is allowed (bypass).
@@ -83,7 +94,10 @@ where
                 Some(a) => a,
                 None => {
                     let body = json!({ "success": false, "message": "Not authenticated" });
-                    let resp = HttpResponse::Unauthorized().json(body);
+                    // Ensure JSON content type explicitly
+                    let resp = HttpResponse::Unauthorized()
+                        .content_type("application/json")
+                        .json(body);
                     let err: Error = InternalError::from_response("Not authenticated", resp).into();
                     return Err(err);
                 }
@@ -101,7 +115,10 @@ where
                 None => {
                     let body =
                         json!({ "success": false, "message": "Database pool not configured" });
-                    let resp = HttpResponse::InternalServerError().json(body);
+                    // Ensure JSON content type explicitly
+                    let resp = HttpResponse::InternalServerError()
+                        .content_type("application/json")
+                        .json(body);
                     let err: Error =
                         InternalError::from_response("Database pool not configured", resp).into();
                     return Err(err);
@@ -129,7 +146,10 @@ where
                 Ok(r) => r,
                 Err(sqlx::Error::RowNotFound) => {
                     let body = json!({ "success": false, "message": "User not found or inactive" });
-                    let resp = HttpResponse::Unauthorized().json(body);
+                    // Ensure JSON content type explicitly
+                    let resp = HttpResponse::Unauthorized()
+                        .content_type("application/json")
+                        .json(body);
                     let err: Error =
                         InternalError::from_response("User not found or inactive", resp).into();
                     return Err(err);
@@ -137,7 +157,10 @@ where
                 Err(e) => {
                     tracing::error!("DB error fetching user permissions: {:?}", e);
                     let body = json!({ "success": false, "message": "Database error" });
-                    let resp = HttpResponse::InternalServerError().json(body);
+                    // Ensure JSON content type explicitly
+                    let resp = HttpResponse::InternalServerError()
+                        .content_type("application/json")
+                        .json(body);
                     let err: Error = InternalError::from_response("Database error", resp).into();
                     return Err(err);
                 }
@@ -151,7 +174,9 @@ where
                     Err(e) => {
                         tracing::error!("Error reading column `{}`: {:?}", col, e);
                         let body = json!({ "success": false, "message": "Database error" });
-                        let resp = HttpResponse::InternalServerError().json(body);
+                        let resp = HttpResponse::InternalServerError()
+                            .content_type("application/json")
+                            .json(body);
                         let err: Error =
                             InternalError::from_response("Database error", resp).into();
                         return Err(err);
@@ -176,7 +201,9 @@ where
                     unknown => {
                         tracing::warn!("Unknown permission requested in middleware: {}", unknown);
                         let body = json!({ "success": false, "message": format!("Unknown permission: {}", unknown) });
-                        let resp = HttpResponse::InternalServerError().json(body);
+                        let resp = HttpResponse::InternalServerError()
+                            .content_type("application/json")
+                            .json(body);
                         let err: Error =
                             InternalError::from_response("Unknown permission requested", resp)
                                 .into();
@@ -186,7 +213,10 @@ where
 
                 if !has_perm {
                     let body = json!({ "success": false, "message": "Access denied: insufficient permissions" });
-                    let resp = HttpResponse::Forbidden().json(body);
+                    // Ensure JSON content type explicitly
+                    let resp = HttpResponse::Forbidden()
+                        .content_type("application/json")
+                        .json(body);
                     let err: Error = InternalError::from_response(
                         "Access denied: insufficient permissions",
                         resp,
@@ -195,6 +225,19 @@ where
                     return Err(err);
                 }
             }
+
+            // Extract all permissions from the row to store in request extensions
+            let user_perms = UserPermissions {
+                can_access_all_files: read_bool_col(&row, "can_access_all_files")?,
+                can_download: read_bool_col(&row, "can_download")?,
+                can_upload: read_bool_col(&row, "can_upload")?,
+                can_edit: read_bool_col(&row, "can_edit")?,
+                can_delete: read_bool_col(&row, "can_delete")?,
+                has_upload_limits: read_bool_col(&row, "has_upload_limits")?,
+            };
+
+            // Store permissions in request extensions for use in handlers
+            req.extensions_mut().insert(user_perms);
 
             // All checks passed: call next service
             let res = svc.call(req).await?;
