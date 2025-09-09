@@ -41,30 +41,72 @@ pub async fn save_chunk_to(
         .await
         .map_err(|e| format!("cannot create chunk file: {e}"))?;
 
-    let mut total_bytes = 0usize;
+    // Use u64 for accumulation to match meta.* types and avoid usize issues on 32-bit targets
+    let mut total_bytes: u64 = 0u64;
 
-    while let Some(chunk) = field
-        .try_next()
-        .await
-        .map_err(|e| format!("stream error: {e}"))?
-    {
-        total_bytes += chunk.len();
-        f.write_all(&chunk)
-            .await
-            .map_err(|e| format!("failed writing chunk to disk: {e}"))?;
+    // Read stream safely, performing best-effort cleanup in error branches
+    loop {
+        match field.try_next().await {
+            Ok(Some(chunk)) => {
+                let chunk_len = chunk.len() as u64;
+
+                // protect against overflow when accumulating
+                if chunk_len > u64::MAX - total_bytes {
+                    let _ = fs::remove_file(&part).await;
+                    return Err("overflow while accumulating chunk bytes".to_string());
+                }
+                total_bytes += chunk_len;
+
+                if let Err(e) = f.write_all(&chunk).await {
+                    let _ = fs::remove_file(&part).await;
+                    return Err(format!("failed writing chunk to disk: {e}"));
+                }
+            }
+            Ok(None) => break, // stream finished
+            Err(e) => {
+                let _ = fs::remove_file(&part).await;
+                return Err(format!("stream error: {e}"));
+            }
+        }
     }
 
-    f.sync_all()
-        .await
-        .map_err(|e| format!("failed syncing chunk: {e}"))?;
+    if let Err(e) = f.sync_all().await {
+        let _ = fs::remove_file(&part).await;
+        return Err(format!("failed syncing chunk: {e}"));
+    }
 
-    // Verify chunk size
-    if total_bytes as u64 != meta.chunk_size {
+    // Compute expected chunk size safely:
+    // start = chunk_index * chunk_size  (checked)
+    let start = match meta.chunk_index.checked_mul(meta.chunk_size) {
+        Some(s) => s,
+        None => {
+            let _ = fs::remove_file(&part).await;
+            return Err(format!(
+                "overflow computing start = chunk_index * chunk_size (index={}, size={})",
+                meta.chunk_index, meta.chunk_size
+            ));
+        }
+    };
+
+    // If start is beyond total_size, the index is invalid
+    if start >= meta.total_size {
+        let _ = fs::remove_file(&part).await;
+        return Err(format!(
+            "chunk_index out of range: start {} >= total_size {}",
+            start, meta.total_size
+        ));
+    }
+
+    // expected chunk size is min(chunk_size, remaining_bytes)
+    let remaining = meta.total_size - start;
+    let chunk_size: u64 = std::cmp::min(remaining, meta.chunk_size);
+
+    // Verify chunk size (compare u64 to u64)
+    if total_bytes != chunk_size {
         // Clean up the chunk file if size doesn't match
         let _ = fs::remove_file(&part).await;
         return Err(format!(
-            "chunk size mismatch: expected {}, got {}",
-            meta.chunk_size, total_bytes
+            "chunk size mismatch: expected {chunk_size}, got {total_bytes}"
         ));
     }
 
