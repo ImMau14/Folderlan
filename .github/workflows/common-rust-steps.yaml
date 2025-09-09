@@ -32,5 +32,5 @@ jobs:
           ${{ runner.os }}-cargo-
 
     - name: Run Cargo Command
-      run: cargo ${{ inputs.command }} --verbose
+      run: cargo ${{ inputs.command }}
       working-directory: ./backend
