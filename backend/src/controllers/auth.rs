@@ -119,13 +119,13 @@ pub async fn register(
     let user_data = user.into_inner();
 
     match user_data {
+        RegisterPayload::Visitor(visitor_data) => {
+            register_user(pool.get_ref(), RegisterPayload::Visitor(visitor_data)).await
+        }
         RegisterPayload::Owner(_) => HttpResponse::InternalServerError().json(json!({
             "success": false,
             "message": "Cannot make owner user from this endpoint"
         })),
-        RegisterPayload::Visitor(visitor_data) => {
-            register_user(pool.get_ref(), RegisterPayload::Visitor(visitor_data)).await
-        }
     }
 }
 
