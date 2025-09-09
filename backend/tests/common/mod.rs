@@ -1,5 +1,6 @@
 use actix_web::{App, HttpServer, middleware::Logger, web};
 use reqwest::Client;
+use reqwest::Response;
 use reqwest::multipart::{Form, Part};
 use sqlx::SqlitePool;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
@@ -7,18 +8,79 @@ use std::{fs, net::TcpListener, path::PathBuf, time::Duration};
 use tokio::time::sleep;
 
 use backend::middleware::jwt_middleware::JwtConfig;
+use backend::models::types::ChunkMeta as BackendChunkMeta;
 use backend::utils::register_user::{RegisterOwnerPayload, RegisterPayload, register_user};
 use backend::{build_cors, configure_services};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use std::panic;
 
-#[derive(Deserialize, Clone, Debug, serde::Serialize)]
-pub struct ChunkMeta {
+#[derive(Deserialize, Clone, Debug, Serialize)]
+pub struct ChunkMetaSerde {
     pub file_id: String,
     pub chunk_index: u64,
     pub total_chunks: u64,
     pub chunk_size: u64,
+    pub total_size: u64,
     pub filename: String,
+}
+
+impl From<ChunkMetaSerde> for BackendChunkMeta {
+    fn from(s: ChunkMetaSerde) -> Self {
+        BackendChunkMeta {
+            file_id: s.file_id,
+            chunk_index: s.chunk_index,
+            total_chunks: s.total_chunks,
+            chunk_size: s.chunk_size,
+            total_size: s.total_size,
+            filename: s.filename,
+        }
+    }
+}
+
+impl From<BackendChunkMeta> for ChunkMetaSerde {
+    fn from(m: BackendChunkMeta) -> Self {
+        ChunkMetaSerde {
+            file_id: m.file_id,
+            chunk_index: m.chunk_index,
+            total_chunks: m.total_chunks,
+            chunk_size: m.chunk_size,
+            total_size: m.total_size,
+            filename: m.filename,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct VisitorOptions {
+    pub can_access_all_files: bool,
+    pub can_download: bool,
+    pub can_upload: bool,
+    pub can_edit: bool,
+    pub can_delete: bool,
+    pub has_upload_limits: bool,
+    pub upload_limit: u64,
+}
+
+impl Default for VisitorOptions {
+    fn default() -> Self {
+        Self {
+            can_access_all_files: false,
+            can_download: true,
+            can_upload: false,
+            can_edit: false,
+            can_delete: false,
+            has_upload_limits: false,
+            upload_limit: 0,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum RegisterKind {
+    #[allow(dead_code)]
+    Owner,
+    Visitor,
 }
 
 pub struct TestApp {
@@ -28,6 +90,7 @@ pub struct TestApp {
     pub pool: SqlitePool,
 }
 
+#[allow(dead_code)]
 impl TestApp {
     pub async fn spawn() -> Self {
         let _ = tracing_subscriber::fmt::try_init();
@@ -141,35 +204,77 @@ impl TestApp {
         body["token"].as_str().expect("token missing").to_owned()
     }
 
+    // --- Helpers for building/registering users ---
+
+    fn build_register_payload(
+        &self,
+        username: &str,
+        password: &str,
+        kind: RegisterKind,
+        opts: Option<&VisitorOptions>,
+    ) -> serde_json::Value {
+        let mut base = serde_json::json!({
+            "username": username,
+            "password": password
+        });
+
+        if let RegisterKind::Visitor = kind {
+            let o = opts.cloned().unwrap_or_default();
+            let visitor_fields = serde_json::json!({
+                "can_access_all_files": o.can_access_all_files,
+                "can_download": o.can_download,
+                "can_upload": o.can_upload,
+                "can_edit": o.can_edit,
+                "can_delete": o.can_delete,
+                "has_upload_limits": o.has_upload_limits,
+                "upload_limit": o.upload_limit
+            });
+
+            if let serde_json::Value::Object(ref mut map) = base {
+                if let serde_json::Value::Object(vis_map) = visitor_fields {
+                    for (k, v) in vis_map {
+                        map.insert(k, v);
+                    }
+                }
+            }
+        }
+
+        base
+    }
+
+    pub async fn send_register_request(
+        &self,
+        token: Option<&str>,
+        payload: &serde_json::Value,
+    ) -> Result<Response, reqwest::Error> {
+        let mut builder = self
+            .client
+            .post(format!("{}/api/auth/register", &self.base_url))
+            .json(payload);
+        if let Some(t) = token {
+            builder = builder.header("Authorization", format!("Bearer {t}"));
+        }
+        builder.send().await
+    }
+
+    // --- Create a visitor via API as owner (uses VisitorOptions) ---
     pub async fn create_visitor_via_api_as_owner(
         &self,
         owner_token: &str,
         username: &str,
         password: &str,
-        can_upload: bool,
+        opts: VisitorOptions,
     ) {
-        let payload = serde_json::json!({
-            "username": username,
-            "password": password,
-            "can_access_all_files": false,
-            "can_download": true,
-            "can_upload": can_upload,
-            "can_edit": false,
-            "can_delete": false,
-            "has_upload_limits": false,
-            "upload_limit": 0
-        });
-
+        let payload =
+            self.build_register_payload(username, password, RegisterKind::Visitor, Some(&opts));
         let mut attempts = 0usize;
         let max = 6usize;
         loop {
             attempts += 1;
-            let builder = self
-                .client
-                .post(format!("{}/api/auth/register", &self.base_url))
-                .header("Authorization", format!("Bearer {owner_token}"))
-                .json(&payload);
-            match builder.send().await {
+            match self
+                .send_register_request(Some(owner_token), &payload)
+                .await
+            {
                 Ok(resp) if resp.status().as_u16() == 201 => return,
                 Ok(resp) => {
                     let status = resp.status();
@@ -186,31 +291,51 @@ impl TestApp {
         }
     }
 
+    // --- Try create user via API, returns Result (no panic) ---
     pub async fn try_create_user_via_api(
         &self,
-        token: &str,
+        token: Option<&str>,
         username: &str,
         password: &str,
+        opts: Option<VisitorOptions>,
     ) -> Result<reqwest::Response, reqwest::Error> {
-        let payload = serde_json::json!({
-            "username": username,
-            "password": password,
-            "can_access_all_files": false,
-            "can_download": true,
-            "can_upload": false,
-            "can_edit": false,
-            "can_delete": false,
-            "has_upload_limits": false,
-            "upload_limit": 0
-        });
+        let payload =
+            self.build_register_payload(username, password, RegisterKind::Visitor, opts.as_ref());
+        self.send_register_request(token, &payload).await
+    }
 
+    // --- Multipart helpers for chunked upload ---
+
+    fn build_chunk_form_from_parts(meta: &ChunkMetaSerde, chunk_bytes: &[u8]) -> Form {
+        let meta_json = serde_json::to_string(meta).expect("serialize metadata");
+        let part_chunk = Part::bytes(chunk_bytes.to_vec())
+            .file_name(meta.filename.clone())
+            .mime_str("application/octet-stream")
+            .unwrap();
+        Form::new()
+            .text("metadata", meta_json)
+            .part("chunk", part_chunk)
+    }
+
+    async fn send_multipart_with_auth(
+        &self,
+        token: &str,
+        endpoint: &str,
+        form: Form,
+    ) -> Result<Response, reqwest::Error> {
         self.client
-            .post(format!("{}/api/auth/register", &self.base_url))
+            .post(format!(
+                "{}/{}",
+                &self.base_url,
+                endpoint.trim_start_matches('/')
+            ))
             .header("Authorization", format!("Bearer {token}"))
-            .json(&payload)
+            .multipart(form)
             .send()
             .await
     }
+
+    // --- Upload utilities ---
 
     pub async fn upload_single_chunk_file(
         &self,
@@ -219,27 +344,16 @@ impl TestApp {
         filename: &str,
         file_bytes: Vec<u8>,
     ) -> reqwest::Response {
-        let meta = ChunkMeta {
+        let meta = ChunkMetaSerde {
             file_id: file_id.to_string(),
             chunk_index: 0,
             total_chunks: 1,
             chunk_size: file_bytes.len() as u64,
+            total_size: file_bytes.len() as u64,
             filename: filename.to_string(),
         };
-        let meta_json = serde_json::to_string(&meta).unwrap();
-        let part_chunk = Part::bytes(file_bytes)
-            .file_name(filename.to_string())
-            .mime_str("application/octet-stream")
-            .unwrap();
-        let form = Form::new()
-            .text("metadata", meta_json)
-            .part("chunk", part_chunk);
-
-        self.client
-            .post(format!("{}/api/files", &self.base_url))
-            .header("Authorization", format!("Bearer {visitor_token}"))
-            .multipart(form)
-            .send()
+        let form = Self::build_chunk_form_from_parts(&meta, &file_bytes);
+        self.send_multipart_with_auth(visitor_token, "api/files/upload", form)
             .await
             .expect("upload request failed")
     }
@@ -247,23 +361,11 @@ impl TestApp {
     pub async fn upload_chunk(
         &self,
         visitor_token: &str,
-        meta: ChunkMeta,
+        meta: ChunkMetaSerde,
         chunk_bytes: Vec<u8>,
     ) -> reqwest::Response {
-        let meta_json = serde_json::to_string(&meta).unwrap();
-        let part_chunk = Part::bytes(chunk_bytes)
-            .file_name(meta.filename.clone())
-            .mime_str("application/octet-stream")
-            .unwrap();
-        let form = Form::new()
-            .text("metadata", meta_json)
-            .part("chunk", part_chunk);
-
-        self.client
-            .post(format!("{}/api/files", &self.base_url))
-            .header("Authorization", format!("Bearer {visitor_token}"))
-            .multipart(form)
-            .send()
+        let form = Self::build_chunk_form_from_parts(&meta, &chunk_bytes);
+        self.send_multipart_with_auth(visitor_token, "api/files/upload", form)
             .await
             .expect("chunk upload request failed")
     }
@@ -281,11 +383,12 @@ impl TestApp {
         let mut responses = Vec::with_capacity(chunks.len());
 
         for (idx, chunk) in chunks.into_iter().enumerate() {
-            let meta = ChunkMeta {
+            let meta = ChunkMetaSerde {
                 file_id: file_id.to_string(),
                 chunk_index: idx as u64,
                 total_chunks: total,
                 chunk_size: chunk.len() as u64,
+                total_size: data.len() as u64,
                 filename: filename.to_string(),
             };
             let resp = self.upload_chunk(visitor_token, meta, chunk.to_vec()).await;
@@ -314,5 +417,29 @@ impl TestApp {
     pub fn cleanup(self) {
         let _ = fs::remove_file(self.db_path);
         let _ = fs::remove_dir_all("./uploads");
+    }
+
+    pub async fn get_files(
+        &self,
+        token: &str,
+        query_params: &[(&str, &str)],
+    ) -> Result<reqwest::Response, reqwest::Error> {
+        let mut url = format!("{}/api/files", self.base_url);
+
+        if !query_params.is_empty() {
+            url.push('?');
+            for (i, (key, value)) in query_params.iter().enumerate() {
+                if i > 0 {
+                    url.push('&');
+                }
+                url.push_str(&format!("{key}={value}"));
+            }
+        }
+
+        self.client
+            .get(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
     }
 }
