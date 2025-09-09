@@ -50,17 +50,6 @@ struct FilesPage<T> {
     offset: u32,
 }
 
-#[derive(Serialize, FromRow)]
-struct FileRow {
-    id: i64,
-    name: String,
-    size_bytes: i64,
-    internal_path: String,
-    mime_type: Option<String>,
-    uploaded_by: Option<String>,
-    uploaded_at: String,
-}
-
 #[derive(Serialize)]
 struct ApiResponse<T> {
     success: bool,
