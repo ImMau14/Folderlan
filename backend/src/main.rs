@@ -5,7 +5,10 @@ use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 use backend::middleware::jwt_middleware::JwtConfig;
 use backend::middleware::simple_access_logger::SimpleAccessLogger;
 use backend::{build_cors, configure_services};
+use std::path::Path;
 use tracing_actix_web::TracingLogger;
+
+use backend::models::types::UploadsPath;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -46,6 +49,13 @@ async fn main() -> std::io::Result<()> {
 
     // DB connect
     let db_file = std::env::var("SQLITE_FILE").unwrap_or_else(|_| "db/app.db".to_string());
+
+    // Creates .db/ if not exists.
+    let db_path = Path::new(&db_file);
+    if let Some(parent_dir) = db_path.parent() {
+        std::fs::create_dir_all(parent_dir).expect("Failed to create database directory");
+    }
+
     let connect_opts = SqliteConnectOptions::new()
         .filename(&db_file)
         .create_if_missing(true);
@@ -77,7 +87,10 @@ async fn main() -> std::io::Result<()> {
     let address_for_app = address.clone();
     let app_factory = move || {
         let cors = build_cors(off_cors, &address_for_app, port);
+        let uploads_path = UploadsPath::new("./uploads");
+
         App::new()
+            .app_data(Data::new(uploads_path))
             .app_data(Data::new(pool.clone()))
             .app_data(Data::new(jwt_cfg.clone()))
             .wrap(cors)

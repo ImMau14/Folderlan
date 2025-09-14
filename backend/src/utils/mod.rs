@@ -15,3 +15,13 @@ pub use register_file::RegisterFilePayload;
 pub use register_file::register_file;
 
 pub mod sanitize;
+
+pub mod file_permissions;
+pub use file_permissions::MinLevel;
+pub use file_permissions::check_file_permission;
+
+pub mod owner_or_uploader;
+pub use owner_or_uploader::is_owner_or_uploader;
+
+pub mod get_user_id;
+pub use get_user_id::get_user_id;

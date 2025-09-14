@@ -1,19 +1,16 @@
 use actix_web::HttpResponse;
 use serde::Deserialize;
-use serde_json::json;
 use sqlx::SqlitePool;
 
+use crate::models::responses::ApiResponse;
 use crate::utils::hash_password;
 
 #[derive(Deserialize, Debug)]
 pub struct RegisterVisitorPayload {
     pub username: String,
     pub password: String,
-    pub can_access_all_files: bool,
-    pub can_download: bool,
     pub can_upload: bool,
-    pub can_edit: bool,
-    pub can_delete: bool,
+    pub can_delete_own_files: bool,
     pub has_upload_limits: bool,
     pub upload_limit: u64,
 }
@@ -36,11 +33,8 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
         username: String,
         password_hash: String,
         role: String,
-        can_access_all_files: bool,
-        can_download: bool,
         can_upload: bool,
-        can_edit: bool,
-        can_delete: bool,
+        can_delete_own_files: bool,
         has_upload_limits: bool,
         upload_limit: u64,
     }
@@ -51,18 +45,14 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
             password_hash: match hash_password(&item.password) {
                 Ok(hash) => hash,
                 Err(e) => {
-                    return HttpResponse::InternalServerError().json(json!({
-                        "success": false,
-                        "message": e.to_string()
-                    }));
+                    return ApiResponse::<()>::builder()
+                        .message(e.to_string())
+                        .internal();
                 }
             },
             role: "owner".to_string(),
-            can_access_all_files: true,
-            can_download: true,
             can_upload: true,
-            can_edit: true,
-            can_delete: true,
+            can_delete_own_files: true,
             has_upload_limits: false,
             upload_limit: 0,
         },
@@ -71,18 +61,14 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
             password_hash: match hash_password(&item.password) {
                 Ok(hash) => hash,
                 Err(e) => {
-                    return HttpResponse::InternalServerError().json(json!({
-                        "success": false,
-                        "message": e.to_string()
-                    }));
+                    return ApiResponse::<()>::builder()
+                        .message(e.to_string())
+                        .internal();
                 }
             },
             role: "visitor".to_string(),
-            can_access_all_files: item.can_access_all_files,
-            can_download: item.can_download,
             can_upload: item.can_upload,
-            can_edit: item.can_edit,
-            can_delete: item.can_delete,
+            can_delete_own_files: item.can_delete_own_files,
             has_upload_limits: item.has_upload_limits,
             upload_limit: item.upload_limit,
         },
@@ -94,40 +80,31 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
             username, 
             password_hash, 
             role, 
-            can_access_all_files, 
-            can_download, 
             can_upload, 
-            can_edit, 
-            can_delete,
+            can_delete_own_files,
             has_upload_limits,
             upload_limit
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
         ",
     )
     .bind(&user.username)
     .bind(&user.password_hash)
     .bind(&user.role)
-    .bind(user.can_access_all_files)
-    .bind(user.can_download)
     .bind(user.can_upload)
-    .bind(user.can_edit)
-    .bind(user.can_delete)
+    .bind(user.can_delete_own_files)
     .bind(user.has_upload_limits)
     .bind(user.upload_limit as i64)
     .execute(pool)
     .await
     {
-        Ok(result) if result.rows_affected() == 1 => HttpResponse::Created().json(json!({
-            "success": true,
-            "message": "User created successfully"
-        })),
-        Ok(_) => HttpResponse::InternalServerError().json(json!({
-            "success": false,
-            "message": "No record was inserted"
-        })),
-        Err(e) => HttpResponse::InternalServerError().json(json!({
-            "success": false,
-            "message": &format!("Database error: {e}")
-        })),
+        Ok(result) if result.rows_affected() == 1 => ApiResponse::<()>::builder()
+            .message("User created successfully")
+            .created(),
+        Ok(_) => ApiResponse::<()>::builder()
+            .message("No record was inserted")
+            .internal(),
+        Err(e) => ApiResponse::<()>::builder()
+            .message(format!("Database error: {e}"))
+            .internal(),
     }
 }

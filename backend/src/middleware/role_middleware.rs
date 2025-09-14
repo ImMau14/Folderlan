@@ -3,6 +3,7 @@ use actix_web::{
     Error, HttpMessage,
     body::MessageBody,
     dev::{ServiceRequest, ServiceResponse, Transform},
+    error::InternalError,
 };
 use futures_util::future::{LocalBoxFuture, Ready, ready};
 use std::{
@@ -11,10 +12,7 @@ use std::{
 };
 
 use crate::middleware::jwt_middleware::AuthUser;
-
-use actix_web::HttpResponse;
-use actix_web::error::InternalError;
-use serde_json::json;
+use crate::models::responses::ApiResponse;
 
 #[allow(dead_code)]
 #[derive(Clone)]
@@ -78,17 +76,17 @@ where
             let auth = match maybe_auth {
                 Some(a) => a,
                 None => {
-                    let body = json!({ "success": false, "message": "Not authenticated" });
-                    let resp = HttpResponse::Unauthorized().json(body);
-                    let err: Error = InternalError::from_response("Not authenticated", resp).into();
+                    let msg = "Not authenticated";
+                    let resp = ApiResponse::<()>::builder().message(msg).unauthorized();
+                    let err: Error = InternalError::from_response(msg, resp).into();
                     return Err(err);
                 }
             };
 
             if !allowed.iter().any(|r| r == &auth.role) {
-                let body = json!({ "success": false, "message": "Access denied" });
-                let resp = HttpResponse::Forbidden().json(body);
-                let err: Error = InternalError::from_response("Access denied", resp).into();
+                let msg = "Access denied";
+                let resp = ApiResponse::<()>::builder().message(msg).forbidden();
+                let err: Error = InternalError::from_response(msg, resp).into();
                 return Err(err);
             }
 

@@ -1,14 +1,15 @@
 use actix_web::{
-    Error, HttpResponse,
+    Error,
     body::EitherBody,
     dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready},
 };
 use futures_util::future::LocalBoxFuture;
-use serde_json::json;
 use std::{
     future::{Ready, ready},
     net::{IpAddr, Ipv4Addr, Ipv6Addr},
 };
+
+use crate::models::responses::ApiResponse;
 
 pub struct LocalOnly;
 
@@ -49,11 +50,10 @@ where
         let peer_opt = req.peer_addr();
 
         fn denied_response<B>(req: ServiceRequest) -> ServiceResponse<EitherBody<B>> {
-            let body = json!({
-                "success": false,
-                "message": "You can access to this endpoint only from the server"
-            });
-            let resp = HttpResponse::Forbidden().json(body).map_into_right_body();
+            let http_response = ApiResponse::<()>::builder()
+                .message("You can access to this endpoint only from the server")
+                .forbidden();
+            let resp = http_response.map_into_right_body();
             req.into_response(resp)
         }
 

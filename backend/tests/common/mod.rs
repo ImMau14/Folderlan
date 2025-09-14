@@ -9,6 +9,7 @@ use tokio::time::sleep;
 
 use backend::middleware::jwt_middleware::JwtConfig;
 use backend::models::types::ChunkMeta as BackendChunkMeta;
+use backend::models::types::UploadsPath;
 use backend::utils::register_user::{RegisterOwnerPayload, RegisterPayload, register_user};
 use backend::{build_cors, configure_services};
 
@@ -23,6 +24,16 @@ pub struct ChunkMetaSerde {
     pub chunk_size: u64,
     pub total_size: u64,
     pub filename: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
+pub struct PermissionRow {
+    pub user_id: i64,
+    pub username: Option<String>,
+    pub access_level: String,
+    pub granted_at: String,
+    pub granted_by: Option<i64>,
 }
 
 impl From<ChunkMetaSerde> for BackendChunkMeta {
@@ -51,29 +62,12 @@ impl From<BackendChunkMeta> for ChunkMetaSerde {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct VisitorOptions {
-    pub can_access_all_files: bool,
-    pub can_download: bool,
     pub can_upload: bool,
-    pub can_edit: bool,
-    pub can_delete: bool,
+    pub can_delete_own_files: bool,
     pub has_upload_limits: bool,
     pub upload_limit: u64,
-}
-
-impl Default for VisitorOptions {
-    fn default() -> Self {
-        Self {
-            can_access_all_files: false,
-            can_download: true,
-            can_upload: false,
-            can_edit: false,
-            can_delete: false,
-            has_upload_limits: false,
-            upload_limit: 0,
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -86,6 +80,7 @@ pub enum RegisterKind {
 pub struct TestApp {
     pub base_url: String,
     pub db_path: PathBuf,
+    pub uploads_path: PathBuf,
     pub client: Client,
     pub pool: SqlitePool,
 }
@@ -122,12 +117,16 @@ impl TestApp {
             secret: "test_secret_for_tests".to_string(),
         };
 
+        let uploads_path = "./tests_uploads";
+
         let srv_pool = pool.clone();
         let srv_cfg = jwt_cfg.clone();
         let server = HttpServer::new(move || {
             let cors = build_cors(true, "127.0.0.1", port);
+            let uploads_path = UploadsPath::new(uploads_path);
             App::new()
                 .wrap(Logger::default())
+                .app_data(web::Data::new(uploads_path))
                 .app_data(web::Data::new(srv_pool.clone()))
                 .app_data(web::Data::new(srv_cfg.clone()))
                 .wrap(cors)
@@ -163,6 +162,7 @@ impl TestApp {
         TestApp {
             base_url,
             db_path,
+            uploads_path: PathBuf::from(uploads_path),
             client,
             pool,
         }
@@ -221,11 +221,8 @@ impl TestApp {
         if let RegisterKind::Visitor = kind {
             let o = opts.cloned().unwrap_or_default();
             let visitor_fields = serde_json::json!({
-                "can_access_all_files": o.can_access_all_files,
-                "can_download": o.can_download,
                 "can_upload": o.can_upload,
-                "can_edit": o.can_edit,
-                "can_delete": o.can_delete,
+                "can_delete_own_files": o.can_delete_own_files,
                 "has_upload_limits": o.has_upload_limits,
                 "upload_limit": o.upload_limit
             });
@@ -414,10 +411,7 @@ impl TestApp {
         all_responses
     }
 
-    pub fn cleanup(self) {
-        let _ = fs::remove_file(self.db_path);
-        let _ = fs::remove_dir_all("./uploads");
-    }
+    // --- Fetch files ---
 
     pub async fn get_files(
         &self,
@@ -441,5 +435,327 @@ impl TestApp {
             .header("Authorization", format!("Bearer {token}"))
             .send()
             .await
+    }
+
+    pub async fn find_file_id_by_name(
+        &self,
+        token: &str,
+        name: &str,
+    ) -> Result<Option<i64>, String> {
+        let max_attempts = 5;
+        let mut attempts = 0;
+
+        loop {
+            attempts += 1;
+            let resp = self
+                .get_files(token, &[("name", name)])
+                .await
+                .map_err(|e| format!("request error: {e}"))?;
+
+            let status = resp.status();
+            if !status.is_success() {
+                let text = resp.text().await.unwrap_or_else(|_| "<no-body>".into());
+                return Err(format!(
+                    "GET /api/files failed: status={status} body={text}"
+                ));
+            }
+
+            let body: serde_json::Value = resp
+                .json()
+                .await
+                .map_err(|e| format!("invalid json from get_files: {e}"))?;
+
+            let items = body
+                .get("data")
+                .and_then(|d| d.get("items"))
+                .and_then(|it| it.as_array())
+                .ok_or_else(|| "unexpected get_files response structure".to_string())?;
+
+            for item in items {
+                if let (Some(n), Some(id)) = (
+                    item.get("name").and_then(|v| v.as_str()),
+                    item.get("id").and_then(|v| v.as_i64()),
+                ) {
+                    if n == name {
+                        return Ok(Some(id));
+                    }
+                }
+            }
+
+            if attempts >= max_attempts {
+                return Ok(None);
+            }
+
+            tokio::time::sleep(Duration::from_millis(200 * attempts)).await;
+        }
+    }
+
+    pub async fn delete_file_by_id(
+        &self,
+        token: &str,
+        file_id: i64,
+    ) -> Result<reqwest::Response, String> {
+        let url = format!("{}/api/files/{}", self.base_url, file_id);
+        self.client
+            .delete(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
+            .map_err(|e| format!("delete request failed: {e}"))
+    }
+
+    pub async fn download_file(
+        &self,
+        token: &str,
+        file_id: i64,
+    ) -> Result<reqwest::Response, reqwest::Error> {
+        let url = format!("{}/api/files/download/{}", self.base_url, file_id);
+        self.client
+            .get(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
+    }
+
+    /// `range` should be something like "bytes=0-1023" or "bytes=0-4"
+    pub async fn download_file_range(
+        &self,
+        token: &str,
+        file_id: i64,
+        range: &str,
+    ) -> Result<reqwest::Response, reqwest::Error> {
+        let url = format!("{}/api/files/download/{}", self.base_url, file_id);
+        self.client
+            .get(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .header("Range", range)
+            .send()
+            .await
+    }
+
+    /// If the server responds with unsuccessful code, return Err with readable message.
+    pub async fn download_file_bytes(&self, token: &str, file_id: i64) -> Result<Vec<u8>, String> {
+        let resp = self
+            .download_file(token, file_id)
+            .await
+            .map_err(|e| format!("request error: {e}"))?;
+
+        let status = resp.status();
+        if !status.is_success() && status != reqwest::StatusCode::PARTIAL_CONTENT {
+            let text = resp.text().await.unwrap_or_else(|_| "<no-body>".into());
+            return Err(format!("download failed: status={status} body={text}"));
+        }
+
+        let bytes = resp
+            .bytes()
+            .await
+            .map_err(|e| format!("error reading body bytes: {e}"))?;
+        Ok(bytes.to_vec())
+    }
+
+    pub async fn grant_or_update_permission_via_api(
+        &self,
+        token: &str,
+        file_id: i64,
+        target_user_id: i64,
+        access_level: &str, // "viewer" | "collaborator"
+    ) -> Result<reqwest::Response, String> {
+        let payload = serde_json::json!({
+            "user_id": target_user_id,
+            "access_level": access_level
+        });
+        let url = format!("{}/api/files/{}/permissions", &self.base_url, file_id);
+        self.client
+            .post(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| format!("grant permission request failed: {e}"))
+    }
+
+    pub async fn list_permissions_via_api(
+        &self,
+        token: &str,
+        file_id: i64,
+    ) -> Result<serde_json::Value, String> {
+        let url = format!("{}/api/files/{}/permissions", &self.base_url, file_id);
+        let resp = self
+            .client
+            .get(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
+            .map_err(|e| format!("list permissions request failed: {e}"))?;
+
+        let status = resp.status();
+
+        if !status.is_success() {
+            let text = resp.text().await.unwrap_or_else(|_| "<no-body>".into());
+            return Err(format!(
+                "list permissions failed: status={status} body={text}"
+            ));
+        }
+
+        let body: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("invalid json from list_permissions: {e}"))?;
+        Ok(body)
+    }
+
+    pub async fn revoke_permission_via_api(
+        &self,
+        token: &str,
+        file_id: i64,
+        target_user_id: i64,
+    ) -> Result<reqwest::Response, String> {
+        let url = format!(
+            "{}/api/files/{}/permissions/{}",
+            &self.base_url, file_id, target_user_id
+        );
+        self.client
+            .delete(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
+            .map_err(|e| format!("revoke permission request failed: {e}"))
+    }
+
+    pub async fn get_permission_row(
+        &self,
+        token: &str,
+        file_id: i64,
+        target_user_id: i64,
+    ) -> Result<Option<PermissionRow>, String> {
+        let body = self.list_permissions_via_api(token, file_id).await?;
+        let items = body
+            .get("data")
+            .and_then(|d| d.as_array())
+            .ok_or_else(|| format!("unexpected permissions response shape: {body}"))?;
+
+        for it in items {
+            if let Some(uid) = it.get("user_id").and_then(|v| v.as_i64()) {
+                if uid == target_user_id {
+                    let perm: PermissionRow = serde_json::from_value(it.clone())
+                        .map_err(|e| format!("failed to deserialize permission row: {e}"))?;
+                    return Ok(Some(perm));
+                }
+            }
+        }
+        Ok(None)
+    }
+
+    pub async fn grant_permission_and_get_row(
+        &self,
+        token: &str,
+        file_id: i64,
+        target_user_id: i64,
+        access_level: &str, // "viewer"|"collaborator"
+    ) -> Result<PermissionRow, String> {
+        let resp = self
+            .grant_or_update_permission_via_api(token, file_id, target_user_id, access_level)
+            .await?;
+        let status = resp.status();
+        if !status.is_success() {
+            let text = resp.text().await.unwrap_or_else(|_| "<no-body>".into());
+            return Err(format!(
+                "grant permission failed: status={status} body={text}"
+            ));
+        }
+        let body: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("invalid json from grant permission: {e}"))?;
+
+        body.get("data")
+            .cloned()
+            .ok_or_else(|| format!("grant returned no data: {body}"))
+            .and_then(|d| {
+                serde_json::from_value::<PermissionRow>(d)
+                    .map_err(|e| format!("failed to deserialize grant response: {e}"))
+            })
+    }
+
+    pub async fn file_has_permission(
+        &self,
+        token: &str,
+        file_id: i64,
+        user_id: i64,
+    ) -> Result<bool, String> {
+        Ok(self
+            .get_permission_row(token, file_id, user_id)
+            .await?
+            .is_some())
+    }
+
+    pub async fn assert_permission_level(
+        &self,
+        token: &str,
+        file_id: i64,
+        target_user_id: i64,
+        expected_level: &str,
+    ) -> Result<(), String> {
+        match self
+            .get_permission_row(token, file_id, target_user_id)
+            .await?
+        {
+            Some(row) => {
+                if row.access_level == expected_level {
+                    Ok(())
+                } else {
+                    Err(format!(
+                        "permission access_level mismatch: expected='{}' got='{}'",
+                        expected_level, row.access_level
+                    ))
+                }
+            }
+            None => Err(format!(
+                "permission not found for user_id={target_user_id} on file_id={file_id}"
+            )),
+        }
+    }
+
+    pub async fn revoke_permission_and_expect_ok(
+        &self,
+        token: &str,
+        file_id: i64,
+        target_user_id: i64,
+    ) -> Result<(), String> {
+        let resp = self
+            .revoke_permission_via_api(token, file_id, target_user_id)
+            .await?;
+        let status = resp.status();
+        if status.is_success() {
+            Ok(())
+        } else {
+            let text = resp.text().await.unwrap_or_else(|_| "<no-body>".into());
+            Err(format!("revoke failed: status={status} body={text}"))
+        }
+    }
+
+    pub async fn revoke_permission_and_assert_removed(
+        &self,
+        token: &str,
+        file_id: i64,
+        target_user_id: i64,
+    ) -> Result<(), String> {
+        self.revoke_permission_and_expect_ok(token, file_id, target_user_id)
+            .await?;
+
+        match self
+            .get_permission_row(token, file_id, target_user_id)
+            .await?
+        {
+            None => Ok(()),
+            Some(_) => Err(format!(
+                "permission still present after revoke for user_id={target_user_id} file_id={file_id}"
+            )),
+        }
+    }
+
+    pub fn cleanup(self) {
+        let _ = fs::remove_file(self.db_path);
+        let _ = fs::remove_dir_all(self.uploads_path);
     }
 }
