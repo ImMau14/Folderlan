@@ -3,27 +3,19 @@ use actix_web_httpauth::middleware::HttpAuthentication;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header, encode};
-use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde::Deserialize;
 use sqlx::{Row, SqlitePool};
 
 use crate::middleware::jwt_middleware::{Claims, JwtConfig, jwt_validator_adapter};
 use crate::middleware::role_middleware::RoleAuth;
 use crate::middleware::server_ip_only::LocalOnly;
+use crate::models::responses::ApiResponse;
 use crate::utils::{RegisterPayload, register_user};
 
 #[derive(Deserialize, Debug)]
 pub struct LoginPayload {
     pub username: String,
     pub password: String,
-}
-
-#[derive(Serialize)]
-struct LoginResponse {
-    success: bool,
-    message: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    token: Option<String>,
 }
 
 pub async fn login(
@@ -40,16 +32,14 @@ pub async fn login(
     let user = match query_result {
         Ok(Some(row)) => row,
         Ok(None) => {
-            return HttpResponse::Unauthorized().json(json!({
-                "success": false,
-                "message": "Invalid credentials"
-            }));
+            return ApiResponse::<()>::builder()
+                .message("Invalid credentials")
+                .unauthorized();
         }
         Err(e) => {
-            return HttpResponse::InternalServerError().json(json!({
-                "success": false,
-                "message": e.to_string()
-            }));
+            return ApiResponse::<()>::builder()
+                .message(e.to_string())
+                .internal();
         }
     };
 
@@ -61,10 +51,9 @@ pub async fn login(
     let parsed_hash = match PasswordHash::new(&password_hash) {
         Ok(parsed) => parsed,
         Err(e) => {
-            return HttpResponse::InternalServerError().json(json!({
-                "success": false,
-                "message": e.to_string()
-            }));
+            return ApiResponse::<()>::builder()
+                .message(e.to_string())
+                .internal();
         }
     };
 
@@ -73,10 +62,9 @@ pub async fn login(
         .verify_password(credentials.password.as_bytes(), &parsed_hash)
         .is_err()
     {
-        return HttpResponse::Unauthorized().json(json!({
-            "success": false,
-            "message": "Invalid credentials"
-        }));
+        return ApiResponse::<()>::builder()
+            .message("Invalid credentials")
+            .unauthorized();
     }
 
     let expiration = Utc::now()
@@ -98,18 +86,16 @@ pub async fn login(
     ) {
         Ok(t) => t,
         Err(e) => {
-            return HttpResponse::InternalServerError().json(json!({
-                "success": false,
-                "message": e.to_string()
-            }));
+            return ApiResponse::<()>::builder()
+                .message(e.to_string())
+                .internal();
         }
     };
 
-    HttpResponse::Ok().json(LoginResponse {
-        success: true,
-        message: "Login success".to_string(),
-        token: Some(token),
-    })
+    ApiResponse::<()>::builder()
+        .message("Login success")
+        .token(token)
+        .ok()
 }
 
 pub async fn register(
@@ -122,10 +108,9 @@ pub async fn register(
         RegisterPayload::Visitor(visitor_data) => {
             register_user(pool.get_ref(), RegisterPayload::Visitor(visitor_data)).await
         }
-        RegisterPayload::Owner(_) => HttpResponse::InternalServerError().json(json!({
-            "success": false,
-            "message": "Cannot make owner user from this endpoint"
-        })),
+        RegisterPayload::Owner(_) => ApiResponse::<()>::builder()
+            .message("Cannot make owner user from this endpoint")
+            .internal(),
     }
 }
 
@@ -136,10 +121,9 @@ pub async fn owner_register(
     let user_data = user.into_inner();
 
     match user_data {
-        RegisterPayload::Visitor(_) => HttpResponse::InternalServerError().json(json!({
-            "success": false,
-            "message": "Cannot make visitor user from this endpoint"
-        })),
+        RegisterPayload::Visitor(_) => ApiResponse::<()>::builder()
+            .message("Cannot make visitor user from this endpoint")
+            .internal(),
         RegisterPayload::Owner(owner_data) => {
             register_user(pool.get_ref(), RegisterPayload::Owner(owner_data)).await
         }

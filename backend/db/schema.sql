@@ -9,11 +9,8 @@ CREATE TABLE IF NOT EXISTS Users (
     last_login_at DATETIME,
     expiration_date DATETIME,
     is_active BOOLEAN DEFAULT 1,
-    can_access_all_files BOOLEAN DEFAULT 0,
-    can_download BOOLEAN DEFAULT 0,
     can_upload BOOLEAN DEFAULT 0,
-    can_edit BOOLEAN DEFAULT 0,
-    can_delete BOOLEAN DEFAULT 0,
+    can_delete_own_files BOOLEAN DEFAULT 0,
     has_upload_limits BOOLEAN DEFAULT 0,
     upload_limit INTEGER DEFAULT 0,
     is_deleted BOOLEAN DEFAULT 0 CHECK(is_deleted IN (0, 1)),
@@ -34,6 +31,7 @@ CREATE TABLE IF NOT EXISTS Files (
     uploaded_by INTEGER NOT NULL,
     uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     is_deleted BOOLEAN DEFAULT 0 CHECK(is_deleted IN (0, 1)),
+    is_public BOOLEAN DEFAULT 0,
     deleted_at DATETIME,
     FOREIGN KEY (uploaded_by) REFERENCES Users(id) ON DELETE RESTRICT
 );
@@ -47,10 +45,7 @@ CREATE TABLE IF NOT EXISTS FilePermissions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     file_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
-    can_view BOOLEAN DEFAULT 0,
-    can_download BOOLEAN DEFAULT 0,
-    can_edit BOOLEAN DEFAULT 0,
-    can_delete BOOLEAN DEFAULT 0,
+    access_level TEXT NOT NULL CHECK(access_level IN ('viewer', 'collaborator')),
     granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     granted_by INTEGER,
     UNIQUE(file_id, user_id),
@@ -81,6 +76,16 @@ CREATE INDEX IF NOT EXISTS idx_audit_file ON AuditLog(file_id);
 CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON AuditLog(timestamp);
 CREATE INDEX IF NOT EXISTS idx_audit_event_type ON AuditLog(event_type);
 
+CREATE TRIGGER IF NOT EXISTS trg_enforce_single_owner
+BEFORE INSERT ON Users
+WHEN NEW.role = 'owner'
+BEGIN
+    SELECT CASE
+        WHEN (SELECT COUNT(*) FROM Users WHERE role = 'owner' AND is_deleted = 0) > 0
+        THEN RAISE(ABORT, 'There can only be one owner')
+    END;
+END;
+
 CREATE TRIGGER IF NOT EXISTS trg_audit_perms_insert
 AFTER INSERT ON FilePermissions
 BEGIN
@@ -88,23 +93,20 @@ BEGIN
     VALUES (
         NEW.granted_by, 
         'PERMISSION_GRANT', 
-        'Permissions granted to user ' || NEW.user_id || ' for file ' || NEW.file_id,
+        'Access level ' || NEW.access_level || ' granted to user ' || NEW.user_id || ' for file ' || NEW.file_id,
         NEW.file_id
     );
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_audit_perms_update
-AFTER UPDATE ON FilePermissions
-WHEN OLD.can_view != NEW.can_view 
-   OR OLD.can_download != NEW.can_download
-   OR OLD.can_edit != NEW.can_edit
-   OR OLD.can_delete != NEW.can_delete
+AFTER UPDATE OF access_level ON FilePermissions
+WHEN OLD.access_level IS NOT NEW.access_level
 BEGIN
     INSERT INTO AuditLog(user_id, event_type, description, file_id)
     VALUES (
         NEW.granted_by, 
         'PERMISSION_UPDATE', 
-        'Permissions updated for user ' || NEW.user_id || ' on file ' || NEW.file_id,
+        'Access level changed to ' || NEW.access_level || ' for user ' || NEW.user_id || ' on file ' || NEW.file_id,
         NEW.file_id
     );
 END;
@@ -122,7 +124,7 @@ BEGIN
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_audit_users_perm_update
-AFTER UPDATE OF can_access_all_files, can_download, can_upload, can_edit, can_delete ON Users
+AFTER UPDATE OF can_upload, can_delete_own_files ON Users
 BEGIN
     INSERT INTO AuditLog(user_id, event_type, description)
     VALUES (
@@ -194,29 +196,11 @@ BEGIN
     SELECT RAISE(ABORT, 'Physical DELETE on Files is not allowed. Use soft delete instead.');
 END;
 
+DROP VIEW IF EXISTS UserFilePermissions;
 CREATE VIEW IF NOT EXISTS ActiveUsers AS
-SELECT * FROM Users WHERE is_deleted = 0 AND is_active = 1;
+SELECT id, username, role, can_upload, can_delete_own_files, has_upload_limits, upload_limit 
+FROM Users WHERE is_deleted = 0 AND is_active = 1;
 
 CREATE VIEW IF NOT EXISTS ActiveFiles AS
-SELECT * FROM Files WHERE is_deleted = 0;
-
-CREATE VIEW IF NOT EXISTS UserFilePermissions AS
-SELECT 
-    u.id AS user_id,
-    u.username,
-    u.role,
-    f.id AS file_id,
-    f.name AS file_name,
-    COALESCE(fp.can_view, u.can_access_all_files) AS can_view,
-    COALESCE(fp.can_download, u.can_download) AS can_download,
-    COALESCE(fp.can_edit, u.can_edit) AS can_edit,
-    COALESCE(fp.can_delete, u.can_delete) AS can_delete,
-    CASE WHEN fp.id IS NULL THEN 'global' ELSE 'specific' END AS permission_source
-FROM 
-    ActiveUsers u
-CROSS JOIN 
-    ActiveFiles f
-LEFT JOIN 
-    FilePermissions fp ON u.id = fp.user_id AND f.id = fp.file_id
-WHERE 
-    u.role = 'owner' OR fp.id IS NOT NULL OR u.can_access_all_files = 1;
+SELECT id, name, size_bytes, mime_type, uploaded_by, uploaded_at 
+FROM Files WHERE is_deleted = 0;

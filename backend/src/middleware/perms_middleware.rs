@@ -1,54 +1,42 @@
 use actix_service::Service;
 use actix_web::{
-    Error, HttpMessage, HttpResponse,
+    Error, HttpMessage,
     body::MessageBody,
     dev::{ServiceRequest, ServiceResponse, Transform},
     error::InternalError,
     web::Data,
 };
 use futures_util::future::{LocalBoxFuture, Ready, ready};
-use serde_json::json;
-use sqlx::{Row, SqlitePool, sqlite::SqliteRow};
+use sqlx::{Row, SqlitePool};
 use std::{
     rc::Rc,
     task::{Context, Poll},
 };
 
 use crate::middleware::jwt_middleware::AuthUser;
+use crate::models::responses::ApiResponse;
 
-/// Struct to hold user permissions extracted from database
+/// Struct to store user permissions.
+/// Inserted into request extensions for use in handlers.
 #[derive(Debug, Clone)]
 pub struct UserPermissions {
-    pub can_access_all_files: bool,
-    pub can_download: bool,
     pub can_upload: bool,
-    pub can_edit: bool,
-    pub can_delete: bool,
+    pub can_delete_own_files: bool,
     pub has_upload_limits: bool,
 }
 
-/// Middleware that checks user permission flags stored in the database.
-/// - `required_perms` are column names from the Users table.
-/// - If user role == "owner", request is allowed (bypass).
-/// - All listed permissions must be true (AND).
+/// Middleware that checks a user's global permissions.
 #[derive(Clone)]
 pub struct PermsAuth {
     required_perms: Vec<String>,
 }
 
 impl PermsAuth {
-    /// Create a new middleware instance with a slice of permission names.
-    /// Example: `PermsAuth::new(&["can_upload", "can_delete"])`
     pub fn new(perms: &[&str]) -> Self {
         Self {
             required_perms: perms.iter().map(|s| s.to_string()).collect(),
         }
     }
-}
-
-pub struct PermsAuthMiddleware<S> {
-    service: Rc<S>,
-    required_perms: Vec<String>,
 }
 
 impl<S, B> Transform<S, ServiceRequest> for PermsAuth
@@ -70,6 +58,11 @@ where
     }
 }
 
+pub struct PermsAuthMiddleware<S> {
+    service: Rc<S>,
+    required_perms: Vec<String>,
+}
+
 impl<S, B> Service<ServiceRequest> for PermsAuthMiddleware<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
@@ -85,163 +78,89 @@ where
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let svc = self.service.clone();
-        let required = self.required_perms.clone();
+        let required_perms = self.required_perms.clone();
 
         Box::pin(async move {
-            // Get AuthUser inserted by JWT middleware
-            let maybe_auth = req.extensions().get::<AuthUser>().cloned();
-            let auth = match maybe_auth {
+            let auth = match req.extensions().get::<AuthUser>().cloned() {
                 Some(a) => a,
                 None => {
-                    let body = json!({ "success": false, "message": "Not authenticated" });
-                    // Ensure JSON content type explicitly
-                    let resp = HttpResponse::Unauthorized()
-                        .content_type("application/json")
-                        .json(body);
-                    let err: Error = InternalError::from_response("Not authenticated", resp).into();
-                    return Err(err);
+                    let msg = "Not authenticated";
+                    let resp = ApiResponse::<()>::builder().message(msg).unauthorized();
+                    return Err(InternalError::from_response(msg.to_string(), resp).into());
                 }
             };
 
-            // Bypass for owner role
             if auth.role == "owner" {
-                let res = svc.call(req).await?;
-                return Ok(res);
+                let user_perms = UserPermissions {
+                    can_upload: true,
+                    can_delete_own_files: true,
+                    has_upload_limits: false, // The owner has no limits
+                };
+                req.extensions_mut().insert(user_perms);
+                return svc.call(req).await;
             }
 
-            // Get DB pool from app_data
             let pool = match req.app_data::<Data<SqlitePool>>() {
                 Some(d) => d.get_ref().clone(),
                 None => {
-                    let body =
-                        json!({ "success": false, "message": "Database pool not configured" });
-                    // Ensure JSON content type explicitly
-                    let resp = HttpResponse::InternalServerError()
-                        .content_type("application/json")
-                        .json(body);
-                    let err: Error =
-                        InternalError::from_response("Database pool not configured", resp).into();
-                    return Err(err);
+                    let msg = "Database pool not configured";
+                    let resp = ApiResponse::<()>::builder().message(msg).internal();
+                    return Err(InternalError::from_response(msg.to_string(), resp).into());
                 }
             };
 
-            // Fetch the relevant permission columns for this user.
-            let row: SqliteRow = match sqlx::query(
-                r#"
-                SELECT
-                    can_access_all_files,
-                    can_download,
-                    can_upload,
-                    can_edit,
-                    can_delete,
-                    has_upload_limits
-                FROM Users
-                WHERE id = ? AND is_active = 1 AND is_deleted = 0
-                "#,
-            )
-            .bind(auth.id)
-            .fetch_one(&pool)
-            .await
+            let base_columns = ["can_upload", "can_delete_own_files", "has_upload_limits"];
+
+            let mut all_columns_to_fetch: Vec<String> = required_perms.clone();
+            all_columns_to_fetch.extend(base_columns.iter().map(|s| s.to_string()));
+            all_columns_to_fetch.sort();
+            all_columns_to_fetch.dedup();
+
+            let query_string = format!(
+                "SELECT {} FROM Users WHERE id = ? AND is_active = 1 AND is_deleted = 0",
+                all_columns_to_fetch.join(", ")
+            );
+
+            let row = match sqlx::query(&query_string)
+                .bind(auth.id)
+                .fetch_one(&pool)
+                .await
             {
                 Ok(r) => r,
                 Err(sqlx::Error::RowNotFound) => {
-                    let body = json!({ "success": false, "message": "User not found or inactive" });
-                    // Ensure JSON content type explicitly
-                    let resp = HttpResponse::Unauthorized()
-                        .content_type("application/json")
-                        .json(body);
-                    let err: Error =
-                        InternalError::from_response("User not found or inactive", resp).into();
-                    return Err(err);
+                    let msg = "User not found or inactive";
+                    let resp = ApiResponse::<()>::builder().message(msg).unauthorized();
+                    return Err(InternalError::from_response(msg.to_string(), resp).into());
                 }
                 Err(e) => {
                     tracing::error!("DB error fetching user permissions: {:?}", e);
-                    let body = json!({ "success": false, "message": "Database error" });
-                    // Ensure JSON content type explicitly
-                    let resp = HttpResponse::InternalServerError()
-                        .content_type("application/json")
-                        .json(body);
-                    let err: Error = InternalError::from_response("Database error", resp).into();
-                    return Err(err);
+                    let msg = "Database error";
+                    let resp = ApiResponse::<()>::builder().message(msg).internal();
+                    return Err(InternalError::from_response(msg.to_string(), resp).into());
                 }
             };
 
-            // Helper: read a boolean-like column (stored as INTEGER 0/1) from the row.
-            // Returns actix_web::Error on failure with proper logging.
-            let read_bool_col = |r: &SqliteRow, col: &str| -> Result<bool, Error> {
-                let v: i64 = match r.try_get(col) {
-                    Ok(val) => val,
-                    Err(e) => {
-                        tracing::error!("Error reading column `{}`: {:?}", col, e);
-                        let body = json!({ "success": false, "message": "Database error" });
-                        let resp = HttpResponse::InternalServerError()
-                            .content_type("application/json")
-                            .json(body);
-                        let err: Error =
-                            InternalError::from_response("Database error", resp).into();
-                        return Err(err);
-                    }
-                };
-                Ok(v != 0)
-            };
-
-            // Validate required permissions (AND logic).
-            for perm in required.iter() {
-                // Known permissions mapping: if you add DB permission columns, include here.
-                let has_perm = match perm.as_str() {
-                    "can_access_all_files"
-                    | "can_download"
-                    | "can_upload"
-                    | "can_edit"
-                    | "can_delete"
-                    | "has_upload_limits" => {
-                        // check column value
-                        read_bool_col(&row, perm.as_str())?
-                    }
-                    unknown => {
-                        tracing::warn!("Unknown permission requested in middleware: {}", unknown);
-                        let body = json!({ "success": false, "message": format!("Unknown permission: {}", unknown) });
-                        let resp = HttpResponse::InternalServerError()
-                            .content_type("application/json")
-                            .json(body);
-                        let err: Error =
-                            InternalError::from_response("Unknown permission requested", resp)
-                                .into();
-                        return Err(err);
-                    }
-                };
-
+            for perm_name in &required_perms {
+                let has_perm: bool =
+                    row.try_get::<i64, _>(perm_name.as_str()).unwrap_or(0_i64) != 0;
                 if !has_perm {
-                    let body = json!({ "success": false, "message": "Access denied: insufficient permissions" });
-                    // Ensure JSON content type explicitly
-                    let resp = HttpResponse::Forbidden()
-                        .content_type("application/json")
-                        .json(body);
-                    let err: Error = InternalError::from_response(
-                        "Access denied: insufficient permissions",
-                        resp,
-                    )
-                    .into();
-                    return Err(err);
+                    let msg = "Access denied: insufficient permissions";
+                    let resp = ApiResponse::<()>::builder().message(msg).forbidden();
+                    return Err(InternalError::from_response(msg.to_string(), resp).into());
                 }
             }
 
-            // Extract all permissions from the row to store in request extensions
             let user_perms = UserPermissions {
-                can_access_all_files: read_bool_col(&row, "can_access_all_files")?,
-                can_download: read_bool_col(&row, "can_download")?,
-                can_upload: read_bool_col(&row, "can_upload")?,
-                can_edit: read_bool_col(&row, "can_edit")?,
-                can_delete: read_bool_col(&row, "can_delete")?,
-                has_upload_limits: read_bool_col(&row, "has_upload_limits")?,
+                can_upload: row.try_get::<i64, _>("can_upload").unwrap_or(0_i64) != 0,
+                can_delete_own_files: row
+                    .try_get::<i64, _>("can_delete_own_files")
+                    .unwrap_or(0_i64)
+                    != 0,
+                has_upload_limits: row.try_get::<i64, _>("has_upload_limits").unwrap_or(0_i64) != 0,
             };
-
-            // Store permissions in request extensions for use in handlers
             req.extensions_mut().insert(user_perms);
 
-            // All checks passed: call next service
-            let res = svc.call(req).await?;
-            Ok(res)
+            svc.call(req).await
         })
     }
 }

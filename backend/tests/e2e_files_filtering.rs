@@ -6,7 +6,7 @@ async fn e2e_get_files_filtering_and_pagination() {
     let app = TestApp::spawn().await;
     app.post_init_db().await;
 
-    // Creates owner
+    // Crea owner directamente en la DB
     let owner_username = "owner@local.test";
     let owner_password = "OwnerPass123!";
     app.create_owner_direct(owner_username, owner_password)
@@ -15,12 +15,12 @@ async fn e2e_get_files_filtering_and_pagination() {
         .login_and_get_token(owner_username, owner_password)
         .await;
 
-    // Creates visitor with permissions
+    // Crea visitor con permisos
     let visitor_opts = VisitorOptions {
-        can_access_all_files: true,
-        can_download: true,
         can_upload: true,
-        ..Default::default()
+        can_delete_own_files: false,
+        has_upload_limits: false,
+        upload_limit: 0,
     };
 
     let visitor_username = "visitor@local.test";
@@ -36,25 +36,36 @@ async fn e2e_get_files_filtering_and_pagination() {
         .login_and_get_token(visitor_username, visitor_password)
         .await;
 
+    // Archivos de prueba: (file_id, filename, bytes)
     let test_files = [
         ("file1", "document.txt", b"C1".as_slice()), // 2 bytes
         ("file2", "image.jpg", b"Content 22".as_slice()), // 10 bytes
         ("file3", "data.pdf", b"Content 333".as_slice()), // 11 bytes
     ];
 
-    // Upload test files
+    // Subir archivos (single-chunk) y comprobar status
     for (file_id, filename, data) in test_files.iter() {
-        app.upload_single_chunk_file(&visitor_token, file_id, filename, data.to_vec())
+        let resp = app
+            .upload_single_chunk_file(&visitor_token, file_id, filename, data.to_vec())
             .await;
+        assert!(
+            resp.status().is_success(),
+            "upload failed for {} (status {})",
+            filename,
+            resp.status()
+        );
     }
 
-    // Get all files
-    let resp = app.get_files(&visitor_token, &[]).await.unwrap();
+    // Obtener todos los archivos (sin filtros)
+    let resp = app
+        .get_files(&visitor_token, &[] as &[(&str, &str)])
+        .await
+        .unwrap();
     assert_eq!(resp.status(), 200);
     let body: serde_json::Value = resp.json().await.unwrap();
     assert_eq!(body["data"]["items"].as_array().unwrap().len(), 3);
 
-    // Get and filter files with name
+    // Filtrar por nombre (contiene "document")
     let resp = app
         .get_files(&visitor_token, &[("name", "document")])
         .await
@@ -63,25 +74,25 @@ async fn e2e_get_files_filtering_and_pagination() {
     let body: serde_json::Value = resp.json().await.unwrap();
     assert_eq!(body["data"]["items"].as_array().unwrap().len(), 1);
 
-    // Get and filter files with a min-size (10 bytes or more)
+    // Filtrar por min_size >= 10 (debe devolver 10 y 11 bytes)
     let resp = app
         .get_files(&visitor_token, &[("min_size", "10")])
         .await
         .unwrap();
     assert_eq!(resp.status(), 200);
     let body: serde_json::Value = resp.json().await.unwrap();
-    assert_eq!(body["data"]["items"].as_array().unwrap().len(), 2); // 10 and 11 bytes
+    assert_eq!(body["data"]["items"].as_array().unwrap().len(), 2);
 
-    // Get and filter files with a max-size (10 bytes or less)
+    // Filtrar por max_size <= 9 (debe devolver solo 2 bytes)
     let resp = app
         .get_files(&visitor_token, &[("max_size", "9")])
         .await
         .unwrap();
     assert_eq!(resp.status(), 200);
     let body: serde_json::Value = resp.json().await.unwrap();
-    assert_eq!(body["data"]["items"].as_array().unwrap().len(), 1); // 2 bytes
+    assert_eq!(body["data"]["items"].as_array().unwrap().len(), 1);
 
-    // Pagination - Limits
+    // Paginación - limit
     let resp = app
         .get_files(&visitor_token, &[("limit", "2")])
         .await
@@ -90,7 +101,7 @@ async fn e2e_get_files_filtering_and_pagination() {
     let body: serde_json::Value = resp.json().await.unwrap();
     assert_eq!(body["data"]["items"].as_array().unwrap().len(), 2);
 
-    // Pagination - Offset
+    // Paginación - limit + offset (limit=2, offset=1 => items 2 y 3)
     let resp = app
         .get_files(&visitor_token, &[("limit", "2"), ("offset", "1")])
         .await
@@ -99,5 +110,6 @@ async fn e2e_get_files_filtering_and_pagination() {
     let body: serde_json::Value = resp.json().await.unwrap();
     assert_eq!(body["data"]["items"].as_array().unwrap().len(), 2);
 
+    // Cleanup de archivos y DB temporales
     app.cleanup();
 }

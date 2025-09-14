@@ -1,7 +1,7 @@
 use actix_web::HttpResponse;
 use sqlx::SqlitePool;
 
-use crate::models::types::Response;
+use crate::models::responses::ApiResponse;
 
 pub struct RegisterFilePayload {
     pub name: String,
@@ -14,13 +14,13 @@ pub struct RegisterFilePayload {
 pub async fn register_file(pool: &SqlitePool, file: RegisterFilePayload) -> HttpResponse {
     match sqlx::query(
         "
-        INSERT INTO Files (
-            name,
-            internal_path,
-            size_bytes,
-            mime_type,
-            uploaded_by
-        ) VALUES (?, ?, ?, ?, ?)
+            INSERT INTO Files (
+                name,
+                internal_path,
+                size_bytes,
+                mime_type,
+                uploaded_by
+            ) VALUES (?, ?, ?, ?, ?)
         ",
     )
     .bind(&file.name)
@@ -31,17 +31,16 @@ pub async fn register_file(pool: &SqlitePool, file: RegisterFilePayload) -> Http
     .execute(pool)
     .await
     {
-        Ok(result) if result.rows_affected() == 1 => HttpResponse::Created().json(Response {
-            success: true,
-            message: "Saved file successfully".into(),
-        }),
-        Ok(_) => HttpResponse::InternalServerError().json(Response {
-            success: false,
-            message: "No record was inserted".into(),
-        }),
-        Err(e) => HttpResponse::InternalServerError().json(Response {
-            success: false,
-            message: format!("Database error: {e}"),
-        }),
+        Ok(result) if result.rows_affected() == 1 => ApiResponse::<()>::builder()
+            .message("Saved file successfully")
+            .created(),
+
+        Ok(_) => ApiResponse::<()>::builder()
+            .message("No record was inserted")
+            .internal(),
+
+        Err(e) => ApiResponse::<()>::builder()
+            .message(format!("Database error: {e}"))
+            .internal(),
     }
 }

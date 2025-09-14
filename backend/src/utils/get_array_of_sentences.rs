@@ -1,16 +1,14 @@
 use regex::Regex;
 use std::error::Error;
-use std::fs;
+// use std::fs;
 
 /// Read a SQL-like file and return a Vec of top-level statements (strings).
 /// - Removes single-line (`-- ...`) and multi-line (`/* ... */`) comments.
 /// - Preserves quoted literals ('', "") and bracket-quoted identifiers (`[...]`).
 /// - Treats semicolons at block level 0 as statement terminators.
 /// - Tracks `begin`/`end` to avoid splitting inside blocks.
-pub fn get_array_of_sentences(file_path: &str) -> Result<Vec<String>, Box<dyn Error>> {
-    // load file and strip optional UTF-8 BOM (U+FEFF)
-    let mut content = fs::read_to_string(file_path)?;
-    content = content.trim_start_matches('\u{FEFF}').to_string();
+pub fn get_array_of_sentences(content: &'static str) -> Result<Vec<String>, Box<dyn Error>> {
+    let content = content.trim_start_matches('\u{FEFF}');
 
     // regex to remove SQL-style single-line comments (from -- to end-of-line)
     let single_line_comment_re = Regex::new(r"(?m)--[^\n\r]*")?;
@@ -18,7 +16,7 @@ pub fn get_array_of_sentences(file_path: &str) -> Result<Vec<String>, Box<dyn Er
     let multi_line_comment_re = Regex::new(r"(?s)/\*.*?\*/")?;
 
     // remove comments in two passes: single-line first, then multi-line
-    let content_no_single_comments = single_line_comment_re.replace_all(&content, "");
+    let content_no_single_comments = single_line_comment_re.replace_all(content, "");
     let content_no_comments = multi_line_comment_re.replace_all(&content_no_single_comments, "");
     let content = content_no_comments.into_owned();
 

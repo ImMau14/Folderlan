@@ -137,11 +137,8 @@ async fn e2e_upload_permissions_and_limits_data_driven() {
         UploadScenario {
             name: "visitor_no_upload_permission",
             visitor_opts: VisitorOptions {
-                can_access_all_files: false,
-                can_download: true,
                 can_upload: false,
-                can_edit: false,
-                can_delete: false,
+                can_delete_own_files: false,
                 has_upload_limits: false,
                 upload_limit: 0,
             },
@@ -153,11 +150,8 @@ async fn e2e_upload_permissions_and_limits_data_driven() {
         UploadScenario {
             name: "visitor_unlimited_upload",
             visitor_opts: VisitorOptions {
-                can_access_all_files: false,
-                can_download: true,
                 can_upload: true,
-                can_edit: false,
-                can_delete: false,
+                can_delete_own_files: false,
                 has_upload_limits: false,
                 upload_limit: 0,
             },
@@ -169,11 +163,8 @@ async fn e2e_upload_permissions_and_limits_data_driven() {
         UploadScenario {
             name: "visitor_with_small_limit",
             visitor_opts: VisitorOptions {
-                can_access_all_files: false,
-                can_download: true,
                 can_upload: true,
-                can_edit: false,
-                can_delete: false,
+                can_delete_own_files: false,
                 has_upload_limits: true,
                 upload_limit: 5, // 5 bytes
             },
@@ -185,11 +176,8 @@ async fn e2e_upload_permissions_and_limits_data_driven() {
         UploadScenario {
             name: "visitor_with_sufficient_limit",
             visitor_opts: VisitorOptions {
-                can_access_all_files: false,
-                can_download: true,
                 can_upload: true,
-                can_edit: false,
-                can_delete: false,
+                can_delete_own_files: false,
                 has_upload_limits: true,
                 upload_limit: 1024 * 10, // 10 KiB
             },

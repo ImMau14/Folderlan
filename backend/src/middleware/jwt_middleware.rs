@@ -1,9 +1,10 @@
 use actix_web::error::InternalError;
-use actix_web::{Error, HttpMessage, HttpResponse, dev::ServiceRequest, web::Data};
+use actix_web::{Error, HttpMessage, dev::ServiceRequest, web::Data};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+
+use crate::models::responses::ApiResponse;
 
 #[derive(Clone, Debug)]
 pub struct JwtConfig {
@@ -34,11 +35,11 @@ pub async fn jwt_validator_adapter(
     let cfg = match req.app_data::<Data<JwtConfig>>() {
         Some(d) => d.get_ref().clone(),
         None => {
-            let body =
-                json!({ "success": false, "message": "JwtConfig not registered in app_data" });
-            let resp = HttpResponse::InternalServerError().json(body);
-            let err: Error =
-                InternalError::from_response("JwtConfig not registered in app_data", resp).into();
+            let msg = "JwtConfig not registered in app_data";
+            let resp = ApiResponse::<()>::builder().message(msg).internal();
+
+            let err: Error = InternalError::from_response(msg, resp).into();
+
             return Err((err, req));
         }
     };
@@ -50,9 +51,10 @@ pub async fn jwt_validator_adapter(
     let token_data = match decode::<Claims>(token, &decoding_key, &validation) {
         Ok(td) => td,
         Err(_) => {
-            let body = json!({ "success": false, "message": "Invalid token or expired" });
-            let resp = HttpResponse::Unauthorized().json(body);
-            let err: Error = InternalError::from_response("Invalid token or expired", resp).into();
+            let msg = "Invalid token or expired";
+            let resp = ApiResponse::<()>::builder().message(msg).unauthorized();
+
+            let err: Error = InternalError::from_response(msg, resp).into();
             return Err((err, req));
         }
     };
