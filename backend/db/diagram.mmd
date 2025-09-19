@@ -8,15 +8,12 @@ erDiagram
         datetime last_login_at
         datetime expiration_date
         boolean is_active
-        boolean can_access_all_files
-        boolean can_download
         boolean can_upload
-        boolean can_edit
-        boolean can_delete
-        boolean is_deleted
-        datetime deleted_at
+        boolean can_delete_own_files
         boolean has_upload_limits
         int upload_limit
+        boolean is_deleted
+        datetime deleted_at
     }
 
     Files {
@@ -28,6 +25,7 @@ erDiagram
         int uploaded_by FK
         datetime uploaded_at
         boolean is_deleted
+        boolean is_public
         datetime deleted_at
     }
 
@@ -35,10 +33,7 @@ erDiagram
         int id PK
         int file_id FK
         int user_id FK
-        boolean can_view
-        boolean can_download
-        boolean can_edit
-        boolean can_delete
+        string access_level
         datetime granted_at
         int granted_by FK
     }
@@ -53,7 +48,7 @@ erDiagram
         int file_id FK
         boolean success
     }
-
+    
     Users ||--o{ Files : uploaded_by
     Users ||--o{ FilePermissions : user_id
     Users ||--o{ FilePermissions : granted_by
