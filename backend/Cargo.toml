@@ -3,6 +3,12 @@ name = "backend"
 version = "0.1.0"
 edition = "2024"
 
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
 [dependencies]
 actix-cors = "0.7.1"
 actix-multipart = "0.7.2"
