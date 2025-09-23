@@ -13,6 +13,7 @@ pub fn configure_services(cfg: &mut web::ServiceConfig) {
             .configure(controllers::auth::auth_config)
             .configure(controllers::db::db_config)
             .configure(controllers::users::users_config)
+            .configure(controllers::audit::audit_config)
             .configure(controllers::files::files_config),
     );
 }
