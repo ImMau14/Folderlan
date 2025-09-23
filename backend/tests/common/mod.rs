@@ -50,6 +50,22 @@ pub struct PermissionRow {
     pub granted_by: Option<i64>,
 }
 
+// Represents an audit log row returned by the API
+#[allow(dead_code)]
+#[derive(Debug, Deserialize, Clone)]
+pub struct AuditLogRow {
+    pub id: i64,
+    pub timestamp: String,
+    pub user_id: Option<i64>,
+    pub username: Option<String>,
+    pub event_type: String,
+    pub description: Option<String>,
+    pub ip_address: Option<String>,
+    pub file_id: Option<i64>,
+    pub file_name: Option<String>,
+    pub success: bool,
+}
+
 impl From<ChunkMetaSerde> for BackendChunkMeta {
     fn from(s: ChunkMetaSerde) -> Self {
         BackendChunkMeta {
@@ -985,6 +1001,154 @@ impl TestApp {
         }
 
         Ok(files)
+    }
+
+    // Gets audit logs with optional query parameters
+    pub async fn get_audit_logs_via_api(
+        &self,
+        token: &str,
+        query_params: &[(&str, &str)],
+    ) -> Result<reqwest::Response, reqwest::Error> {
+        let mut url = format!("{}/api/audit", self.base_url);
+
+        if !query_params.is_empty() {
+            url.push('?');
+            for (i, (key, value)) in query_params.iter().enumerate() {
+                if i > 0 {
+                    url.push('&');
+                }
+                url.push_str(&format!("{key}={value}"));
+            }
+        }
+
+        self.client
+            .get(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
+    }
+
+    // Lists audit logs and returns parsed JSON
+    pub async fn list_audit_logs_page(
+        &self,
+        token: &str,
+        query_params: &[(&str, &str)],
+    ) -> Result<serde_json::Value, String> {
+        let resp = self
+            .get_audit_logs_via_api(token, query_params)
+            .await
+            .map_err(|e| format!("request error: {e}"))?;
+
+        let status = resp.status();
+        if !status.is_success() {
+            let text = resp.text().await.unwrap_or_else(|_| "<no-body>".into());
+            return Err(format!(
+                "GET /api/audit failed: status={status} body={text}"
+            ));
+        }
+
+        let body: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("invalid json from get_audit_logs: {e}"))?;
+        Ok(body)
+    }
+
+    // Fetches audit log rows as Vec<AuditLogRow>
+    // Accepts either `data` being an array or `data.items` shape to be tolerant with response shapes.
+    pub async fn fetch_audit_log_rows(
+        &self,
+        token: &str,
+        query_params: &[(&str, &str)],
+    ) -> Result<Vec<AuditLogRow>, String> {
+        let body = self.list_audit_logs_page(token, query_params).await?;
+
+        // Normalize: body -> data value (could be array or object with items)
+        let data_val = if let Some(d) = body.get("data") {
+            d.clone()
+        } else {
+            body.clone()
+        };
+
+        let arr_val = if data_val.is_array() {
+            data_val
+        } else if let Some(items) = data_val.get("items") {
+            items.clone()
+        } else {
+            return Err(format!("unexpected audit logs response shape: {body}"));
+        };
+
+        let rows: Vec<AuditLogRow> = serde_json::from_value(arr_val)
+            .map_err(|e| format!("failed to deserialize audit rows: {e}"))?;
+        Ok(rows)
+    }
+
+    // Finds an audit row by event_type and optional file_id with retries/backoff.
+    // Returns Ok(Some(row)) if found, Ok(None) if not found after retries, Err on fatal errors.
+    pub async fn find_audit_row_by_event_and_file(
+        &self,
+        token: &str,
+        event_type: &str,
+        file_id: Option<i64>,
+    ) -> Result<Option<AuditLogRow>, String> {
+        let max_attempts = 6usize;
+        let mut attempts = 0usize;
+
+        loop {
+            attempts += 1;
+
+            let mut q_owned: Vec<(String, String)> = Vec::with_capacity(3);
+            q_owned.push(("event_type".to_string(), event_type.to_string()));
+            q_owned.push(("limit".to_string(), "100".to_string()));
+            if let Some(fid) = file_id {
+                q_owned.push(("file_id".to_string(), fid.to_string()));
+            }
+
+            // Convert to Vec<(&str, &str)> right before the call.
+            let q_refs: Vec<(&str, &str)> = q_owned
+                .iter()
+                .map(|(k, v)| (k.as_str(), v.as_str()))
+                .collect();
+
+            let rows = self.fetch_audit_log_rows(token, &q_refs).await?;
+
+            for row in rows {
+                if row.event_type == event_type {
+                    if let Some(fid) = file_id {
+                        if row.file_id == Some(fid) {
+                            return Ok(Some(row));
+                        }
+                    } else {
+                        return Ok(Some(row));
+                    }
+                }
+            }
+
+            if attempts >= max_attempts {
+                return Ok(None);
+            }
+
+            tokio::time::sleep(Duration::from_millis(200 * attempts as u64)).await;
+        }
+    }
+
+    // Asserts that an audit event exists (returns Ok(()) on success, Err(String) on failure)
+    pub async fn assert_audit_contains_event(
+        &self,
+        token: &str,
+        event_type: &str,
+        file_id: Option<i64>,
+    ) -> Result<(), String> {
+        match self
+            .find_audit_row_by_event_and_file(token, event_type, file_id)
+            .await?
+        {
+            Some(_) => Ok(()),
+            None => Err(format!(
+                "audit event not found: event_type='{}' file_id={:?}",
+                event_type, file_id
+            )),
+        }
     }
 
     // Cleans up test resources (database and uploads)
