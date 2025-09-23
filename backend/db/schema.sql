@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS Users (
     role TEXT NOT NULL CHECK(role IN ('owner', 'visitor')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_login_at DATETIME,
-    expiration_date DATETIME,
     is_active BOOLEAN DEFAULT 1,
     can_upload BOOLEAN DEFAULT 0,
     can_delete_own_files BOOLEAN DEFAULT 0,
