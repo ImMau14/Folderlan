@@ -16,6 +16,19 @@ use backend::{build_cors, configure_services};
 use serde::{Deserialize, Serialize};
 use std::panic;
 
+// Represents a file accessible to a user with metadata and permissions
+#[derive(Debug, Deserialize, Clone, Serialize)]
+pub struct AccessibleFile {
+    pub id: i64,
+    pub name: String,
+    pub size_bytes: i64,
+    pub mime_type: Option<String>,
+    pub uploaded_by: i64,
+    pub uploaded_at: String,
+    pub access_type: String, // "owner", "viewer", or "collaborator"
+}
+
+// Metadata for file chunks during upload
 #[derive(Deserialize, Clone, Debug, Serialize)]
 pub struct ChunkMetaSerde {
     pub file_id: String,
@@ -26,6 +39,7 @@ pub struct ChunkMetaSerde {
     pub filename: String,
 }
 
+// Represents a user's permission on a file
 #[derive(Debug, Deserialize, Clone)]
 #[allow(dead_code)]
 pub struct PermissionRow {
@@ -62,6 +76,7 @@ impl From<BackendChunkMeta> for ChunkMetaSerde {
     }
 }
 
+// Configuration options for visitor accounts
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct VisitorOptions {
     pub can_upload: bool,
@@ -70,6 +85,7 @@ pub struct VisitorOptions {
     pub upload_limit: u64,
 }
 
+// Type of user registration (owner or visitor)
 #[derive(Clone, Copy, Debug)]
 pub enum RegisterKind {
     #[allow(dead_code)]
@@ -77,6 +93,7 @@ pub enum RegisterKind {
     Visitor,
 }
 
+// Test application context for integration testing
 pub struct TestApp {
     pub base_url: String,
     pub db_path: PathBuf,
@@ -87,6 +104,7 @@ pub struct TestApp {
 
 #[allow(dead_code)]
 impl TestApp {
+    // Spawns a new test application instance
     pub async fn spawn() -> Self {
         let _ = tracing_subscriber::fmt::try_init();
         std::panic::set_hook(Box::new(|panic_info| {
@@ -151,10 +169,10 @@ impl TestApp {
             if start.elapsed() > timeout {
                 panic!("server did not become ready in time");
             }
-            if let Ok(resp) = client.get(format!("{}/api/db", &base_url)).send().await {
-                if resp.status().is_success() {
-                    break;
-                }
+            if let Ok(resp) = client.get(format!("{}/api/db", &base_url)).send().await
+                && resp.status().is_success()
+            {
+                break;
             }
             sleep(Duration::from_millis(100)).await;
         }
@@ -168,6 +186,7 @@ impl TestApp {
         }
     }
 
+    // Initializes the database schema
     pub async fn post_init_db(&self) {
         let resp = self
             .client
@@ -182,6 +201,7 @@ impl TestApp {
         );
     }
 
+    // Creates an owner user directly in the database
     pub async fn create_owner_direct(&self, username: &str, password: &str) {
         let payload = RegisterPayload::Owner(RegisterOwnerPayload {
             username: username.to_string(),
@@ -191,6 +211,7 @@ impl TestApp {
         assert_eq!(resp.status().as_u16(), 201);
     }
 
+    // Logs in and returns JWT token
     pub async fn login_and_get_token(&self, username: &str, password: &str) -> String {
         let resp = self
             .client
@@ -204,8 +225,7 @@ impl TestApp {
         body["token"].as_str().expect("token missing").to_owned()
     }
 
-    // --- Helpers for building/registering users ---
-
+    // Builds registration payload JSON
     fn build_register_payload(
         &self,
         username: &str,
@@ -227,11 +247,11 @@ impl TestApp {
                 "upload_limit": o.upload_limit
             });
 
-            if let serde_json::Value::Object(ref mut map) = base {
-                if let serde_json::Value::Object(vis_map) = visitor_fields {
-                    for (k, v) in vis_map {
-                        map.insert(k, v);
-                    }
+            if let serde_json::Value::Object(ref mut map) = base
+                && let serde_json::Value::Object(vis_map) = visitor_fields
+            {
+                for (k, v) in vis_map {
+                    map.insert(k, v);
                 }
             }
         }
@@ -239,6 +259,7 @@ impl TestApp {
         base
     }
 
+    // Sends registration request to API
     pub async fn send_register_request(
         &self,
         token: Option<&str>,
@@ -254,7 +275,7 @@ impl TestApp {
         builder.send().await
     }
 
-    // --- Create a visitor via API as owner (uses VisitorOptions) ---
+    // Creates visitor via API as owner
     pub async fn create_visitor_via_api_as_owner(
         &self,
         owner_token: &str,
@@ -288,7 +309,7 @@ impl TestApp {
         }
     }
 
-    // --- Try create user via API, returns Result (no panic) ---
+    // Attempts to create user via API (returns Result instead of panicking)
     pub async fn try_create_user_via_api(
         &self,
         token: Option<&str>,
@@ -301,8 +322,7 @@ impl TestApp {
         self.send_register_request(token, &payload).await
     }
 
-    // --- Multipart helpers for chunked upload ---
-
+    // Builds multipart form for chunk upload
     fn build_chunk_form_from_parts(meta: &ChunkMetaSerde, chunk_bytes: &[u8]) -> Form {
         let meta_json = serde_json::to_string(meta).expect("serialize metadata");
         let part_chunk = Part::bytes(chunk_bytes.to_vec())
@@ -314,6 +334,7 @@ impl TestApp {
             .part("chunk", part_chunk)
     }
 
+    // Sends multipart request with authentication
     async fn send_multipart_with_auth(
         &self,
         token: &str,
@@ -332,8 +353,7 @@ impl TestApp {
             .await
     }
 
-    // --- Upload utilities ---
-
+    // Uploads a single-chunk file
     pub async fn upload_single_chunk_file(
         &self,
         visitor_token: &str,
@@ -355,6 +375,7 @@ impl TestApp {
             .expect("upload request failed")
     }
 
+    // Uploads a single chunk
     pub async fn upload_chunk(
         &self,
         visitor_token: &str,
@@ -367,6 +388,7 @@ impl TestApp {
             .expect("chunk upload request failed")
     }
 
+    // Uploads file in multiple chunks
     pub async fn upload_chunks(
         &self,
         visitor_token: &str,
@@ -395,6 +417,7 @@ impl TestApp {
         responses
     }
 
+    // Uploads multiple files in batches
     pub async fn upload_lote(
         &self,
         visitor_token: &str,
@@ -411,8 +434,7 @@ impl TestApp {
         all_responses
     }
 
-    // --- Fetch files ---
-
+    // Gets files with optional query parameters
     pub async fn get_files(
         &self,
         token: &str,
@@ -437,6 +459,7 @@ impl TestApp {
             .await
     }
 
+    // Finds file ID by name with retries
     pub async fn find_file_id_by_name(
         &self,
         token: &str,
@@ -475,10 +498,9 @@ impl TestApp {
                 if let (Some(n), Some(id)) = (
                     item.get("name").and_then(|v| v.as_str()),
                     item.get("id").and_then(|v| v.as_i64()),
-                ) {
-                    if n == name {
-                        return Ok(Some(id));
-                    }
+                ) && n == name
+                {
+                    return Ok(Some(id));
                 }
             }
 
@@ -490,6 +512,7 @@ impl TestApp {
         }
     }
 
+    // Deletes file by ID
     pub async fn delete_file_by_id(
         &self,
         token: &str,
@@ -504,6 +527,7 @@ impl TestApp {
             .map_err(|e| format!("delete request failed: {e}"))
     }
 
+    // Downloads entire file
     pub async fn download_file(
         &self,
         token: &str,
@@ -517,7 +541,7 @@ impl TestApp {
             .await
     }
 
-    /// `range` should be something like "bytes=0-1023" or "bytes=0-4"
+    // Downloads file range (partial content)
     pub async fn download_file_range(
         &self,
         token: &str,
@@ -533,7 +557,7 @@ impl TestApp {
             .await
     }
 
-    /// If the server responds with unsuccessful code, return Err with readable message.
+    // Downloads file and returns bytes
     pub async fn download_file_bytes(&self, token: &str, file_id: i64) -> Result<Vec<u8>, String> {
         let resp = self
             .download_file(token, file_id)
@@ -553,12 +577,13 @@ impl TestApp {
         Ok(bytes.to_vec())
     }
 
+    // Grants or updates file permission for user
     pub async fn grant_or_update_permission_via_api(
         &self,
         token: &str,
         file_id: i64,
         target_user_id: i64,
-        access_level: &str, // "viewer" | "collaborator"
+        access_level: &str, // "viewer" or "collaborator"
     ) -> Result<reqwest::Response, String> {
         let payload = serde_json::json!({
             "user_id": target_user_id,
@@ -574,6 +599,7 @@ impl TestApp {
             .map_err(|e| format!("grant permission request failed: {e}"))
     }
 
+    // Lists permissions for a file
     pub async fn list_permissions_via_api(
         &self,
         token: &str,
@@ -604,6 +630,7 @@ impl TestApp {
         Ok(body)
     }
 
+    // Revokes permission for user on file
     pub async fn revoke_permission_via_api(
         &self,
         token: &str,
@@ -622,6 +649,7 @@ impl TestApp {
             .map_err(|e| format!("revoke permission request failed: {e}"))
     }
 
+    // Gets permission row for specific user on file
     pub async fn get_permission_row(
         &self,
         token: &str,
@@ -635,17 +663,18 @@ impl TestApp {
             .ok_or_else(|| format!("unexpected permissions response shape: {body}"))?;
 
         for it in items {
-            if let Some(uid) = it.get("user_id").and_then(|v| v.as_i64()) {
-                if uid == target_user_id {
-                    let perm: PermissionRow = serde_json::from_value(it.clone())
-                        .map_err(|e| format!("failed to deserialize permission row: {e}"))?;
-                    return Ok(Some(perm));
-                }
+            if let Some(uid) = it.get("user_id").and_then(|v| v.as_i64())
+                && uid == target_user_id
+            {
+                let perm: PermissionRow = serde_json::from_value(it.clone())
+                    .map_err(|e| format!("failed to deserialize permission row: {e}"))?;
+                return Ok(Some(perm));
             }
         }
         Ok(None)
     }
 
+    // Grants permission and returns the permission row
     pub async fn grant_permission_and_get_row(
         &self,
         token: &str,
@@ -677,6 +706,7 @@ impl TestApp {
             })
     }
 
+    // Checks if file has permission for user
     pub async fn file_has_permission(
         &self,
         token: &str,
@@ -689,6 +719,7 @@ impl TestApp {
             .is_some())
     }
 
+    // Asserts permission level matches expected value
     pub async fn assert_permission_level(
         &self,
         token: &str,
@@ -716,6 +747,7 @@ impl TestApp {
         }
     }
 
+    // Revokes permission and expects success
     pub async fn revoke_permission_and_expect_ok(
         &self,
         token: &str,
@@ -734,6 +766,7 @@ impl TestApp {
         }
     }
 
+    // Revokes permission and verifies it was removed
     pub async fn revoke_permission_and_assert_removed(
         &self,
         token: &str,
@@ -754,6 +787,207 @@ impl TestApp {
         }
     }
 
+    // Gets users with optional query parameters
+    pub async fn get_users_via_api(
+        &self,
+        token: &str,
+        query_params: &[(&str, &str)],
+    ) -> Result<reqwest::Response, reqwest::Error> {
+        let mut url = format!("{}/api/user", self.base_url);
+
+        if !query_params.is_empty() {
+            url.push('?');
+            for (i, (key, value)) in query_params.iter().enumerate() {
+                if i > 0 {
+                    url.push('&');
+                }
+                url.push_str(&format!("{key}={value}"));
+            }
+        }
+
+        self.client
+            .get(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
+    }
+
+    // Lists users with pagination and returns parsed JSON
+    pub async fn list_users_page(
+        &self,
+        token: &str,
+        query_params: &[(&str, &str)],
+    ) -> Result<serde_json::Value, String> {
+        let resp = self
+            .get_users_via_api(token, query_params)
+            .await
+            .map_err(|e| format!("request error: {e}"))?;
+
+        let status = resp.status();
+        if !status.is_success() {
+            let text = resp.text().await.unwrap_or_else(|_| "<no-body>".into());
+            return Err(format!("GET /api/user failed: status={status} body={text}"));
+        }
+
+        let body: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("invalid json from get_users: {e}"))?;
+        Ok(body)
+    }
+
+    // Finds user ID by username with retries
+    pub async fn find_user_id_by_username(
+        &self,
+        token: &str,
+        username: &str,
+    ) -> Result<Option<i64>, String> {
+        let max_attempts = 5usize;
+        let mut attempts = 0usize;
+
+        loop {
+            attempts += 1;
+            let resp = self
+                .get_users_via_api(token, &[("name", username)])
+                .await
+                .map_err(|e| format!("request error: {e}"))?;
+
+            let status = resp.status();
+            if !status.is_success() {
+                let text = resp.text().await.unwrap_or_else(|_| "<no-body>".into());
+                return Err(format!("GET /api/user failed: status={status} body={text}"));
+            }
+
+            let body: serde_json::Value = resp
+                .json()
+                .await
+                .map_err(|e| format!("invalid json from get_users: {e}"))?;
+
+            let items = body
+                .get("data")
+                .and_then(|d| d.get("items"))
+                .and_then(|it| it.as_array())
+                .ok_or_else(|| "unexpected get_users response structure".to_string())?;
+
+            for item in items {
+                if let (Some(n), Some(id)) = (
+                    item.get("username").and_then(|v| v.as_str()),
+                    item.get("id").and_then(|v| v.as_i64()),
+                ) && n == username
+                {
+                    return Ok(Some(id));
+                }
+            }
+
+            if attempts >= max_attempts {
+                return Ok(None);
+            }
+
+            tokio::time::sleep(Duration::from_millis(200 * attempts as u64)).await;
+        }
+    }
+
+    // Deletes user via API
+    pub async fn delete_user_via_api(
+        &self,
+        token: &str,
+        user_id: i64,
+    ) -> Result<reqwest::Response, String> {
+        let url = format!("{}/api/user/{}", self.base_url, user_id);
+        self.client
+            .delete(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
+            .map_err(|e| format!("delete user request failed: {e}"))
+    }
+
+    // Toggles user active status
+    pub async fn toggle_user_active_via_api(
+        &self,
+        token: &str,
+        user_id: i64,
+    ) -> Result<reqwest::Response, String> {
+        let url = format!("{}/api/user/{}/toggle", self.base_url, user_id);
+        self.client
+            .post(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
+            .map_err(|e| format!("toggle user request failed: {e}"))
+    }
+
+    // Updates user permissions
+    pub async fn update_user_perms_via_api(
+        &self,
+        token: &str,
+        user_id: i64,
+        payload: &serde_json::Value,
+    ) -> Result<reqwest::Response, String> {
+        let url = format!("{}/api/user/{}/perms", self.base_url, user_id);
+        self.client
+            .post(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .json(payload)
+            .send()
+            .await
+            .map_err(|e| format!("update user perms request failed: {e}"))
+    }
+
+    // Gets accessible files for user
+    pub async fn get_user_accessible_via_api(
+        &self,
+        token: &str,
+        user_id: i64,
+    ) -> Result<reqwest::Response, reqwest::Error> {
+        let url = format!("{}/api/user/{}/accessible", &self.base_url, user_id);
+        self.client
+            .get(&url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
+    }
+
+    // Lists accessible files for user
+    pub async fn list_accessible_files(
+        &self,
+        token: &str,
+        user_id: i64,
+    ) -> Result<Vec<AccessibleFile>, String> {
+        let resp = self
+            .get_user_accessible_via_api(token, user_id)
+            .await
+            .map_err(|e| format!("request error: {e}"))?;
+
+        let status = resp.status();
+        if !status.is_success() {
+            let text = resp.text().await.unwrap_or_else(|_| "<no-body>".into());
+            return Err(format!(
+                "GET /api/user/{user_id}/accessible failed: status={status} body={text}"
+            ));
+        }
+
+        let body: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("invalid json from list_accessible_files: {e}"))?;
+
+        let items = body
+            .get("data")
+            .and_then(|d| d.as_array())
+            .ok_or_else(|| format!("unexpected list_accessible_files response shape: {body}"))?;
+
+        let mut files = Vec::with_capacity(items.len());
+        for item in items {
+            let file: AccessibleFile = serde_json::from_value(item.clone())
+                .map_err(|e| format!("failed to deserialize AccessibleFile: {e}"))?;
+            files.push(file);
+        }
+
+        Ok(files)
+    }
+
+    // Cleans up test resources (database and uploads)
     pub fn cleanup(self) {
         let _ = fs::remove_file(self.db_path);
         let _ = fs::remove_dir_all(self.uploads_path);

@@ -23,11 +23,17 @@ pub async fn login(
     jwt_cfg: web::Data<JwtConfig>,
     credentials: web::Json<LoginPayload>,
 ) -> HttpResponse {
-    let query_result =
-        sqlx::query("SELECT id, username, password_hash, role FROM Users WHERE username = ?")
-            .bind(&credentials.username)
-            .fetch_optional(pool.get_ref())
-            .await;
+    let query_result = sqlx::query(
+        "
+        SELECT 
+            id, username, password_hash, role, is_deleted, is_active 
+        FROM Users 
+        WHERE username = ?
+    ",
+    )
+    .bind(&credentials.username)
+    .fetch_optional(pool.get_ref())
+    .await;
 
     let user = match query_result {
         Ok(Some(row)) => row,
@@ -47,6 +53,20 @@ pub async fn login(
     let username: String = user.get("username");
     let password_hash: String = user.get("password_hash");
     let role: String = user.get("role");
+    let is_deleted: bool = user.get("is_deleted");
+    let is_active: bool = user.get("is_active");
+
+    if is_deleted {
+        return ApiResponse::<()>::builder()
+            .message("Your account has been deleted")
+            .unauthorized();
+    }
+
+    if !is_active {
+        return ApiResponse::<()>::builder()
+            .message("Your account has been disabled")
+            .unauthorized();
+    }
 
     let parsed_hash = match PasswordHash::new(&password_hash) {
         Ok(parsed) => parsed,
@@ -65,6 +85,16 @@ pub async fn login(
         return ApiResponse::<()>::builder()
             .message("Invalid credentials")
             .unauthorized();
+    }
+
+    if let Err(e) = sqlx::query("UPDATE Users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .bind(id)
+        .execute(pool.get_ref())
+        .await
+    {
+        return ApiResponse::<()>::builder()
+            .message(e.to_string())
+            .internal();
     }
 
     let expiration = Utc::now()
