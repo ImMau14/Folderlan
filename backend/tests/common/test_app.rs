@@ -288,6 +288,41 @@ impl TestApp {
         );
     }
 
+    // Change the owner's password (only accessible from localhost)
+    pub async fn change_owner_password(&self, new_password: &str) -> Result<Response, String> {
+        let payload = serde_json::json!({
+            "new_password": new_password
+        });
+
+        self.api
+            .post("api/auth/owner_reset_password")
+            .with_json(&payload)
+            .send()
+            .await
+            .map_err(|e| format!("owner password change failed: {e}"))
+    }
+
+    // Change a visitor's password (requires owner token)
+    pub async fn change_visitor_password(
+        &self,
+        owner_token: &str,
+        visitor_username: &str,
+        new_password: &str,
+    ) -> Result<Response, String> {
+        let payload = serde_json::json!({
+            "visitor_username": visitor_username,
+            "new_password": new_password
+        });
+
+        self.api
+            .post("api/auth/visitor_reset_password")
+            .with_token(owner_token)
+            .with_json(&payload)
+            .send()
+            .await
+            .map_err(|e| format!("visitor password change failed: {e}"))
+    }
+
     // =========================================================================
     // FILE OPERATIONS
     // =========================================================================
