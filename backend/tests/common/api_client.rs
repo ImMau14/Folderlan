@@ -1,8 +1,9 @@
+// HTTP client wrapper for API testing with fluent request builder interface
 use reqwest::{Client, Method, Response, multipart::Form};
 use serde::Serialize;
 use std::time::Duration;
 
-// HTTP client wrapper for API testing
+// HTTP client configuration for API testing
 #[derive(Debug, Clone)]
 pub struct ApiClient {
     base_url: String,
@@ -10,7 +11,7 @@ pub struct ApiClient {
     timeout: Duration,
 }
 
-// Request builder for fluent API calls
+// Fluent interface builder for HTTP requests
 #[derive(Debug, Clone)]
 pub struct RequestBuilder {
     client: Client,
@@ -25,7 +26,7 @@ pub struct RequestBuilder {
 }
 
 impl ApiClient {
-    // Client initialization with base URL
+    // Creates new client instance with base URL
     pub fn new(base_url: String) -> Self {
         Self {
             base_url,
@@ -34,13 +35,13 @@ impl ApiClient {
         }
     }
 
-    // Timeout configuration
+    // Configures request timeout duration
     pub fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
         self
     }
 
-    // Generic request builder
+    // Creates request builder with specified HTTP method
     pub fn request(&self, method: Method, endpoint: &str) -> RequestBuilder {
         RequestBuilder::new(self.client.clone(), method, &self.base_url, endpoint)
             .with_timeout(self.timeout)
@@ -63,7 +64,7 @@ impl ApiClient {
 }
 
 impl RequestBuilder {
-    // Request builder initialization
+    // Initializes new request builder with HTTP method and endpoint
     fn new(client: Client, method: Method, base_url: &str, endpoint: &str) -> Self {
         Self {
             client,
@@ -78,31 +79,31 @@ impl RequestBuilder {
         }
     }
 
-    // Request timeout setter
+    // Sets request timeout
     pub fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
         self
     }
 
-    // Authentication token setter
+    // Adds Bearer token authentication header
     pub fn with_token(mut self, token: &str) -> Self {
         self.token = Some(format!("Bearer {}", token));
         self
     }
 
-    // Query parameter adder
+    // Adds query parameter to request URL
     pub fn with_query_param(mut self, key: &str, value: &str) -> Self {
         self.query_params.push((key.to_string(), value.to_string()));
         self
     }
 
-    // JSON body setter
+    // Sets JSON request body
     pub fn with_json<T: Serialize + ?Sized>(mut self, body: &T) -> Self {
         self.body = Some(serde_json::to_value(body).unwrap());
         self
     }
 
-    // URL construction with query parameters
+    // Constructs final URL with query parameters
     fn build_url(&self) -> String {
         let mut url = format!(
             "{}/{}",
@@ -123,7 +124,7 @@ impl RequestBuilder {
         url
     }
 
-    // HTTP request execution
+    // Executes HTTP request and returns response
     pub async fn send(self) -> Result<Response, reqwest::Error> {
         let url = self.build_url();
         let mut request = self
@@ -131,14 +132,17 @@ impl RequestBuilder {
             .request(self.method.clone(), &url)
             .timeout(self.timeout);
 
+        // Add authorization header if token exists
         if let Some(token) = self.token {
             request = request.header("Authorization", token);
         }
 
+        // Add custom headers
         for (key, value) in self.headers {
             request = request.header(key, value);
         }
 
+        // Add JSON body if present
         if let Some(body) = self.body {
             request = request.json(&body);
         }
@@ -146,7 +150,7 @@ impl RequestBuilder {
         request.send().await
     }
 
-    // Multipart form data request execution
+    // Executes multipart form data request
     pub async fn send_multipart(self, form: Form) -> Result<Response, reqwest::Error> {
         let url = self.build_url();
         let mut request = self
@@ -155,10 +159,12 @@ impl RequestBuilder {
             .timeout(self.timeout)
             .multipart(form);
 
+        // Add authorization header if token exists
         if let Some(token) = self.token {
             request = request.header("Authorization", token);
         }
 
+        // Add custom headers
         for (key, value) in self.headers {
             request = request.header(key, value);
         }

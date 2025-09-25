@@ -1,8 +1,10 @@
+// Integration tests for the full API workflow, error handling, and pagination features
 mod common;
 use common::*;
 use serde_json::json;
 use std::time::Duration;
 
+/// Tests the complete API workflow including database initialization, user management, file operations, and cleanup
 #[tokio::test(flavor = "multi_thread")]
 async fn test_full_api_workflow() {
     // Windows-specific configuration delay
@@ -71,7 +73,7 @@ async fn test_full_api_workflow() {
         "Visitor token should not be empty"
     );
 
-    // Create restricted visitor
+    // Create restricted visitor with upload limits
     let limited_visitor_opts = VisitorOptions {
         can_upload: true,
         can_delete_own_files: false,
@@ -92,7 +94,7 @@ async fn test_full_api_workflow() {
         .await;
 
     // Phase 3: File operations testing
-    let file_content = b"Este es un archivo de prueba para el test E2E".to_vec();
+    let file_content = b"This is a test file for the E2E test".to_vec();
     let upload_resp = app
         .upload_single_chunk_file(
             &visitor_token,
@@ -109,7 +111,7 @@ async fn test_full_api_workflow() {
         upload_resp.text().await.ok()
     );
 
-    // Retrieve uploaded file ID
+    // Retrieve uploaded file ID for subsequent operations
     let file_id = app
         .find_file_id_by_name(&visitor_token, "test_document.txt")
         .await
@@ -127,7 +129,7 @@ async fn test_full_api_workflow() {
     assert!(files_body["success"].as_bool().unwrap());
     assert!(!files_body["data"]["items"].as_array().unwrap().is_empty());
 
-    // File download functionality
+    // File download functionality verification
     let downloaded_bytes = app
         .download_file_bytes(&visitor_token, file_id)
         .await
@@ -145,7 +147,7 @@ async fn test_full_api_workflow() {
     assert!(users_body["success"].as_bool().unwrap());
     assert!(users_body["data"]["items"].as_array().unwrap().len() >= 3);
 
-    // Find user IDs for subsequent operations
+    // Find user IDs for permission management
     let visitor_id = app
         .find_user_id_by_username(&owner_token, "test_visitor")
         .await
@@ -165,7 +167,7 @@ async fn test_full_api_workflow() {
         .expect("toggle user failed");
     assert!(toggle_resp.status().is_success());
 
-    // Verify user deactivation
+    // Verify user deactivation in user list
     let users_after_toggle = app
         .list_users_page(&owner_token, &[("is_active", "false")])
         .await
@@ -175,7 +177,7 @@ async fn test_full_api_workflow() {
         serde_json::from_value(users_after_toggle["data"]["items"].clone()).unwrap();
     assert!(inactive_users.iter().any(|u| u["id"] == visitor_id));
 
-    // Reactivate user
+    // Reactivate user for continued testing
     app.toggle_user_active_via_api(&owner_token, visitor_id)
         .await
         .expect("toggle user back failed");
@@ -200,14 +202,14 @@ async fn test_full_api_workflow() {
         .expect("grant permission failed");
     assert!(grant_resp.status().is_success());
 
-    // List file permissions
+    // List file permissions to verify grant
     let perms_list = app
         .list_permissions_via_api(&visitor_token, file_id)
         .await
         .expect("list permissions failed");
     assert!(!perms_list["data"].as_array().unwrap().is_empty());
 
-    // Verify permission enforcement
+    // Verify permission enforcement through file download
     let limited_access_bytes = app
         .download_file_bytes(&limited_visitor_token, file_id)
         .await
@@ -221,12 +223,12 @@ async fn test_full_api_workflow() {
         .expect("revoke permission failed");
     assert!(revoke_resp.status().is_success());
 
-    // Confirm permission removal
+    // Confirm permission removal from system
     app.revoke_permission_and_assert_removed(&visitor_token, file_id, limited_visitor_id)
         .await
         .expect("permission should be removed");
 
-    // Phase 6: Multipart file upload testing
+    // Phase 6: Multipart file upload testing with large files
     let large_content: Vec<u8> = (0..5000).map(|i| (i % 256) as u8).collect();
 
     let chunk_responses = app
@@ -239,7 +241,7 @@ async fn test_full_api_workflow() {
         )
         .await;
 
-    // Validate all chunk uploads
+    // Validate all chunk uploads succeeded
     for (i, resp) in chunk_responses.iter().enumerate() {
         assert!(
             resp.status().is_success(),
@@ -249,7 +251,7 @@ async fn test_full_api_workflow() {
         );
     }
 
-    // Verify multipart upload integrity
+    // Verify multipart upload integrity through download comparison
     let large_file_id = app
         .find_file_id_by_name(&visitor_token, "large_file.bin")
         .await
@@ -277,7 +279,7 @@ async fn test_full_api_workflow() {
     assert!(filenames.contains(&"test_document.txt".to_string()));
     assert!(filenames.contains(&"large_file.bin".to_string()));
 
-    // Phase 8: Audit log verification
+    // Phase 8: Audit log verification for security tracking
     let audit_resp = app
         .get_audit_logs_via_api(&owner_token, &[("limit", "20")])
         .await
@@ -287,19 +289,19 @@ async fn test_full_api_workflow() {
     let audit_body: serde_json::Value = audit_resp.json().await.expect("invalid json");
     assert!(audit_body["success"].as_bool().unwrap());
 
-    // Verify specific audit events
+    // Verify specific audit events were recorded
     app.assert_audit_contains_event(&owner_token, "FILE_UPLOAD", Some(file_id))
         .await
         .expect("FILE_UPLOAD event should be in audit logs");
 
-    // Phase 9: File deletion testing
+    // Phase 9: File deletion testing and cleanup verification
     let delete_resp = app
         .delete_file_by_id(&visitor_token, file_id)
         .await
         .expect("delete file failed");
     assert!(delete_resp.status().is_success());
 
-    // Confirm file removal from accessible list
+    // Confirm file removal from accessible files list
     let accessible_after_delete = app
         .list_accessible_files(&visitor_token, visitor_id)
         .await
@@ -311,14 +313,14 @@ async fn test_full_api_workflow() {
         .collect();
     assert!(!filenames_after.contains(&"test_document.txt".to_string()));
 
-    // Phase 10: User deletion testing
+    // Phase 10: User deletion testing with soft delete verification
     let delete_user_resp = app
         .delete_user_via_api(&owner_token, visitor_id)
         .await
         .expect("delete user failed");
     assert!(delete_user_resp.status().is_success());
 
-    // Verify user soft deletion
+    // Verify user soft deletion in system
     let users_after_delete = app
         .list_users_page(
             &owner_token,
@@ -331,12 +333,14 @@ async fn test_full_api_workflow() {
         serde_json::from_value(users_after_delete["data"]["items"].clone()).unwrap();
     assert!(inactive_after.iter().any(|u| u["id"] == visitor_id));
 
-    // Phase 11: Resource cleanup
+    // Phase 11: Resource cleanup after test completion
     app.cleanup();
 }
 
+/// Tests error cases, security boundaries, and permission validation
 #[tokio::test(flavor = "multi_thread")]
 async fn test_error_cases_and_security() {
+    // Windows-specific configuration delay
     if cfg!(windows) {
         tokio::time::sleep(Duration::from_secs(2)).await;
     }
@@ -344,7 +348,7 @@ async fn test_error_cases_and_security() {
     let app = TestApp::spawn().await;
     app.post_init_db().await;
 
-    // Setup test users
+    // Setup test users for security testing
     app.create_owner_direct("security_owner", "owner_pass")
         .await;
     let owner_token = app
@@ -368,7 +372,7 @@ async fn test_error_cases_and_security() {
         .login_and_get_token("security_visitor", "visitor_pass")
         .await;
 
-    // Test 1: Unauthorized access attempts
+    // Test 1: Unauthorized access attempts without valid token
     let unauthorized_resp = app
         .api
         .get("/api/user")
@@ -377,6 +381,7 @@ async fn test_error_cases_and_security() {
         .expect("request failed");
     assert!(unauthorized_resp.status().is_client_error());
 
+    // Test invalid token rejection
     let invalid_token_resp = app
         .api
         .get("/api/user")
@@ -386,21 +391,21 @@ async fn test_error_cases_and_security() {
         .expect("request failed");
     assert!(invalid_token_resp.status().is_client_error());
 
-    // Test 2: Permission boundary testing
+    // Test 2: Permission boundary testing for role-based access
     let forbidden_resp = app
         .get_users_via_api(&visitor_token, &[])
         .await
         .expect("request failed");
     assert!(forbidden_resp.status().is_client_error());
 
-    // Test 3: Input validation testing
+    // Test 3: Input validation testing with excessive limits
     let excess_limit_resp = app
         .get_files(&visitor_token, &[("limit", "1000")])
         .await
         .expect("request failed");
     assert!(excess_limit_resp.status().is_success());
 
-    // Test 4: Insufficient permission testing
+    // Test 4: Insufficient permission testing for upload restrictions
     app.create_visitor_via_api_as_owner(
         &owner_token,
         "no_upload_user",
@@ -431,8 +436,10 @@ async fn test_error_cases_and_security() {
     app.cleanup();
 }
 
+/// Tests pagination functionality, filtering, and result set management
 #[tokio::test(flavor = "multi_thread")]
 async fn test_pagination_and_filtering() {
+    // Windows-specific configuration delay
     if cfg!(windows) {
         tokio::time::sleep(Duration::from_secs(2)).await;
     }
@@ -446,7 +453,7 @@ async fn test_pagination_and_filtering() {
         .login_and_get_token("pagination_owner", "owner_pass")
         .await;
 
-    // Create multiple test users
+    // Create multiple test users for pagination testing
     for i in 0..20 {
         let username = format!("user_{:02}", i);
         let opts = VisitorOptions {
@@ -460,7 +467,7 @@ async fn test_pagination_and_filtering() {
             .await;
     }
 
-    // Test 1: Basic pagination functionality
+    // Test 1: Basic pagination functionality with limit and offset
     let page1 = app
         .list_users_page(&owner_token, &[("limit", "5"), ("offset", "0")])
         .await
@@ -473,6 +480,7 @@ async fn test_pagination_and_filtering() {
     assert_eq!(page1["data"]["limit"], 5);
     assert_eq!(page1["data"]["offset"], 0);
 
+    // Test second page retrieval
     let page2 = app
         .list_users_page(&owner_token, &[("limit", "5"), ("offset", "5")])
         .await
@@ -482,7 +490,7 @@ async fn test_pagination_and_filtering() {
         serde_json::from_value(page2["data"]["items"].clone()).unwrap();
     assert_eq!(items_page2.len(), 5);
 
-    // Verify page separation
+    // Verify page separation and no overlap between result sets
     let page1_ids: Vec<i64> = items_page1
         .iter()
         .map(|u| u["id"].as_i64().unwrap())
@@ -497,7 +505,7 @@ async fn test_pagination_and_filtering() {
         assert!(!page2_ids.contains(&id), "Pages should not overlap");
     }
 
-    // Test 2: Permission-based filtering
+    // Test 2: Permission-based filtering for user attributes
     let upload_users = app
         .list_users_page(&owner_token, &[("perm", "can_upload"), ("limit", "20")])
         .await
@@ -510,7 +518,7 @@ async fn test_pagination_and_filtering() {
         assert_eq!(user["can_upload"], 1);
     }
 
-    // Test 3: Combined filtering
+    // Test 3: Combined filtering with multiple parameters
     let filtered = app
         .list_users_page(&owner_token, &[("name", "user_1"), ("limit", "15")])
         .await

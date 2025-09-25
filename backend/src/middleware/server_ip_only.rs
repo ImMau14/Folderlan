@@ -1,3 +1,4 @@
+// Middleware that restricts access to localhost only
 use actix_web::{
     Error,
     body::EitherBody,
@@ -11,8 +12,10 @@ use std::{
 
 use crate::models::responses::ApiResponse;
 
+// Middleware factory struct
 pub struct LocalOnly;
 
+// Transform implementation for converting service into middleware
 impl<S, B> Transform<S, ServiceRequest> for LocalOnly
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
@@ -25,15 +28,18 @@ where
     type Transform = LocalOnlyMiddleware<S>;
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
+    // Creates new middleware instance
     fn new_transform(&self, service: S) -> Self::Future {
         ready(Ok(LocalOnlyMiddleware { service }))
     }
 }
 
+// Middleware service struct
 pub struct LocalOnlyMiddleware<S> {
     service: S,
 }
 
+// Service implementation for the middleware
 impl<S, B> Service<ServiceRequest> for LocalOnlyMiddleware<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
@@ -46,9 +52,11 @@ where
 
     forward_ready!(service);
 
+    // Processes incoming requests and checks client IP
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let peer_opt = req.peer_addr();
 
+        // Creates forbidden response for denied requests
         fn denied_response<B>(req: ServiceRequest) -> ServiceResponse<EitherBody<B>> {
             let http_response = ApiResponse::<()>::builder()
                 .message("You can access to this endpoint only from the server")
@@ -57,21 +65,25 @@ where
             req.into_response(resp)
         }
 
+        // Checks if request comes from localhost
         if let Some(socket_addr) = peer_opt {
             let ip = socket_addr.ip();
             let allowed =
                 ip == IpAddr::V4(Ipv4Addr::LOCALHOST) || ip == IpAddr::V6(Ipv6Addr::LOCALHOST);
 
             if allowed {
+                // Proceeds with request processing for localhost
                 let fut = self.service.call(req);
                 Box::pin(async move {
                     let res = fut.await?;
                     Ok(res.map_into_left_body())
                 })
             } else {
+                // Returns forbidden response for non-localhost
                 Box::pin(async move { Ok(denied_response(req)) })
             }
         } else {
+            // Returns forbidden response if IP cannot be determined
             Box::pin(async move { Ok(denied_response(req)) })
         }
     }

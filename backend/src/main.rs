@@ -1,18 +1,19 @@
+// Main entry point for the Actix-Web server with SQLite database integration
 use actix_web::{App, HttpServer, web::Data};
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
-use tracing_subscriber::{EnvFilter, fmt, prelude::*};
-
-use backend::middleware::jwt_middleware::JwtConfig;
-use backend::middleware::simple_access_logger::SimpleAccessLogger;
-use backend::{build_cors, configure_services};
 use std::path::Path;
 use tracing_actix_web::TracingLogger;
+use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
-use backend::models::types::UploadsPath;
+use backend::{
+    build_cors, configure_services,
+    middleware::{jwt_middleware::JwtConfig, simple_access_logger::SimpleAccessLogger},
+    models::types::UploadsPath,
+};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // Tracing
+    // Initialize tracing subsystem for structured logging
     let env_filter = EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| EnvFilter::new("info,actix_server=warn,actix_web=info"));
 
@@ -25,19 +26,18 @@ async fn main() -> std::io::Result<()> {
         .init();
     tracing::info!("Starting server");
 
-    // OFF_CORS
+    // Load CORS configuration from environment
     let off_cors: bool = std::env::var("OFF_CORS")
         .ok()
         .and_then(|v| v.trim().parse().ok())
         .unwrap_or(false);
 
-    // PORT
+    // Configure server network settings
     let port: u16 = std::env::var("PORT")
         .ok()
         .and_then(|v| v.trim().parse().ok())
         .unwrap_or(8080);
 
-    // ADDRESS
     let address: String = std::env::var("ADDRESS").unwrap_or_else(|_| "0.0.0.0".to_string());
 
     tracing::info!(
@@ -47,10 +47,10 @@ async fn main() -> std::io::Result<()> {
         address
     );
 
-    // DB connect
+    // Initialize SQLite database connection
     let db_file = std::env::var("SQLITE_FILE").unwrap_or_else(|_| "db/app.db".to_string());
 
-    // Creates .db/ if not exists.
+    // Ensure database directory exists
     let db_path = Path::new(&db_file);
     if let Some(parent_dir) = db_path.parent() {
         std::fs::create_dir_all(parent_dir).expect("Failed to create database directory");
@@ -64,7 +64,7 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("Could not connect to SQLite");
 
-    // pragmas
+    // Apply database performance optimizations
     if let Err(e) = sqlx::query("PRAGMA journal_mode = WAL;")
         .execute(&pool)
         .await
@@ -78,12 +78,13 @@ async fn main() -> std::io::Result<()> {
         tracing::warn!("Could not set busy_timeout: {}", e);
     }
 
-    // SECRET_JWT
+    // Configure JWT authentication
     let secret_jwt: String = std::env::var("SECRET_JWT").unwrap_or_else(|_| "12345".to_string());
     let jwt_cfg = JwtConfig { secret: secret_jwt };
 
     tracing::info!("Server will bind to http://{}:{}", address, port);
 
+    // Configure Actix-Web application factory
     let address_for_app = address.clone();
     let app_factory = move || {
         let cors = build_cors(off_cors, &address_for_app, port);
@@ -99,6 +100,7 @@ async fn main() -> std::io::Result<()> {
             .configure(configure_services)
     };
 
+    // Start HTTP server
     HttpServer::new(app_factory)
         .bind((address.as_str(), port))?
         .run()

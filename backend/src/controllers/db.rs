@@ -1,3 +1,4 @@
+// Manages database initialization and existence checks. Restricted to local server access.
 use actix_web::{Responder, web};
 use sqlx::SqlitePool;
 
@@ -5,6 +6,7 @@ use crate::middleware::server_ip_only::LocalOnly;
 use crate::models::responses::ApiResponse;
 use crate::utils::get_array_of_sentences;
 
+// Initializes the database by executing SQL statements from the schema file.
 pub async fn init_db(pool: web::Data<SqlitePool>) -> impl Responder {
     let pool_ref: &SqlitePool = pool.get_ref();
 
@@ -30,6 +32,7 @@ pub async fn init_db(pool: web::Data<SqlitePool>) -> impl Responder {
         .ok()
 }
 
+// Checks if the database contains any user-created tables.
 pub async fn db_exists(pool: web::Data<SqlitePool>) -> impl Responder {
     let pool_ref: &SqlitePool = pool.get_ref();
 
@@ -51,6 +54,7 @@ pub async fn db_exists(pool: web::Data<SqlitePool>) -> impl Responder {
     }
 }
 
+// Configures the Actix Web service for database management routes.
 pub fn db_config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/db")
