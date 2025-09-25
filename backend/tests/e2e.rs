@@ -49,6 +49,27 @@ async fn test_full_api_workflow() {
         .await;
     assert!(!owner_token.is_empty(), "Owner token should not be empty");
 
+    // Phase 2.1: Test owner password change functionality
+    let change_owner_resp = app
+        .change_owner_password("new_owner_password123")
+        .await
+        .expect("Owner password change failed");
+    assert!(
+        change_owner_resp.status().is_success(),
+        "Owner password change should succeed. Status: {}",
+        change_owner_resp.status()
+    );
+
+    // Verify owner can login with new password
+    let new_owner_token = app
+        .login_and_get_token("test_owner", "new_owner_password123")
+        .await;
+    assert!(
+        !new_owner_token.is_empty(),
+        "New owner token should not be empty"
+    );
+    let owner_token = new_owner_token; // Use new token for subsequent operations
+
     // Create visitor with full permissions
     let visitor_opts = VisitorOptions {
         can_upload: true,
@@ -72,6 +93,27 @@ async fn test_full_api_workflow() {
         !visitor_token.is_empty(),
         "Visitor token should not be empty"
     );
+
+    // Phase 2.2: Test visitor password change functionality
+    let change_visitor_resp = app
+        .change_visitor_password(&owner_token, "test_visitor", "new_visitor_password123")
+        .await
+        .expect("Visitor password change failed");
+    assert!(
+        change_visitor_resp.status().is_success(),
+        "Visitor password change should succeed. Status: {}",
+        change_visitor_resp.status()
+    );
+
+    // Verify visitor can login with new password
+    let new_visitor_token = app
+        .login_and_get_token("test_visitor", "new_visitor_password123")
+        .await;
+    assert!(
+        !new_visitor_token.is_empty(),
+        "New visitor token should not be empty"
+    );
+    let visitor_token = new_visitor_token; // Use new token for subsequent operations
 
     // Create restricted visitor with upload limits
     let limited_visitor_opts = VisitorOptions {
@@ -405,7 +447,65 @@ async fn test_error_cases_and_security() {
         .expect("request failed");
     assert!(excess_limit_resp.status().is_success());
 
-    // Test 4: Insufficient permission testing for upload restrictions
+    // Test 4: Password change security testing
+    // Test 4.1: Visitor attempting to change another visitor's password without owner token (should fail)
+    app.create_visitor_via_api_as_owner(
+        &owner_token,
+        "another_visitor",
+        "another_pass",
+        VisitorOptions::default(),
+    )
+    .await;
+
+    let unauthorized_visitor_change_resp = app
+        .change_visitor_password(&visitor_token, "another_visitor", "hacked_password")
+        .await;
+
+    // This should fail because visitors cannot change other users' passwords
+    assert!(
+        unauthorized_visitor_change_resp.is_err()
+            || !unauthorized_visitor_change_resp
+                .as_ref()
+                .unwrap()
+                .status()
+                .is_success(),
+        "Visitors should not be able to change other users' passwords"
+    );
+
+    // Test 4.2: Owner changing non-existent visitor password (should fail)
+    let non_existent_visitor_resp = app
+        .change_visitor_password(&owner_token, "non_existent_visitor", "new_password")
+        .await;
+
+    assert!(
+        non_existent_visitor_resp.is_err()
+            || !non_existent_visitor_resp
+                .as_ref()
+                .unwrap()
+                .status()
+                .is_success(),
+        "Changing password for non-existent user should fail"
+    );
+
+    // Test 4.3: Valid owner changing visitor password (should succeed)
+    let valid_visitor_change_resp = app
+        .change_visitor_password(&owner_token, "security_visitor", "new_secure_password123")
+        .await
+        .expect("Valid owner password change should not fail");
+
+    assert!(
+        valid_visitor_change_resp.status().is_success(),
+        "Owner should be able to change visitor passwords. Status: {}",
+        valid_visitor_change_resp.status()
+    );
+
+    // Verify the password change took effect
+    let new_visitor_token = app
+        .login_and_get_token("security_visitor", "new_secure_password123")
+        .await;
+    assert!(!new_visitor_token.is_empty(), "New password should work");
+
+    // Test 5: Insufficient permission testing for upload restrictions
     app.create_visitor_via_api_as_owner(
         &owner_token,
         "no_upload_user",
@@ -466,6 +566,28 @@ async fn test_pagination_and_filtering() {
         app.create_visitor_via_api_as_owner(&owner_token, &username, "password123", opts)
             .await;
     }
+
+    // Test password change functionality in pagination context
+    // Change password for a specific user and verify they can still be found in paginated results
+    let target_username = "user_05";
+    let change_resp = app
+        .change_visitor_password(&owner_token, target_username, "new_pagination_password")
+        .await
+        .expect("Password change during pagination test failed");
+
+    assert!(
+        change_resp.status().is_success(),
+        "Password change should work during pagination testing"
+    );
+
+    // Verify the user can login with new password
+    let new_token = app
+        .login_and_get_token(target_username, "new_pagination_password")
+        .await;
+    assert!(
+        !new_token.is_empty(),
+        "New password should work after pagination setup"
+    );
 
     // Test 1: Basic pagination functionality with limit and offset
     let page1 = app
