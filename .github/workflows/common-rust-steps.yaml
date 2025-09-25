@@ -18,7 +18,7 @@ jobs:
     - name: Install Rust
       uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
-        working-directory: ./backend
+        components: clippy, rustfmt
 
     - name: Cache dependencies
       uses: actions/cache@v3
