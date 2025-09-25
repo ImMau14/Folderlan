@@ -1,3 +1,4 @@
+// Handles audit log retrieval with filtering and pagination.
 use actix_web::{Responder, web};
 use actix_web_httpauth::middleware::HttpAuthentication;
 use serde::{Deserialize, Serialize};
@@ -6,23 +7,20 @@ use sqlx::{FromRow, QueryBuilder, SqlitePool};
 use crate::middleware::{jwt_middleware::jwt_validator_adapter, role_middleware::RoleAuth};
 use crate::models::responses::ApiResponse;
 
-// Query params accepted: start, end, user_id, file_id, event_type, success, limit, offset
+// Defines query parameters for filtering audit logs.
 #[derive(Deserialize)]
 pub struct AuditLogQuery {
-    // "2025-09-01 00:00:00" or "2025-09-01T00:00:00"
-    pub start: Option<String>,
+    pub start: Option<String>, // "2025-09-01 00:00:00" or "2025-09-01T00:00:00"
     pub end: Option<String>,
-
     pub user_id: Option<i64>,
     pub file_id: Option<i64>,
     pub event_type: Option<String>,
     pub success: Option<bool>,
-
-    // Oagination
-    pub limit: Option<u32>,
-    pub offset: Option<u32>,
+    pub limit: Option<u32>,  // Pagination limit (max 1000)
+    pub offset: Option<u32>, // Pagination offset
 }
 
+// Represents a single audit log entry.
 #[derive(Serialize, FromRow)]
 pub struct AuditLogRow {
     pub id: i64,
@@ -37,6 +35,7 @@ pub struct AuditLogRow {
     pub success: bool,
 }
 
+// Retrieves audit logs with optional filtering and pagination.
 pub async fn list_audit_logs(
     pool: web::Data<SqlitePool>,
     query: web::Query<AuditLogQuery>,
@@ -63,7 +62,7 @@ pub async fn list_audit_logs(
     ",
     );
 
-    // Filters
+    // Apply filters based on query parameters
     if let Some(ref start) = query.start {
         qb.push(" AND a.timestamp >= ").push_bind(start);
     }
@@ -83,7 +82,7 @@ pub async fn list_audit_logs(
         qb.push(" AND a.success = ").push_bind(s);
     }
 
-    // Order and pagination
+    // Apply sorting and pagination
     qb.push(" ORDER BY a.timestamp DESC");
 
     let limit = query.limit.unwrap_or(100u32).min(1000);
@@ -102,6 +101,7 @@ pub async fn list_audit_logs(
     }
 }
 
+// Configures the audit log API endpoints.
 pub fn audit_config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/audit")

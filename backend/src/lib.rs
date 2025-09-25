@@ -1,3 +1,4 @@
+// Main application module and CORS configuration for the Actix Web server.
 pub mod controllers;
 pub mod middleware;
 pub mod models;
@@ -6,7 +7,7 @@ pub mod utils;
 use actix_cors::Cors;
 use actix_web::web;
 
-/// Register routes and sub-scopes for the API.
+/// Configures API routes and sub-scopes
 pub fn configure_services(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
@@ -18,16 +19,16 @@ pub fn configure_services(cfg: &mut web::ServiceConfig) {
     );
 }
 
-/// Builds CORS policy
+/// Builds CORS policy with configurable restrictions
 pub fn build_cors(off_cors: bool, address: &str, port: u16) -> Cors {
     if off_cors {
-        Cors::permissive()
+        Cors::permissive() // Allows all origins when CORS is disabled
     } else {
         let origin = format!("http://{address}:{port}");
         Cors::default()
-            .allowed_origin(origin.as_str())
-            .allowed_methods(vec!["GET", "POST"])
-            .allowed_header(actix_web::http::header::CONTENT_TYPE)
-            .max_age(3600)
+            .allowed_origin(origin.as_str()) // Restricts to specific origin
+            .allowed_methods(vec!["GET", "POST"]) // Permits only GET and POST methods
+            .allowed_header(actix_web::http::header::CONTENT_TYPE) // Allows content-type header
+            .max_age(3600) // Sets preflight cache timeout
     }
 }

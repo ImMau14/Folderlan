@@ -1,3 +1,4 @@
+// Handles file management operations including upload, download, deletion, and permission management.
 use actix_files::NamedFile;
 use actix_multipart::Multipart;
 use actix_web::{HttpMessage, HttpRequest, Responder, http::header, web};
@@ -6,26 +7,23 @@ use futures_util::TryStreamExt as _;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool};
-use std::collections::HashMap;
-use std::io;
-use std::sync::Arc;
-use std::sync::Mutex;
+use std::{collections::HashMap, io, sync::Arc, sync::Mutex};
 use tokio::sync::Mutex as TokioMutex;
 
-use crate::middleware::jwt_middleware::jwt_validator_adapter;
-use crate::middleware::perms_middleware::{PermsAuth, UserPermissions};
+use crate::middleware::{
+    jwt_middleware::jwt_validator_adapter,
+    perms_middleware::{PermsAuth, UserPermissions},
+};
 use crate::models::{
     responses::ApiResponse,
     types::{ChunkMeta, UploadsPath},
 };
-
-use crate::utils::storage;
 use crate::utils::{
     MinLevel, RegisterFilePayload, check_file_permission, get_user_id, is_owner_or_uploader,
-    register_file,
+    register_file, storage,
 };
 
-// Query params (extractor)
+// Query parameters for file listing with filtering capabilities.
 #[derive(Deserialize)]
 pub struct FileQuery {
     name: Option<String>,
@@ -37,6 +35,7 @@ pub struct FileQuery {
     offset: Option<u32>,
 }
 
+// Paginated response structure for file listings.
 #[derive(serde::Serialize)]
 pub struct FilesPage<T> {
     items: Vec<T>,
@@ -45,6 +44,7 @@ pub struct FilesPage<T> {
     offset: u32,
 }
 
+// Database row structure for files with additional metadata.
 #[derive(sqlx::FromRow, serde::Serialize)]
 pub struct FileRowWithTotal {
     id: i64,
@@ -58,12 +58,14 @@ pub struct FileRowWithTotal {
     total_count: i64,
 }
 
+// Payload for granting or updating file permissions.
 #[derive(Deserialize)]
 pub struct PermPayload {
     user_id: i64,
-    access_level: String, // "viewer" | "collaborator"
+    access_level: String,
 }
 
+// Database row structure for file permissions.
 #[derive(sqlx::FromRow, Serialize)]
 pub struct FilePermRow {
     user_id: i64,
@@ -73,10 +75,11 @@ pub struct FilePermRow {
     granted_by: Option<i64>,
 }
 
-// Global map for per-file locks
+// Global synchronization mechanism for per-file upload operations.
 static FILE_LOCKS: Lazy<Mutex<HashMap<String, Arc<TokioMutex<()>>>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
+// Handles chunked file upload with metadata validation and storage.
 pub async fn upload_file(
     mut payload: Multipart,
     req: HttpRequest,
@@ -266,6 +269,7 @@ pub async fn upload_file(
     }
 }
 
+// Retrieves paginated file list with optional filtering based on user permissions.
 pub async fn get_files(
     pool: web::Data<SqlitePool>,
     q: web::Query<FileQuery>,
@@ -354,6 +358,7 @@ pub async fn get_files(
         .ok()
 }
 
+// Marks file as deleted in database and removes physical file from storage.
 pub async fn delete_file(
     path: web::Path<u64>,
     pool: web::Data<SqlitePool>,
@@ -414,6 +419,7 @@ pub async fn delete_file(
         .ok()
 }
 
+// Streams file download with proper Content-Disposition headers.
 pub async fn download_file_named(
     path: web::Path<u64>,
     pool: web::Data<SqlitePool>,
@@ -464,6 +470,7 @@ pub async fn download_file_named(
     }
 }
 
+// Grants or updates user permissions for specific file access.
 pub async fn grant_or_update_permission(
     path: web::Path<u64>,
     payload: web::Json<PermPayload>,
@@ -589,6 +596,7 @@ pub async fn grant_or_update_permission(
         .ok()
 }
 
+// Revokes user permissions for specific file access.
 pub async fn revoke_permission(
     path: web::Path<(u64, i64)>, // (file_id, user_id)
     pool: web::Data<SqlitePool>,
@@ -663,6 +671,7 @@ pub async fn revoke_permission(
     }
 }
 
+// Lists all permissions granted for a specific file.
 pub async fn list_permissions(
     path: web::Path<u64>,
     pool: web::Data<SqlitePool>,
@@ -718,6 +727,7 @@ pub async fn list_permissions(
         .ok()
 }
 
+// Configures file management routes with authentication and permission middleware.
 pub fn files_config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/files")

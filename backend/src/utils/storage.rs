@@ -1,22 +1,24 @@
-use crate::models::types::ChunkMeta;
+// Manages file chunk operations including storage, validation, and assembly for uploads.
 use actix_multipart::Field;
 use futures_util::TryStreamExt as _;
 use mime_guess::from_path;
 use std::path::{Path, PathBuf};
-use tokio::fs::{self, File};
-use tokio::io::AsyncWriteExt;
+use tokio::{
+    fs::{self, File},
+    io::AsyncWriteExt,
+};
 
+use crate::models::types::ChunkMeta;
 use crate::utils::sanitize;
 
-/// Ensure base dir and tmp exists creating it if not exists
+/// Creates base directory and tmp subdirectory if they don't exist
 pub async fn ensure_base(base: &PathBuf) -> Result<(), std::io::Error> {
     fs::create_dir_all(&base).await?;
     fs::create_dir_all(base.join("tmp")).await?;
     Ok(())
 }
 
-/// Path for the part (tmp). Now validates file_id.
-/// Returns Err if file_id is invalid.
+/// Generates temporary path for chunk part with file_id validation
 pub fn tmp_part_path(base: &Path, file_id: &str, index: u64) -> Result<PathBuf, String> {
     if !sanitize::validate_file_id(file_id) {
         return Err("invalid file_id".to_string());
@@ -24,14 +26,13 @@ pub fn tmp_part_path(base: &Path, file_id: &str, index: u64) -> Result<PathBuf, 
     Ok(base.join("tmp").join(format!("{file_id}.part.{index}")))
 }
 
-/// Save an incoming multipart `Field` (the chunk) to disk as a part file.
-/// Also verifies chunk size.
+/// Saves multipart field chunk to temporary part file with size validation
 pub async fn save_chunk_to(
     base: &Path,
     meta: &ChunkMeta,
     mut field: Field,
 ) -> Result<PathBuf, String> {
-    // validate file_id
+    // Validate file_id before processing
     if !sanitize::validate_file_id(&meta.file_id) {
         return Err("invalid file_id".into());
     }
@@ -41,16 +42,14 @@ pub async fn save_chunk_to(
         .await
         .map_err(|e| format!("cannot create chunk file: {e}"))?;
 
-    // Use u64 for accumulation to match meta.* types and avoid usize issues on 32-bit targets
     let mut total_bytes: u64 = 0u64;
 
-    // Read stream safely, performing best-effort cleanup in error branches
+    // Stream chunks to disk with overflow protection
     loop {
         match field.try_next().await {
             Ok(Some(chunk)) => {
                 let chunk_len = chunk.len() as u64;
 
-                // protect against overflow when accumulating
                 if chunk_len > u64::MAX - total_bytes {
                     let _ = fs::remove_file(&part).await;
                     return Err("overflow while accumulating chunk bytes".to_string());
@@ -62,7 +61,7 @@ pub async fn save_chunk_to(
                     return Err(format!("failed writing chunk to disk: {e}"));
                 }
             }
-            Ok(None) => break, // stream finished
+            Ok(None) => break,
             Err(e) => {
                 let _ = fs::remove_file(&part).await;
                 return Err(format!("stream error: {e}"));
@@ -75,8 +74,7 @@ pub async fn save_chunk_to(
         return Err(format!("failed syncing chunk: {e}"));
     }
 
-    // Compute expected chunk size safely:
-    // start = chunk_index * chunk_size  (checked)
+    // Calculate expected chunk size with overflow checks
     let start = match meta.chunk_index.checked_mul(meta.chunk_size) {
         Some(s) => s,
         None => {
@@ -88,7 +86,6 @@ pub async fn save_chunk_to(
         }
     };
 
-    // If start is beyond total_size, the index is invalid
     if start >= meta.total_size {
         let _ = fs::remove_file(&part).await;
         return Err(format!(
@@ -97,13 +94,11 @@ pub async fn save_chunk_to(
         ));
     }
 
-    // expected chunk size is min(chunk_size, remaining_bytes)
     let remaining = meta.total_size - start;
     let chunk_size: u64 = std::cmp::min(remaining, meta.chunk_size);
 
-    // Verify chunk size (compare u64 to u64)
+    // Verify received chunk size matches expected
     if total_bytes != chunk_size {
-        // Clean up the chunk file if size doesn't match
         let _ = fs::remove_file(&part).await;
         return Err(format!(
             "chunk size mismatch: expected {chunk_size}, got {total_bytes}"
@@ -113,9 +108,8 @@ pub async fn save_chunk_to(
     Ok(part)
 }
 
-/// Check async whether all parts exist (0 .. total_chunks-1)
+/// Verifies all chunks for a file are present in temporary storage
 pub async fn all_parts_present(base: &Path, meta: &ChunkMeta) -> bool {
-    // quick validate
     if !sanitize::validate_file_id(&meta.file_id) {
         return false;
     }
@@ -133,18 +127,16 @@ pub async fn all_parts_present(base: &Path, meta: &ChunkMeta) -> bool {
     true
 }
 
-/// Assemble all parts in order into the final file,
-/// returning (path_relative_to_base, sanitized_name, size_in_bytes, mime_type).
+/// Combines all chunks into final file and returns file metadata
 pub async fn assemble_file(
     base: &Path,
     meta: &ChunkMeta,
 ) -> Result<(PathBuf, String, u64, String), String> {
-    // validate file_id
     if !sanitize::validate_file_id(&meta.file_id) {
         return Err("invalid file_id".into());
     }
 
-    // Generate a unique sanitized filename and the relative path that will be used on disk
+    // Generate unique sanitized filename
     let (sanitized_name, rel_path) =
         sanitize::generate_unique_sanitized_filename(base, &meta.filename)
             .await
@@ -152,17 +144,16 @@ pub async fn assemble_file(
 
     let final_path = base.join(&rel_path);
 
-    // Optional double-check that final_path remains within base (requires parents exist)
+    // Security check to prevent path traversal
     if let Err(e) = sanitize::ensure_path_within_base(base, final_path.as_path()).await {
         return Err(format!("security check failed: {e}"));
     }
 
-    // create destination file (will create/overwrite only this unique name)
     let mut dst = File::create(&final_path)
         .await
         .map_err(|e| format!("cannot create final file: {e}"))?;
 
-    // copy each part into dst
+    // Concatenate all chunks into final file
     for i in 0..meta.total_chunks {
         let part = tmp_part_path(base, &meta.file_id, i)
             .map_err(|e| format!("invalid file_id when reading part {i}: {e}"))?;
@@ -173,7 +164,6 @@ pub async fn assemble_file(
             .await
             .map_err(|e| format!("failed copying part {i}: {e}"))?;
 
-        // remove the part after copy (best-effort)
         let _ = fs::remove_file(&part).await;
     }
 
@@ -191,13 +181,11 @@ pub async fn assemble_file(
         .essence_str()
         .to_string();
 
-    // rel_path already is relative to base (generated by generate_unique_sanitized_filename)
     Ok((rel_path, sanitized_name, size, mime))
 }
 
-/// Clean up temporary files for a given file_id
+/// Removes temporary chunk files for a specific file_id
 pub async fn cleanup_tmp_files(base: &Path, file_id: &str) {
-    // validate file_id
     if !sanitize::validate_file_id(file_id) {
         return;
     }

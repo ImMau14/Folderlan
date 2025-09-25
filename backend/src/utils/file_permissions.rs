@@ -1,12 +1,15 @@
+// Checks user permissions for file access based on ownership, public status, and explicit permissions.
 use crate::models::responses::ApiResponse;
 use actix_web::HttpResponse;
 use sqlx::SqlitePool;
 
+// Defines minimum access level required for operation
 pub enum MinLevel {
     Viewer,
     Collaborator,
 }
 
+// Converts access level string to numeric value for comparison
 fn level_value(level: &str) -> i32 {
     match level {
         "collaborator" => 2,
@@ -15,6 +18,7 @@ fn level_value(level: &str) -> i32 {
     }
 }
 
+// Verifies file permissions and returns file path/name if authorized
 pub async fn check_file_permission(
     pool: &SqlitePool,
     current_user_id: u64,
@@ -32,6 +36,7 @@ pub async fn check_file_permission(
         access_level: Option<String>,                // From FilePermissions
     }
 
+    // Query file and user permission data
     let rec_opt = sqlx::query_as::<_, PermCheckRow>(
         r#"
         SELECT
@@ -47,8 +52,8 @@ pub async fn check_file_permission(
         WHERE f.id = ? AND f.is_deleted = 0
         "#,
     )
-    .bind(current_user_id as i64) // For subquery select
-    .bind(current_user_id as i64) // To get requester's role/can_delete flag
+    .bind(current_user_id as i64)
+    .bind(current_user_id as i64)
     .bind(file_id as i64)
     .fetch_optional(pool)
     .await
@@ -58,6 +63,7 @@ pub async fn check_file_permission(
             .internal()
     })?;
 
+    // Verify file exists
     let row = match rec_opt {
         Some(r) => r,
         None => {
@@ -67,23 +73,21 @@ pub async fn check_file_permission(
         }
     };
 
-    // Owner shortcut
+    // Owner has full access
     if row.requester_role.as_deref() == Some("owner") {
         return Ok((row.internal_path, row.name));
     }
 
-    // If min_level == Viewer, allow if file is public
+    // Public files are accessible to viewers
     if matches!(min_level, MinLevel::Viewer) && row.is_public == 1 {
         return Ok((row.internal_path, row.name));
     }
 
-    // If uploader and special rule for delete: the original delete endpoint allowed
-    // the uploader to delete their own files only if u.can_delete_own_files = 1.
-    // Check that here only when min_level == Collaborator and current user is uploader.
+    // Handle uploader permissions
     if let Some(uploaded_by) = row.uploaded_by
         && uploaded_by as u64 == current_user_id
     {
-        // If the required operation is delete (Collaborator) we must ensure the user can delete own files.
+        // Uploaders need special permission for delete operations
         if matches!(min_level, MinLevel::Collaborator) {
             if row.requester_can_delete_own_files == Some(1) {
                 return Ok((row.internal_path, row.name));
@@ -93,12 +97,12 @@ pub async fn check_file_permission(
                     .forbidden());
             }
         } else {
-            // For viewer-level operations, uploader can view their own files
+            // Uploaders can always view their own files
             return Ok((row.internal_path, row.name));
         }
     }
 
-    // Check FilePermissions access_level
+    // Check explicit permissions from FilePermissions table
     let required_value = match min_level {
         MinLevel::Viewer => 1,
         MinLevel::Collaborator => 2,
@@ -110,7 +114,7 @@ pub async fn check_file_permission(
         return Ok((row.internal_path, row.name));
     }
 
-    // Otherwise insufficient
+    // Default deny
     Err(ApiResponse::<()>::builder()
         .message("File not found or insufficient permissions")
         .forbidden())

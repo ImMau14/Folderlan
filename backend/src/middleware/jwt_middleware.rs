@@ -1,3 +1,4 @@
+// Handles JWT authentication middleware and token validation.
 use actix_web::error::InternalError;
 use actix_web::{Error, HttpMessage, dev::ServiceRequest, web::Data};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
@@ -6,11 +7,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::models::responses::ApiResponse;
 
+// Configuration for JWT token validation.
 #[derive(Clone, Debug)]
 pub struct JwtConfig {
     pub secret: String,
 }
 
+// Claims extracted from JWT tokens.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Claims {
     pub sub: String,
@@ -19,6 +22,7 @@ pub struct Claims {
     pub exp: usize,
 }
 
+// Authenticated user information extracted from JWT.
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct AuthUser {
@@ -28,6 +32,7 @@ pub struct AuthUser {
     pub jwt_claims: Claims,
 }
 
+// Validates JWT tokens from Bearer authentication headers.
 pub async fn jwt_validator_adapter(
     req: ServiceRequest,
     credentials: BearerAuth,

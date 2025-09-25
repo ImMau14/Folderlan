@@ -1,3 +1,4 @@
+// Handles user registration with different roles and permissions
 use actix_web::HttpResponse;
 use serde::Deserialize;
 use sqlx::SqlitePool;
@@ -5,6 +6,7 @@ use sqlx::SqlitePool;
 use crate::models::responses::ApiResponse;
 use crate::utils::hash_password;
 
+// Visitor registration payload with specific permissions
 #[derive(Deserialize, Debug)]
 pub struct RegisterVisitorPayload {
     pub username: String,
@@ -15,12 +17,14 @@ pub struct RegisterVisitorPayload {
     pub upload_limit: u64,
 }
 
+// Owner registration payload with basic credentials
 #[derive(Deserialize, Debug)]
 pub struct RegisterOwnerPayload {
     pub username: String,
     pub password: String,
 }
 
+// Unified payload type handling both visitor and owner registration
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
 pub enum RegisterPayload {
@@ -28,7 +32,9 @@ pub enum RegisterPayload {
     Owner(RegisterOwnerPayload),
 }
 
+// Registers a new user in the database with role-specific permissions
 pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResponse {
+    // Internal payload structure for database insertion
     struct Payload {
         username: String,
         password_hash: String,
@@ -39,6 +45,7 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
         upload_limit: u64,
     }
 
+    // Process payload based on user type (owner/visitor)
     let user: Payload = match user {
         RegisterPayload::Owner(item) => Payload {
             username: item.username,
@@ -51,9 +58,9 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
                 }
             },
             role: "owner".to_string(),
-            can_upload: true,
-            can_delete_own_files: true,
-            has_upload_limits: false,
+            can_upload: true,           // Owners have full upload privileges
+            can_delete_own_files: true, // Owners can delete their files
+            has_upload_limits: false,   // Owners have no upload limits
             upload_limit: 0,
         },
         RegisterPayload::Visitor(item) => Payload {
@@ -67,13 +74,14 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
                 }
             },
             role: "visitor".to_string(),
-            can_upload: item.can_upload,
-            can_delete_own_files: item.can_delete_own_files,
-            has_upload_limits: item.has_upload_limits,
-            upload_limit: item.upload_limit,
+            can_upload: item.can_upload, // Configurable upload permission
+            can_delete_own_files: item.can_delete_own_files, // Configurable delete permission
+            has_upload_limits: item.has_upload_limits, // Configurable limits flag
+            upload_limit: item.upload_limit, // Custom upload limit
         },
     };
 
+    // Execute database insertion with user data
     match sqlx::query(
         "
         INSERT INTO Users (
@@ -93,10 +101,11 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
     .bind(user.can_upload)
     .bind(user.can_delete_own_files)
     .bind(user.has_upload_limits)
-    .bind(user.upload_limit as i64)
+    .bind(user.upload_limit as i64) // Convert u64 to i64 for SQLite compatibility
     .execute(pool)
     .await
     {
+        // Handle insertion results
         Ok(result) if result.rows_affected() == 1 => ApiResponse::<()>::builder()
             .message("User created successfully")
             .created(),

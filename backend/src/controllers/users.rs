@@ -1,3 +1,4 @@
+// Manages user-related endpoints including listing, updating permissions, toggling status, and file access
 use actix_web::{HttpResponse, Responder, web};
 use actix_web_httpauth::middleware::HttpAuthentication;
 use serde::{Deserialize, Serialize};
@@ -6,11 +7,11 @@ use sqlx::{Row, SqlitePool};
 use crate::middleware::{jwt_middleware::jwt_validator_adapter, role_middleware::RoleAuth};
 use crate::models::responses::ApiResponse;
 
-/// Query params
+// Query parameters for user list filtering and pagination.
 #[derive(Deserialize)]
 pub struct UserQuery {
     pub name: Option<String>,
-    /// "can_upload" | "can_upload:false" | "can_upload,has_upload_limits"
+    // Permission filter: "can_upload" | "can_upload:false" | "can_upload,has_upload_limits"
     pub perm: Option<String>,
     pub is_active: Option<bool>,
     pub include_deleted: Option<bool>,
@@ -18,6 +19,7 @@ pub struct UserQuery {
     pub offset: Option<u32>,
 }
 
+// User record with total count for pagination.
 #[derive(Serialize, sqlx::FromRow)]
 pub struct UserRowWithTotal {
     pub id: i64,
@@ -33,6 +35,7 @@ pub struct UserRowWithTotal {
     pub total_count: i64,
 }
 
+// Paginated user list response.
 #[derive(Serialize)]
 pub struct UsersPage {
     pub items: Vec<UserRowWithTotal>,
@@ -41,6 +44,7 @@ pub struct UsersPage {
     pub offset: u32,
 }
 
+// User permission update payload.
 #[derive(Deserialize)]
 pub struct UpdateUserPerms {
     pub can_upload: Option<bool>,
@@ -49,6 +53,7 @@ pub struct UpdateUserPerms {
     pub upload_limit: Option<i64>,
 }
 
+// File accessible by a user with access level.
 #[derive(Serialize, sqlx::FromRow)]
 pub struct AccessibleFile {
     pub id: i64,
@@ -60,6 +65,7 @@ pub struct AccessibleFile {
     pub access_type: String, // "owner", "viewer", "collaborator"
 }
 
+// Parses permission filter string into individual permission flags.
 fn parse_perm_flags(perm: &Option<String>) -> (Option<bool>, Option<bool>, Option<bool>) {
     if perm.is_none() {
         return (None, None, None);
@@ -98,6 +104,7 @@ fn parse_perm_flags(perm: &Option<String>) -> (Option<bool>, Option<bool>, Optio
     (cu, cd, hl)
 }
 
+// Soft-deletes a user by setting is_deleted flag. Prevents owner deletion.
 pub async fn delete_user(pool: web::Data<SqlitePool>, path: web::Path<u64>) -> HttpResponse {
     let id = path.into_inner();
 
@@ -173,6 +180,7 @@ pub async fn delete_user(pool: web::Data<SqlitePool>, path: web::Path<u64>) -> H
     }
 }
 
+// Retrieves paginated and filtered user list.
 pub async fn get_users(pool: web::Data<SqlitePool>, q: web::Query<UserQuery>) -> impl Responder {
     let limit_u32 = q.limit.unwrap_or(25).min(100);
     let offset_u32 = q.offset.unwrap_or(0);
@@ -255,13 +263,13 @@ pub async fn get_users(pool: web::Data<SqlitePool>, q: web::Query<UserQuery>) ->
         .ok()
 }
 
+// Toggles user active status.
 pub async fn toggle_user_active(
     pool: web::Data<SqlitePool>,
     path: web::Path<u64>,
 ) -> impl Responder {
     let id = path.into_inner();
 
-    // Check if user exists and is not deleted
     let user_exists =
         match sqlx::query_scalar::<_, i64>("SELECT 1 FROM Users WHERE id = ? AND is_deleted = 0")
             .bind(id as i64)
@@ -283,7 +291,6 @@ pub async fn toggle_user_active(
             .not_found();
     }
 
-    // Toggle is_active status
     match sqlx::query(
         "
         UPDATE Users 
@@ -313,6 +320,7 @@ pub async fn toggle_user_active(
     }
 }
 
+// Updates user permissions.
 pub async fn update_user_perms(
     pool: web::Data<SqlitePool>,
     path: web::Path<u64>,
@@ -321,7 +329,6 @@ pub async fn update_user_perms(
     let id = path.into_inner();
     let payload = payload.into_inner();
 
-    // Check if user exists and is not deleted
     let user_exists =
         match sqlx::query_scalar::<_, i64>("SELECT 1 FROM Users WHERE id = ? AND is_deleted = 0")
             .bind(id as i64)
@@ -387,6 +394,7 @@ pub async fn update_user_perms(
     }
 }
 
+// Retrieves all files accessible by a user including ownership and permissions.
 pub async fn get_accessible_files(
     pool: web::Data<SqlitePool>,
     user_id: web::Path<u64>,
@@ -434,6 +442,7 @@ pub async fn get_accessible_files(
     }
 }
 
+// Configures user management routes with JWT authentication and role-based authorization.
 pub fn users_config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/user")
