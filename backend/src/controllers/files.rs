@@ -213,19 +213,32 @@ pub async fn upload_file(
                             match storage::assemble_file(&base, meta_ref).await {
                                 Ok((final_path, file_name, file_size, mime_type)) => {
                                     storage::cleanup_tmp_files(&base, &meta_ref.file_id).await;
-                                    return register_file(
-                                        pool.get_ref(),
-                                        RegisterFilePayload {
-                                            name: file_name,
-                                            internal_path: final_path
-                                                .to_string_lossy()
-                                                .into_owned(),
-                                            size_bytes: file_size,
-                                            mime_type,
-                                            uploaded_by: user_id,
-                                        },
-                                    )
-                                    .await;
+
+                                    // Compute internal_path string the same way the rest of code expects.
+                                    // Keep behavior consistent with previous code: pass final_path.to_string_lossy()
+                                    let internal_path_str =
+                                        final_path.to_string_lossy().into_owned();
+
+                                    // Build payload to register file in DB.
+                                    let payload = RegisterFilePayload {
+                                        name: file_name.clone(),
+                                        internal_path: internal_path_str.clone(),
+                                        size_bytes: file_size,
+                                        mime_type,
+                                        uploaded_by: user_id, // Type verified: i64
+                                    };
+
+                                    // Call register_file and hold result so we can mark handled for watcher.
+                                    let register_resp =
+                                        register_file(pool.get_ref(), payload).await;
+
+                                    // Mark the internal path as handled so watcher doesn't process it again.
+                                    // This function lives in the watcher module added to the crate.
+                                    // It expects the same format of internal_path that we passed to register_file.
+                                    crate::watcher::mark_handled_internal_path(&internal_path_str);
+
+                                    // Return registration response (successful or not).
+                                    return register_resp;
                                 }
                                 Err(e) => {
                                     storage::cleanup_tmp_files(&base, &meta_ref.file_id).await;
@@ -433,6 +446,27 @@ pub async fn download_file_named(
         Err(e) => return e,
     };
 
+    // Ensure file exists and not deleted
+    let file_exists =
+        match sqlx::query_scalar::<_, i64>("SELECT id FROM Files WHERE id = ? AND is_deleted = 0")
+            .bind(file_id as i32)
+            .fetch_optional(pool.get_ref())
+            .await
+        {
+            Ok(opt) => opt.is_some(),
+            Err(e) => {
+                return ApiResponse::<()>::builder()
+                    .message(format!("DB error: {e}"))
+                    .internal();
+            }
+        };
+
+    if !file_exists {
+        return ApiResponse::<()>::builder()
+            .message("File not found")
+            .not_found();
+    }
+
     let (internal_path, name_opt) =
         match check_file_permission(pool.get_ref(), user_id, file_id, MinLevel::Viewer).await {
             Ok(pair) => pair,
@@ -584,13 +618,13 @@ pub async fn grant_or_update_permission(
     {
         Ok(r) => r,
         Err(e) => {
-            return ApiResponse::<()>::builder()
+            return ApiResponse::<FilePermRow>::builder()
                 .message(format!("DB error fetching permission: {e}"))
                 .internal();
         }
     };
 
-    ApiResponse::<FilePermRow>::builder()
+    ApiResponse::builder()
         .message("Permission granted/updated")
         .data(row)
         .ok()
