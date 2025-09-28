@@ -1,4 +1,11 @@
 // Test application for backend API integration tests. Manages server lifecycle, database, file storage, and API client.
+use backend::{
+    build_cors, configure_services,
+    middleware::jwt_middleware::JwtConfig,
+    models::types::UploadsPath,
+    utils::db::{RegisterPayload, register_user, register_user::RegisterOwnerPayload},
+    watcher::start_watcher,
+};
 use reqwest::{
     Response,
     multipart::{Form, Part},
@@ -132,10 +139,6 @@ impl TestApp {
             .expect("cannot create sqlite pool");
 
         // Configure and start Actix web server
-        use backend::middleware::jwt_middleware::JwtConfig;
-        use backend::models::types::UploadsPath;
-        use backend::{build_cors, configure_services};
-
         let jwt_cfg = JwtConfig {
             secret: "test_secret_for_tests".to_string(),
         };
@@ -148,9 +151,7 @@ impl TestApp {
         let uploads_dir = PathBuf::from(uploads_path_str.clone());
         let owner_user_id: Option<i64> = Some(1);
 
-        match backend::watcher::start_watcher(uploads_dir, "tmp", Some(pool.clone()), owner_user_id)
-            .await
-        {
+        match start_watcher(uploads_dir, "tmp", Some(pool.clone()), owner_user_id).await {
             Ok(_handle) => {
                 tracing::info!("Filesystem watcher started");
             }
@@ -239,8 +240,6 @@ impl TestApp {
 
     // Creates owner user directly in database
     pub async fn create_owner_direct(&self, username: &str, password: &str) {
-        use backend::utils::register_user::{RegisterOwnerPayload, RegisterPayload, register_user};
-
         let payload = RegisterPayload::Owner(RegisterOwnerPayload {
             username: username.to_string(),
             password: password.to_string(),
@@ -306,7 +305,7 @@ impl TestApp {
     // Change the owner's password (only accessible from localhost)
     pub async fn change_owner_password(&self, new_password: &str) -> Result<Response, String> {
         let payload = serde_json::json!({
-            "new_password": new_password
+            "password": new_password
         });
 
         self.api
@@ -325,8 +324,8 @@ impl TestApp {
         new_password: &str,
     ) -> Result<Response, String> {
         let payload = serde_json::json!({
-            "visitor_username": visitor_username,
-            "new_password": new_password
+            "username": visitor_username,
+            "password": new_password
         });
 
         self.api
@@ -475,7 +474,7 @@ impl TestApp {
         self.send_permission_request(
             "POST",
             token,
-            &format!("/api/files/{}/permissions", file_id),
+            &format!("/api/files/{}/perms", file_id),
             Some(&payload),
         )
         .await
@@ -487,7 +486,7 @@ impl TestApp {
         token: &str,
         file_id: i64,
     ) -> Result<Value, String> {
-        self.get_paginated_data(token, &format!("/api/files/{}/permissions", file_id), &[])
+        self.get_paginated_data(token, &format!("/api/files/{}/perms", file_id), &[])
             .await
     }
 
@@ -501,7 +500,7 @@ impl TestApp {
         self.send_permission_request(
             "DELETE",
             token,
-            &format!("/api/files/{}/permissions/{}", file_id, target_user_id),
+            &format!("/api/files/{}/perms/{}", file_id, target_user_id),
             None,
         )
         .await

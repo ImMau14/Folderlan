@@ -1,4 +1,19 @@
 // Handles file management operations including upload, download, deletion, and permission management.
+use crate::{
+    middleware::{
+        jwt_middleware::jwt_validator_adapter,
+        perms_middleware::{PermsAuth, UserPermissions},
+    },
+    models::{
+        responses::ApiResponse,
+        types::{ChunkMeta, UploadsPath},
+    },
+    utils::{
+        db::{MinLevel, RegisterFilePayload, check_file_permission, register_file},
+        files::storage,
+        helpers::{get_user_id, is_owner_or_uploader},
+    },
+};
 use actix_files::NamedFile;
 use actix_multipart::Multipart;
 use actix_web::{HttpMessage, HttpRequest, Responder, http::header, web};
@@ -9,19 +24,6 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool};
 use std::{collections::HashMap, io, sync::Arc, sync::Mutex};
 use tokio::sync::Mutex as TokioMutex;
-
-use crate::middleware::{
-    jwt_middleware::jwt_validator_adapter,
-    perms_middleware::{PermsAuth, UserPermissions},
-};
-use crate::models::{
-    responses::ApiResponse,
-    types::{ChunkMeta, UploadsPath},
-};
-use crate::utils::{
-    MinLevel, RegisterFilePayload, check_file_permission, get_user_id, is_owner_or_uploader,
-    register_file, storage,
-};
 
 // Query parameters for file listing with filtering capabilities.
 #[derive(Deserialize)]
@@ -787,13 +789,13 @@ pub fn files_config(cfg: &mut web::ServiceConfig) {
                     .route(web::get().to(download_file_named)),
             )
             .service(
-                web::resource("/{id}/permissions")
+                web::resource("/{id}/perms")
                     .wrap(HttpAuthentication::bearer(jwt_validator_adapter))
                     .route(web::post().to(grant_or_update_permission))
                     .route(web::get().to(list_permissions)),
             )
             .service(
-                web::resource("/{id}/permissions/{user_id}")
+                web::resource("/{id}/perms/{user_id}")
                     .wrap(HttpAuthentication::bearer(jwt_validator_adapter))
                     .route(web::delete().to(revoke_permission)),
             ),

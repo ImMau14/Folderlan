@@ -1,10 +1,8 @@
 // Handles user registration with different roles and permissions
+use crate::{models::responses::ApiResponse, utils::helpers::hash_password};
 use actix_web::HttpResponse;
 use serde::Deserialize;
 use sqlx::SqlitePool;
-
-use crate::models::responses::ApiResponse;
-use crate::utils::hash_password;
 
 // Visitor registration payload with specific permissions
 #[derive(Deserialize, Debug)]

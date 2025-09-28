@@ -1,11 +1,12 @@
 // Manages user-related endpoints including listing, updating permissions, toggling status, and file access
+use crate::{
+    middleware::{jwt_middleware::jwt_validator_adapter, role_middleware::RoleAuth},
+    models::responses::ApiResponse,
+};
 use actix_web::{HttpResponse, Responder, web};
 use actix_web_httpauth::middleware::HttpAuthentication;
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, SqlitePool};
-
-use crate::middleware::{jwt_middleware::jwt_validator_adapter, role_middleware::RoleAuth};
-use crate::models::responses::ApiResponse;
 
 // Query parameters for user list filtering and pagination.
 #[derive(Deserialize)]

@@ -1,4 +1,5 @@
 // Middleware for permission-based authorization.
+use crate::{middleware::jwt_middleware::AuthUser, models::responses::ApiResponse};
 use actix_service::Service;
 use actix_web::{
     Error, HttpMessage,
@@ -13,9 +14,6 @@ use std::{
     rc::Rc,
     task::{Context, Poll},
 };
-
-use crate::middleware::jwt_middleware::AuthUser;
-use crate::models::responses::ApiResponse;
 
 // User permissions structure
 #[derive(Debug, Clone)]

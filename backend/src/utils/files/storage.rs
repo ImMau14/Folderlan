@@ -1,4 +1,5 @@
 // Manages file chunk operations including storage, validation, and assembly for uploads.
+use crate::{models::types::ChunkMeta, utils::files::sanitize};
 use actix_multipart::Field;
 use futures_util::TryStreamExt as _;
 use mime_guess::from_path;
@@ -7,9 +8,6 @@ use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
 };
-
-use crate::models::types::ChunkMeta;
-use crate::utils::sanitize;
 
 /// Creates base directory and tmp subdirectory if they don't exist
 pub async fn ensure_base(base: &PathBuf) -> Result<(), std::io::Error> {
