@@ -10,13 +10,13 @@
 
 1. [Quick start](#quick-start)  
 2. [Build & run (developer steps)](#build--run-developer-steps)  
-3. [Configuration — Environment variables](#configuration--environment-variables-explanation-only)  
+3. [Configuration — Environment variables](#configuration--environment-variables)  
    - [Main server variables](#main-server-variables)  
    - [Watcher variables](#watcher-variables)  
-4. [File system watcher](#file-system-watcher-concise)  
+4. [File system watcher](#file-system-watcher)  
    - [Pipeline](#pipeline)  
    - [Guarantees & features](#guarantees--features)  
-5. [API reference](#api-reference-precise--unambiguous)  
+5. [API reference](#api-reference)  
    - [Database management](#database-management)  
    - [Authentication](#authentication)  
    - [Audit logs](#audit-logs)  
@@ -32,20 +32,20 @@
 
   ```bash
   cd backend
-  ```
+````
 
 2. Build or run:
 
-  ```bash
-  cargo build            # or cargo run
-  cargo build --release  # for optimized binary
-  ```
+```bash
+cargo build            # or cargo run
+cargo build --release  # for optimized binary
+```
 
 3. First run will:
 
-  * Create the SQLite file (default `db/app.db`);
-  * Create `uploads` directory;
-  * Require creating a single **owner** account (use local-only owner registration endpoint).
+* Create the SQLite file (default `db/app.db`);
+* Create `uploads` directory;
+* Require creating a single **owner** account (use local-only owner registration endpoint).
 
 4. Configure runtime via environment variables (see [Configuration](#configuration--environment-variables-explanation-only)).
 
@@ -55,22 +55,22 @@
 
 1. Change dir:
 
-  ```bash
-  cd backend
-  ```
+```bash
+cd backend
+```
 
 2. Debug build & run:
 
-  ```bash
-  cargo run
-  ```
+```bash
+cargo run
+```
 
 3. Release build:
 
-  ```bash
-  cargo build --release
-  ./target/release/backend # Or backend.exe on Windows
-  ```
+```bash
+cargo build --release
+./target/release/backend # Or backend.exe on Windows
+```
 
 ---
 
@@ -78,13 +78,13 @@
 
 ## Main server variables
 
-| Name          |          Type |                 Default | Purpose / Notes                                                                       |
+|      Name     |      Type     |         Default         | Purpose / Notes                                                                       |
 | :-----------: | :-----------: | :---------------------: | ------------------------------------------------------------------------------------- |
-| `OFF_CORS`    |       boolean |                 `false` | If `true`, modifies CORS builder behavior. Set to `true` for restricted environments. |
-| `PORT`        |       integer |                  `8080` | TCP port to bind server.                                                              |
-| `ADDRESS`     |        string |               `0.0.0.0` | Bind address. Use `127.0.0.1` for local-only.                                         |
-| `SQLITE_FILE` | string (path) |             `db/app.db` | SQLite DB file path. Parent dirs are created automatically.                           |
-| `SECRET_JWT`  |        string | `"12345"` (dev default) | JWT signing secret. **Change in production.**                                         |
+|   `OFF_CORS`  |    boolean    |         `false`         | If `true`, modifies CORS builder behavior. Set to `true` for restricted environments. |
+|     `PORT`    |    integer    |          `8080`         | TCP port to bind server.                                                              |
+|   `ADDRESS`   |     string    |        `0.0.0.0`        | Bind address. Use `127.0.0.1` for local-only.                                         |
+| `SQLITE_FILE` | string (path) |       `db/app.db`       | SQLite DB file path. Parent dirs are created automatically.                           |
+|  `SECRET_JWT` |     string    | `"12345"` (dev default) | JWT signing secret. **Change in production.**                                         |
 
 **Usage:** set env vars in shell, systemd, or container env. Example:
 
@@ -95,14 +95,14 @@ export SECRET_JWT="change-me"
 
 ## Watcher variables
 
-| Name                          |    Type | Typical value | Purpose                                             |
+|              Name             |   Type  | Typical value | Purpose                                             |
 | :---------------------------: | :-----: | :-----------: | --------------------------------------------------- |
-| `WATCHER_IGNORE_TTL_SECS`     | integer |          `30` | Avoid reprocessing same file for this many seconds. |
-| `WATCHER_STABILITY_CHECK_MS`  | integer |         `300` | Milliseconds between file size checks.              |
-| `WATCHER_STABILITY_REQUIRED`  | integer |           `3` | Required number of stable checks before processing. |
-| `WATCHER_LOCK_TTL_SECS`       | integer |         `300` | TTL for cleaning idle per-file locks.               |
-| `WATCHER_PRUNE_INTERVAL_SECS` | integer |          `10` | Cleanup frequency for internal structures.          |
-| `WATCHER_CHANNEL_CAPACITY`    | integer |          `64` | Internal event channel capacity.                    |
+|   `WATCHER_IGNORE_TTL_SECS`   | integer |      `30`     | Avoid reprocessing same file for this many seconds. |
+|  `WATCHER_STABILITY_CHECK_MS` | integer |     `300`     | Milliseconds between file size checks.              |
+|  `WATCHER_STABILITY_REQUIRED` | integer |      `3`      | Required number of stable checks before processing. |
+|    `WATCHER_LOCK_TTL_SECS`    | integer |     `300`     | TTL for cleaning idle per-file locks.               |
+| `WATCHER_PRUNE_INTERVAL_SECS` | integer |      `10`     | Cleanup frequency for internal structures.          |
+|   `WATCHER_CHANNEL_CAPACITY`  | integer |      `64`     | Internal event channel capacity.                    |
 
 **Note:** increase stability values for remote filesystems (NFS/SMB).
 
@@ -147,10 +147,10 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 * **Response (200)**:
 
   ```json
-  { 
-    "success": bool,
-    "message": string,
-    "exists": bool
+  {
+    "success": true,
+    "message": "Database exists",
+    "exists": true
   }
   ```
 * **Errors**: `500` when db aren't initialized.
@@ -164,8 +164,8 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 
   ```json
   {
-    "success": bool,
-    "message": string,
+    "success": true,
+    "message": "Database initialized"
   }
   ```
 * **Errors**: `500` on schema execution or file read error.
@@ -177,53 +177,61 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 ### POST `/api/auth/login`
 
 * **Access**: public
+
 * **Method**: `POST`
+
 * **Headers**: `Content-Type: application/json`
+
 * **Body (required)**:
 
   ```json
   {
-    "username": string, 
-    "password": string
+    "username": "alice",
+    "password": "s3cr3t"
   }
   ```
 
 * **Response (200)**:
 
   ```json
-  { 
-    "success": bool,
-    "message": string,
-    "token": string
+  {
+    "success": true,
+    "message": "Login successful",
+    "token": "eyJhbGciOiJIUzI1NiIs..."
   }
   ```
-  
+
 * **Notes**: token expires in 1 hour.
+
 * **Errors**: `401` invalid credentials, `500` server error.
 
 ### POST `/api/auth/register` — Register visitor
 
 * **Access**: Owner (must include `Authorization: Bearer <token>`)
+
 * **Method**: `POST`
+
 * **Headers**: `Authorization`, `Content-Type: application/json`
+
 * **Body (required)**:
 
   ```json
-  { 
-    "username": string,
-    "password": string,
-    "can_upload": bool,
-    "can_delete_own_files": bool,
-    "has_upload_limits": bool,
-    "upload_limit": int
+  {
+    "username": "bob",
+    "password": "p@ssw0rd",
+    "can_upload": true,
+    "can_delete_own_files": true,
+    "has_upload_limits": false,
+    "upload_limit": 0
   }
   ```
+
 * **Response (200)**:
 
   ```json
   {
-    "success": bool,
-    "message": string,
+    "success": true,
+    "message": "Visitor created"
   }
   ```
 
@@ -232,13 +240,15 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 ### POST `/api/auth/owner_register` — Register owner (local-only)
 
 * **Access**: Local-only
+
 * **Method**: `POST`
+
 * **Body**:
 
   ```json
-  { 
-    "username":"string, 
-    "password": string
+  {
+    "username": "owner",
+    "password": "ownerpass"
   }
   ```
 
@@ -247,20 +257,23 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 ### POST `/api/auth/owner_reset_password` — Reset owner password (local-only)
 
 * **Access**: Local-only
+
 * **Method**: `POST`
+
 * **Body**:
 
   ```json
-  { 
-    "password": string
+  {
+    "password": "new_owner_password"
   }
   ```
-* **Response**: 
+
+* **Response**:
 
   ```json
   {
-    "success": bool,
-    "message": string,
+    "success": true,
+    "message": "Password updated"
   }
   ```
 
@@ -269,23 +282,26 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 ### POST `/api/auth/visitor_reset_password` — Reset visitor password (owner only)
 
 * **Access**: Owner
+
 * **Method**: `POST`
+
 * **Headers**: `Authorization`, `Content-Type: application/json`
+
 * **Body**:
 
   ```json
-  { 
-    "username": string, 
-    "password": string
+  {
+    "username": "bob",
+    "password": "new_password"
   }
   ```
-  
-* **Response**: 
+
+* **Response**:
 
   ```json
   {
-    "success": bool,
-    "message": string,
+    "success": true,
+    "message": "Password updated"
   }
   ```
 
@@ -314,19 +330,19 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 
   ```json
   {
-    "message": string,
+    "message": "Audit entries retrieved",
     "data": [
       {
-        "id": int,
-        "timestamp": string,
-        "user_id": int,
-        "username": string,
-        "event_type": string,
-        "description": string,
-        "ip_address": string,
-        "file_id": int,
-        "file_name": string,
-        "success": bool
+        "id": 123,
+        "timestamp": "2025-09-28T12:34:56Z",
+        "user_id": 42,
+        "username": "alice",
+        "event_type": "file_upload",
+        "description": "Uploaded file report.pdf",
+        "ip_address": "192.168.0.1",
+        "file_id": 77,
+        "file_name": "report.pdf",
+        "success": true
       }
     ]
   }
@@ -341,20 +357,23 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 ### POST `/api/files/upload` — Chunked file upload
 
 * **Permission required**: `can_upload`
+
 * **Method**: `POST`
+
 * **Headers**: `Authorization`, `Content-Type: multipart/form-data`
+
 * **Multipart fields**:
 
   * `metadata` (JSON string) — **required**
 
     ```json
     {
-      "file_id": string,       // unique client-side id for this file
-      "chunk_index": int,      // zero-based integer
-      "total_chunks: int,      // integer > 0
-      "chunk_size": int,       // integer: bytes
-      "total_size": int,       // integer: bytes total
-      "filename": string       // string
+      "file_id": "abc123",
+      "chunk_index": 0,
+      "total_chunks": 5,
+      "chunk_size": 1048576,
+      "total_size": 5242880,
+      "filename": "video.mp4"
     }
     ```
 
@@ -368,9 +387,9 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 * **Response (200)**:
 
   ```json
-  { 
-    "success": bool,
-    "message": string
+  {
+    "success": true,
+    "message": "Chunk received"
   }
   ```
 
@@ -379,6 +398,7 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 ### GET `/api/files` — List files
 
 * **Method**: `GET`
+
 * **Query params**:
 
   * `name` (string, optional) — substring match
@@ -391,39 +411,41 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 * **Response (200)**:
 
   ```json
-  { 
-    "message": "Files retrieved", 
-    "data": { 
-      "items": [ 
+  {
+    "message": "Files retrieved",
+    "data": {
+      "items": [
         {
-          "id": int,
-          "name": string,
-          "size_bytes": int,
-          "internal_path:" string,
-          "mime_type": string,
-          "uploaded_by": string,
-          "is_public": bool,
-          "uploaded_at": string,
-          "total_count": int,
+          "id": 77,
+          "name": "report.pdf",
+          "size_bytes": 123456,
+          "internal_path": "uploads/2025/09/report.pdf",
+          "mime_type": "application/pdf",
+          "uploaded_by": "alice",
+          "is_public": false,
+          "uploaded_at": "2025-09-28T12:00:00Z",
+          "total_count": 1
         }
-      ], 
-      "total": int,
-      "limit": int, 
-      "offset": int 
-    } 
+      ],
+      "total": 1,
+      "limit": 25,
+      "offset": 0
+    }
   }
   ```
 
 ### DELETE `/api/files/{id}` — Delete file
 
 * **Method**: `DELETE`
+
 * **URL param**: `id` (integer)
-* **Response**: 
+
+* **Response**:
 
   ```json
   {
-    "success": bool,
-    "message": string,
+    "success": true,
+    "message": "File deleted"
   }
   ```
 
@@ -439,29 +461,31 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 ### POST `/api/files/{id}/perms` — Grant/update permission
 
 * **Method**: `POST`
+
 * **URL param**: `id` (integer)
+
 * **Body**:
 
   ```json
-  { 
-    "user_id": int, 
-    "access_level": string // access_level ∈ {"viewer", "collaborator"}
+  {
+    "user_id": 42,
+    "access_level": "viewer"
   }
   ```
 
 * **Response (200)**:
 
   ```json
-  { 
-    "success": bool
-    "message": string,
-    "data": { 
-      "user_id": int, 
-      "username": string, 
-      "access_level": string, // access_level ∈ {"viewer", "collaborator"}
-      "granted_at": string, 
-      "granted_by": int 
-    } 
+  {
+    "success": true,
+    "message": "Permission granted",
+    "data": {
+      "user_id": 42,
+      "username": "bob",
+      "access_level": "viewer",
+      "granted_at": "2025-09-28T12:35:00Z",
+      "granted_by": 1
+    }
   }
   ```
 
@@ -474,18 +498,18 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 * **Response**:
 
   ```json
-  { 
-    "success": bool,
-    "message": string, 
-    "data": [ 
-      { 
-        "user_id": int, 
-        "username": string, 
-        "access_level": string,  // access_level ∈ {"viewer", "collaborator"}
-        "granted_at": string, 
-        "granted_by": int
-      } 
-    ] 
+  {
+    "success": true,
+    "message": "Permissions listed",
+    "data": [
+      {
+        "user_id": 42,
+        "username": "bob",
+        "access_level": "collaborator",
+        "granted_at": "2025-09-28T12:35:00Z",
+        "granted_by": 1
+      }
+    ]
   }
   ```
 
@@ -493,12 +517,12 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 
 * **Method**: `DELETE`
 * **URL params**: `id` (file id integer), `user_id` (integer)
-* **Response**: 
+* **Response**:
 
   ```json
   {
-    "success": bool,
-    "message": string,
+    "success": true,
+    "message": "Permission revoked"
   }
   ```
 
@@ -509,34 +533,36 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 ### GET `/api/user` — List users
 
 * **Access**: Owner only
+
 * **Method**: `GET`
+
 * **Query params**:
 
   * `name` (string)
   * `perm` (string filter)
   * `is_active` (boolean)
   * `include_deleted` (boolean),
-  * `limit` (int) 
+  * `limit` (int)
   * `offset` (int)
 
 * **Response**: paginated list of users. Each item:
 
   ```json
   {
-    "success": bool,
-    "message": string,
+    "success": true,
+    "message": "Users retrieved",
     "data": [
       {
-        "id": int,
-        "username": string,
-        "role": string,     // owner|visitor
-        "is_active": int,
-        "can_upload": int,
-        "can_delete_own_files": int,
-        "has_upload_limits": int,
-        "upload_limit": int,
-        "created_at": string,
-        "last_login_at": string
+        "id": 42,
+        "username": "bob",
+        "role": "visitor",
+        "is_active": true,
+        "can_upload": true,
+        "can_delete_own_files": false,
+        "has_upload_limits": false,
+        "upload_limit": 0,
+        "created_at": "2025-01-01T09:00:00Z",
+        "last_login_at": "2025-09-27T18:00:00Z"
       }
     ]
   }
@@ -545,13 +571,15 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 ### DELETE `/api/user/{id}` — Soft-delete user
 
 * **Access**: Owner only (cannot delete owner user)
+
 * **Method**: `DELETE`
-* **Response**: 
+
+* **Response**:
 
   ```json
   {
-    "success": bool,
-    "message": string,
+    "success": true,
+    "message": "User soft-deleted"
   }
   ```
 
@@ -560,35 +588,36 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 ### POST `/api/user/{id}/toggle` — Toggle active status
 
 * **Access**: Owner only
-* **Response**: 
+* **Response**:
 
   ```json
   {
-    "success": bool,
-    "message": string,
+    "success": true,
+    "message": "User active status toggled"
   }
   ```
 
 ### POST `/api/user/{id}/perms` — Update user permissions
 
 * **Access**: Owner only
+
 * **Body**:
 
   ```json
-  { 
-    "can_upload": true, 
-    "can_delete_own_files": true, 
-    "has_upload_limits": true, 
-    "upload_limit": 1000000 
+  {
+    "can_upload": true,
+    "can_delete_own_files": false,
+    "has_upload_limits": false,
+    "upload_limit": 0
   }
   ```
 
-* **Response**: 
+* **Response**:
 
   ```json
   {
-    "success": bool,
-    "message": string,
+    "success": true,
+    "message": "Permissions updated"
   }
   ```
 
@@ -599,17 +628,17 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 
   ```json
   {
-    "success": bool,
-    "message": string,
+    "success": true,
+    "message": "Accessible files",
     "data": [
       {
-        "id": int,
-        "name": string,
-        "size_bytes": int,
-        "mime_type": string, // Optional
-        "uploaded_by": int,
-        "uploaded_at": string,
-        "access_type": string, 
+        "id": 77,
+        "name": "report.pdf",
+        "size_bytes": 123456,
+        "mime_type": "application/pdf",
+        "uploaded_by": 42,
+        "uploaded_at": "2025-09-28T12:00:00Z",
+        "access_type": "viewer"
       }
     ]
   }
@@ -617,27 +646,37 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 
 ---
 
+
 # Common rules: auth / pagination / errors
 
-* **Auth header**: `Authorization: Bearer <your_jwt_token>`
-* **Token TTL**: 1 hour (issued by `/api/auth/login`).
-* **Pagination**: `limit` & `offset`. Respect endpoint max limits.
-* **Errors**: Standard HTTP codes:
+* **Authorization**: Unless noted, endpoints require `Authorization: Bearer <token>`.
+* **Owner vs Visitor**:
 
-  * `200` OK, `400` Bad Request, `401` Unauthorized, `403` Forbidden, `404` Not Found, `500` Internal Server Error.
-* **All timestamps** must be ISO-8601 strings in responses.
+  * Owner = full admin rights.
+  * Visitor = restricted (upload/delete own if permitted).
+* **Pagination**: Standard `limit` + `offset`.
+* **Errors**:
+
+  * `400` invalid request
+  * `401` unauthorized
+  * `403` forbidden
+  * `404` not found
+  * `500` server/db error
 
 ---
 
-# Appendix — canonical response schemas
+# Appendix: canonical response schemas
 
-## Common response wrapper
+All endpoints embed responses in consistent wrapper:
 
 ```json
 {
-  "message": string,
-  "data": generic_type, // optional
-  "token": string,      // for auth only
-  "exists": bool        // endpoint-specific
+  "success": true,
+  "message": "OK",
+  "data": null,
+  "token": null,
+  "exists": false
 }
 ```
+
+Fields may be null if not relevant.
