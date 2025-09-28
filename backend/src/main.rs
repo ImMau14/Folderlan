@@ -5,6 +5,7 @@ use backend::{
     middleware::{jwt_middleware::JwtConfig, simple_access_logger::SimpleAccessLogger},
     models::types::UploadsPath,
 };
+use rand::{RngCore, rngs::OsRng};
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 use std::path::{Path, PathBuf};
 use tracing_actix_web::TracingLogger;
@@ -78,7 +79,11 @@ async fn main() -> std::io::Result<()> {
     }
 
     // Configure JWT authentication
-    let secret_jwt: String = std::env::var("SECRET_JWT").unwrap_or_else(|_| "12345".to_string());
+    let secret_jwt: String = std::env::var("SECRET_JWT").unwrap_or_else(|_| {
+        let mut buf = vec![0u8; 32usize];
+        OsRng.fill_bytes(&mut buf);
+        buf.iter().map(|b| format!("{:02x}", b)).collect()
+    });
     let jwt_cfg = JwtConfig { secret: secret_jwt };
 
     tracing::info!("Server will bind to http://{}:{}", address, port);
