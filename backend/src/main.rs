@@ -1,7 +1,7 @@
 // Main entry point for the Actix-Web server with SQLite database integration
 use actix_web::{App, HttpServer, web::Data};
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tracing_actix_web::TracingLogger;
 use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
@@ -83,6 +83,32 @@ async fn main() -> std::io::Result<()> {
     let jwt_cfg = JwtConfig { secret: secret_jwt };
 
     tracing::info!("Server will bind to http://{}:{}", address, port);
+
+    // Choose uploads directory
+    let uploads_dir = PathBuf::from("./uploads");
+
+    // tmp subdir name (adjust if you use a different tmp folder inside uploads).
+    let tmp_subdir = "tmp";
+
+    // Owner user id when watcher registers files created by sharing.
+    let owner_user_id: Option<i64> = Some(1);
+
+    match backend::watcher::start_watcher(
+        uploads_dir,
+        tmp_subdir,
+        Some(pool.clone()),
+        owner_user_id,
+    )
+    .await
+    {
+        Ok(_handle) => {
+            tracing::info!("Filesystem watcher started");
+            // Optionally keep the handle somewhere if you want graceful shutdown logic.
+        }
+        Err(e) => {
+            tracing::warn!("Failed to start filesystem watcher: {}", e);
+        }
+    }
 
     // Configure Actix-Web application factory
     let address_for_app = address.clone();

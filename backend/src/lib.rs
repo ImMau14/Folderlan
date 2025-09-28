@@ -3,6 +3,7 @@ pub mod controllers;
 pub mod middleware;
 pub mod models;
 pub mod utils;
+pub mod watcher;
 
 use actix_cors::Cors;
 use actix_web::web;
