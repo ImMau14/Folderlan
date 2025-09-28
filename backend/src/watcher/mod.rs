@@ -15,7 +15,7 @@ use std::{
 use tokio::{sync::Mutex as TokioMutex, task::JoinHandle, time::sleep};
 use tracing::{debug, error, info, warn};
 
-use crate::utils::{RegisterFilePayload, register_file};
+use crate::utils::db::{RegisterFilePayload, register_file};
 
 type FileLock = Arc<TokioMutex<()>>;
 type FileLockEntry = (FileLock, Instant);

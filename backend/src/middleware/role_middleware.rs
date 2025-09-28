@@ -1,4 +1,5 @@
 // Middleware for role-based authorization. Checks if the authenticated user has required permissions.
+use crate::{middleware::jwt_middleware::AuthUser, models::responses::ApiResponse};
 use actix_service::Service;
 use actix_web::{
     Error, HttpMessage,
@@ -11,9 +12,6 @@ use std::{
     rc::Rc,
     task::{Context, Poll},
 };
-
-use crate::middleware::jwt_middleware::AuthUser;
-use crate::models::responses::ApiResponse;
 
 // Configuration for allowed roles
 #[derive(Clone)]

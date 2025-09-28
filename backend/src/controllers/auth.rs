@@ -1,4 +1,16 @@
 // Manages authentication-related endpoints, including login, registration, and password resets.
+use crate::{
+    middleware::{
+        jwt_middleware::{Claims, JwtConfig, jwt_validator_adapter},
+        role_middleware::RoleAuth,
+        server_ip_only::LocalOnly,
+    },
+    models::responses::ApiResponse,
+    utils::{
+        db::{RegisterPayload, register_user},
+        helpers::hash_password,
+    },
+};
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use actix_web_httpauth::middleware::HttpAuthentication;
 use argon2::{
@@ -10,14 +22,6 @@ use jsonwebtoken::{EncodingKey, Header, encode};
 use serde::Deserialize;
 use sqlx::{Row, SqlitePool};
 
-use crate::middleware::{
-    jwt_middleware::{Claims, JwtConfig, jwt_validator_adapter},
-    role_middleware::RoleAuth,
-    server_ip_only::LocalOnly,
-};
-use crate::models::responses::ApiResponse;
-use crate::utils::{RegisterPayload, hash_password, register_user};
-
 // Defines the expected structure for login requests.
 #[derive(Deserialize, Debug)]
 pub struct LoginPayload {
@@ -28,14 +32,14 @@ pub struct LoginPayload {
 // Defines the expected structure for an owner's password reset request.
 #[derive(Deserialize)]
 pub struct OwnerResetPayload {
-    pub new_password: String,
+    pub password: String,
 }
 
 // Defines the expected structure for a visitor's password reset request.
 #[derive(Deserialize)]
 pub struct VisitorResetPayload {
-    pub visitor_username: String,
-    pub new_password: String,
+    pub username: String,
+    pub password: String,
 }
 
 // Handles user login by verifying credentials and generating a JWT.
@@ -206,7 +210,7 @@ pub async fn owner_reset_password(
     pool: web::Data<SqlitePool>,
     payload: web::Json<OwnerResetPayload>,
 ) -> HttpResponse {
-    let new_password = payload.new_password.trim();
+    let password = payload.password.trim();
 
     // Fetches the owner account from the database.
     let owner_row = match sqlx::query(
@@ -243,7 +247,7 @@ pub async fn owner_reset_password(
     };
 
     // Hashes the new password.
-    let password_hash = match hash_password(new_password) {
+    let password_hash = match hash_password(password) {
         Ok(pass) => pass,
         Err(e) => {
             return ApiResponse::<()>::builder()
@@ -316,13 +320,13 @@ pub async fn owner_change_visitor_password(
     payload: web::Json<VisitorResetPayload>,
 ) -> HttpResponse {
     let payload = payload.into_inner();
-    let visitor_username = payload.visitor_username.trim();
-    let new_password = payload.new_password.trim();
+    let username = payload.username.trim();
+    let password = payload.password.trim();
 
     // Returns an error if the username is empty.
-    if visitor_username.is_empty() {
+    if username.is_empty() {
         return ApiResponse::<()>::builder()
-            .message("visitor_username is required")
+            .message("username is required")
             .bad_request();
     }
 
@@ -330,7 +334,7 @@ pub async fn owner_change_visitor_password(
     let user_row = match sqlx::query(
         "SELECT id, role, is_deleted, username FROM Users WHERE username = ? LIMIT 1",
     )
-    .bind(visitor_username)
+    .bind(username)
     .fetch_optional(pool.get_ref())
     .await
     {
@@ -371,7 +375,7 @@ pub async fn owner_change_visitor_password(
     }
 
     // Hashes the new password.
-    let password_hash = match hash_password(new_password) {
+    let password_hash = match hash_password(password) {
         Ok(pass) => pass,
         Err(e) => {
             return ApiResponse::<()>::builder()

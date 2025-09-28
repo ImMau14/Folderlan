@@ -1,15 +1,14 @@
 // Main entry point for the Actix-Web server with SQLite database integration
 use actix_web::{App, HttpServer, web::Data};
-use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
-use std::path::{Path, PathBuf};
-use tracing_actix_web::TracingLogger;
-use tracing_subscriber::{EnvFilter, fmt, prelude::*};
-
 use backend::{
     build_cors, configure_services,
     middleware::{jwt_middleware::JwtConfig, simple_access_logger::SimpleAccessLogger},
     models::types::UploadsPath,
 };
+use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
+use std::path::{Path, PathBuf};
+use tracing_actix_web::TracingLogger;
+use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

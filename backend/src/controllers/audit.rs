@@ -1,11 +1,12 @@
 // Handles audit log retrieval with filtering and pagination.
+use crate::{
+    middleware::{jwt_middleware::jwt_validator_adapter, role_middleware::RoleAuth},
+    models::responses::ApiResponse,
+};
 use actix_web::{Responder, web};
 use actix_web_httpauth::middleware::HttpAuthentication;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, QueryBuilder, SqlitePool};
-
-use crate::middleware::{jwt_middleware::jwt_validator_adapter, role_middleware::RoleAuth};
-use crate::models::responses::ApiResponse;
 
 // Defines query parameters for filtering audit logs.
 #[derive(Deserialize)]

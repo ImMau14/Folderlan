@@ -1,10 +1,10 @@
 // Manages database initialization and existence checks. Restricted to local server access.
+use crate::{
+    middleware::server_ip_only::LocalOnly, models::responses::ApiResponse,
+    utils::helpers::get_array_of_sentences,
+};
 use actix_web::{Responder, web};
 use sqlx::SqlitePool;
-
-use crate::middleware::server_ip_only::LocalOnly;
-use crate::models::responses::ApiResponse;
-use crate::utils::get_array_of_sentences;
 
 // Initializes the database by executing SQL statements from the schema file.
 pub async fn init_db(pool: web::Data<SqlitePool>) -> impl Responder {

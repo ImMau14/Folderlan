@@ -1,8 +1,7 @@
 // Handles file registration in the database by inserting file metadata.
+use crate::models::responses::ApiResponse;
 use actix_web::HttpResponse;
 use sqlx::SqlitePool;
-
-use crate::models::responses::ApiResponse;
 
 // Represents the file metadata required for database registration
 pub struct RegisterFilePayload {

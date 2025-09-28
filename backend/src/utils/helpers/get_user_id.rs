@@ -1,9 +1,7 @@
 // Extracts the user ID from JWT middleware authentication data
+use crate::{middleware::jwt_middleware::AuthUser, models::responses::ApiResponse};
 use actix_web::{HttpMessage, HttpRequest, HttpResponse};
 use std::convert::TryInto;
-
-use crate::middleware::jwt_middleware::AuthUser;
-use crate::models::responses::ApiResponse;
 
 /// Extracts the user id from middleware
 pub fn get_user_id(req: HttpRequest) -> Result<u64, HttpResponse> {

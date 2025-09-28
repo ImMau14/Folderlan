@@ -1,10 +1,8 @@
-# Folderlan — Backend Documentation
+# Folderlan 1.0.0 — Backend Documentation
 
 ![Rust](https://img.shields.io/badge/Rust-393127?style=for-the-badge&logo=rust)
 ![Actix-web](https://img.shields.io/badge/Actix--Web-2d2d2d?style=for-the-badge&logo=actix)
 ![SQLite](https://img.shields.io/badge/SQLite-272939?style=for-the-badge&logo=sqlite)
-
-> Clean, navigable backend docs for developers. Focus: clarity, exact types, and direct instructions.
 
 ---
 
@@ -25,7 +23,7 @@
    - [File management](#file-management)  
    - [User management](#user-management)  
 6. [Common rules: auth / pagination / errors](#common-rules-auth--pagination--errors)  
-7. [Appendix: canonical response schemas & examples](#appendix-canonical-response-schemas--examples)  
+7. [Appendix: canonical response schemas](#appendix-canonical-response-schemas)  
 
 ---
 
@@ -71,13 +69,7 @@
 
   ```bash
   cargo build --release
-  ./target/release/<binary-name>
-  ```
-
-4. Example env for a local run:
-
-  ```bash
-  PORT=8080 ADDRESS=127.0.0.1 SQLITE_FILE=db/app.db SECRET_JWT=supersecret cargo run
+  ./target/release/backend # Or backend.exe on Windows
   ```
 
 ---
@@ -155,11 +147,13 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 * **Response (200)**:
 
   ```json
-  { "message": "string", "exists": true }
+  { 
+    "success": bool,
+    "message": string,
+    "exists": bool
+  }
   ```
-
-* `exists`: `true` if any non-system tables exist.
-* **Errors**: `500` on DB read failure.
+* **Errors**: `500` when db aren't initialized.
 
 ### POST `/api/db` — Initialize database
 
@@ -169,7 +163,10 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 * **Response (200)**:
 
   ```json
-  { "message": "Database initialized" }
+  {
+    "success": bool,
+    "message": string,
+  }
   ```
 * **Errors**: `500` on schema execution or file read error.
 
@@ -185,13 +182,22 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 * **Body (required)**:
 
   ```json
-  { "username": "string", "password": "string" }
+  {
+    "username": string, 
+    "password": string
+  }
   ```
+
 * **Response (200)**:
 
   ```json
-  { "message": "string", "token": "JWT_STRING" }
+  { 
+    "success": bool,
+    "message": string,
+    "token": string
+  }
   ```
+  
 * **Notes**: token expires in 1 hour.
 * **Errors**: `401` invalid credentials, `500` server error.
 
@@ -203,13 +209,24 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 * **Body (required)**:
 
   ```json
-  { "username": "string", "password": "string", "email": "string" }
+  { 
+    "username": string,
+    "password": string,
+    "can_upload": bool,
+    "can_delete_own_files": bool,
+    "has_upload_limits": bool,
+    "upload_limit": int
+  }
   ```
 * **Response (200)**:
 
   ```json
-  { "message": "Visitor created" }
+  {
+    "success": bool,
+    "message": string,
+  }
   ```
+
 * **Errors**: `400` invalid input, `403` insufficient perms, `500` DB error.
 
 ### POST `/api/auth/owner_register` — Register owner (local-only)
@@ -219,8 +236,12 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 * **Body**:
 
   ```json
-  { "username": "string", "password": "string", "email": "string" }
+  { 
+    "username":"string, 
+    "password": string
+  }
   ```
+
 * **Response**: same as visitor register.
 
 ### POST `/api/auth/owner_reset_password` — Reset owner password (local-only)
@@ -230,9 +251,19 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 * **Body**:
 
   ```json
-  { "new_password": "string" }
+  { 
+    "password": string
+  }
   ```
-* **Response**: `{ "message": "Owner password updated" }`
+* **Response**: 
+
+  ```json
+  {
+    "success": bool,
+    "message": string,
+  }
+  ```
+
 * **Errors**: `500` if owner not found.
 
 ### POST `/api/auth/visitor_reset_password` — Reset visitor password (owner only)
@@ -243,9 +274,21 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 * **Body**:
 
   ```json
-  { "visitor_username": "string", "new_password": "string" }
+  { 
+    "username": string, 
+    "password": string
+  }
   ```
-* **Response**: `{ "message": "Password updated" }`
+  
+* **Response**: 
+
+  ```json
+  {
+    "success": bool,
+    "message": string,
+  }
+  ```
+
 * **Errors**: `404` visitor not found, `400` invalid.
 
 ---
@@ -271,19 +314,19 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 
   ```json
   {
-    "message":"string",
+    "message": string,
     "data": [
       {
-        "id": 1,
-        "timestamp": "2025-09-27T12:00:00Z",
-        "user_id": 1,
-        "username": "string",
-        "event_type": "string",
-        "description": "string",
-        "ip_address": "string",
-        "file_id": 1,
-        "file_name": "string",
-        "success": true
+        "id": int,
+        "timestamp": string,
+        "user_id": int,
+        "username": string,
+        "event_type": string,
+        "description": string,
+        "ip_address": string,
+        "file_id": int,
+        "file_name": string,
+        "success": bool
       }
     ]
   }
@@ -306,14 +349,15 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 
     ```json
     {
-      "file_id": "string",         // unique client-side id for this file
-      "chunk_index": 0,            // zero-based integer
-      "total_chunks": 4,           // integer > 0
-      "chunk_size": 1048576,       // integer: bytes
-      "total_size": 4194304,       // integer: bytes total
-      "filename": "myfile.ext"     // string
+      "file_id": string,       // unique client-side id for this file
+      "chunk_index": int,      // zero-based integer
+      "total_chunks: int,      // integer > 0
+      "chunk_size": int,       // integer: bytes
+      "total_size": int,       // integer: bytes total
+      "filename": string       // string
     }
     ```
+
   * `chunk` — binary chunk (required)
 
 * **Behavior**:
@@ -325,17 +369,8 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 
   ```json
   { 
-    "message":"Upload accepted",
-    "data": { 
-      "id": 1, 
-      "name": "string", 
-      "size_bytes": 0, 
-      "internal_path": "string", 
-      "mime_type": "string", 
-      "uploaded_by": 1, 
-      "is_public": false, 
-      "uploaded_at": "ISO-8601"
-    } 
+    "success": bool,
+    "message": string
   }
   ```
 
@@ -359,10 +394,22 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
   { 
     "message": "Files retrieved", 
     "data": { 
-      "items": [ /* file objects */ ], 
-      "total": 0, 
-      "limit": 25, 
-      "offset": 0 
+      "items": [ 
+        {
+          "id": int,
+          "name": string,
+          "size_bytes": int,
+          "internal_path:" string,
+          "mime_type": string,
+          "uploaded_by": string,
+          "is_public": bool,
+          "uploaded_at": string,
+          "total_count": int,
+        }
+      ], 
+      "total": int,
+      "limit": int, 
+      "offset": int 
     } 
   }
   ```
@@ -371,7 +418,15 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 
 * **Method**: `DELETE`
 * **URL param**: `id` (integer)
-* **Response (200)**: `{ "message": "File deleted" }`
+* **Response**: 
+
+  ```json
+  {
+    "success": bool,
+    "message": string,
+  }
+  ```
+
 * **Errors**: `403` no permission, `404` not found, `500` server error.
 
 ### GET `/api/files/download/{id}` — Download file
@@ -381,34 +436,38 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 * **Response**: raw file stream with `Content-Disposition: attachment; filename="..."`.
 * **Errors**: `403` permission, `404` not found.
 
-### POST `/api/files/{id}/permissions` — Grant/update permission
+### POST `/api/files/{id}/perms` — Grant/update permission
 
 * **Method**: `POST`
 * **URL param**: `id` (integer)
 * **Body**:
 
   ```json
-  { "user_id": 1, "access_level": "viewer" } // access_level ∈ {"viewer","collaborator"}
+  { 
+    "user_id": int, 
+    "access_level": string // access_level ∈ {"viewer", "collaborator"}
+  }
   ```
 
 * **Response (200)**:
 
   ```json
   { 
-    "message": "Permission granted",
+    "success": bool
+    "message": string,
     "data": { 
-      "user_id": 1, 
-      "username": "string", 
-      "access_level": "viewer",
-      "granted_at": "ISO-8601", 
-      "granted_by": 1 
+      "user_id": int, 
+      "username": string, 
+      "access_level": string, // access_level ∈ {"viewer", "collaborator"}
+      "granted_at": string, 
+      "granted_by": int 
     } 
   }
   ```
 
 * **Errors**: `400` invalid access level, `404` user/file missing, `403` insufficient perms.
 
-### GET `/api/files/{id}/permissions` — List permissions
+### GET `/api/files/{id}/perms` — List permissions
 
 * **Method**: `GET`
 * **URL param**: `id` (integer)
@@ -416,24 +475,32 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 
   ```json
   { 
-    "message": "OK", 
+    "success": bool,
+    "message": string, 
     "data": [ 
       { 
-        "user_id": 1, 
-        "username": "string", 
-        "access_level": "viewer",
-        "granted_at": "ISO-8601", 
-        "granted_by": 1 
+        "user_id": int, 
+        "username": string, 
+        "access_level": string,  // access_level ∈ {"viewer", "collaborator"}
+        "granted_at": string, 
+        "granted_by": int
       } 
     ] 
   }
   ```
 
-### DELETE `/api/files/{id}/permissions/{user_id}` — Revoke permission
+### DELETE `/api/files/{id}/perms/{user_id}` — Revoke permission
 
 * **Method**: `DELETE`
 * **URL params**: `id` (file id integer), `user_id` (integer)
-* **Response**: `{ "message":"Permission revoked" }`
+* **Response**: 
+
+  ```json
+  {
+    "success": bool,
+    "message": string,
+  }
+  ```
 
 ---
 
@@ -456,16 +523,22 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 
   ```json
   {
-    "id": 1,
-    "username": "string",
-    "role": "owner|visitor",
-    "is_active": 1,
-    "can_upload": 1,
-    "can_delete_own_files": 1,
-    "has_upload_limits": 1,
-    "upload_limit": 1000000,
-    "created_at": "ISO-8601",
-    "last_login_at": "ISO-8601"
+    "success": bool,
+    "message": string,
+    "data": [
+      {
+        "id": int,
+        "username": string,
+        "role": string,     // owner|visitor
+        "is_active": int,
+        "can_upload": int,
+        "can_delete_own_files": int,
+        "has_upload_limits": int,
+        "upload_limit": int,
+        "created_at": string,
+        "last_login_at": string
+      }
+    ]
   }
   ```
 
@@ -473,13 +546,28 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 
 * **Access**: Owner only (cannot delete owner user)
 * **Method**: `DELETE`
-* **Response**: `{ "message":"User deleted" }`
+* **Response**: 
+
+  ```json
+  {
+    "success": bool,
+    "message": string,
+  }
+  ```
+
 * **Errors**: `400` cannot delete owner, `404` not found.
 
 ### POST `/api/user/{id}/toggle` — Toggle active status
 
 * **Access**: Owner only
-* **Response**: `{ "message": "User active status toggled" }`
+* **Response**: 
+
+  ```json
+  {
+    "success": bool,
+    "message": string,
+  }
+  ```
 
 ### POST `/api/user/{id}/perms` — Update user permissions
 
@@ -494,12 +582,38 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
     "upload_limit": 1000000 
   }
   ```
-* **Response**: `{ "message":"Permissions updated" }`
+
+* **Response**: 
+
+  ```json
+  {
+    "success": bool,
+    "message": string,
+  }
+  ```
 
 ### GET `/api/user/{id}/accessible` — Files a user can access
 
 * **Access**: Owner or authorized token
 * **Response**: list of file objects with `access_type` ∈ `{"owner","viewer","collaborator"}`.
+
+  ```json
+  {
+    "success": bool,
+    "message": string,
+    "data": [
+      {
+        "id": int,
+        "name": string,
+        "size_bytes": int,
+        "mime_type": string, // Optional
+        "uploaded_by": int,
+        "uploaded_at": string,
+        "access_type": string, 
+      }
+    ]
+  }
+  ```
 
 ---
 
@@ -515,33 +629,15 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 
 ---
 
-# Appendix — canonical response schemas & examples
+# Appendix — canonical response schemas
 
 ## Common response wrapper
 
 ```json
 {
-  "message": "string",
-  "data": {},        // optional
-  "token": "string", // for auth only
-  "exists": true     // endpoint-specific
-}
-```
-
-## Example: successful file upload (finalized)
-
-```json
-{
-  "message":"Upload complete",
-  "data": {
-    "id": 42,
-    "name": "photo.jpg",
-    "size_bytes": 12345,
-    "internal_path": "uploads/2025/09/photo.jpg",
-    "mime_type": "image/jpeg",
-    "uploaded_by": 2,
-    "is_public": false,
-    "uploaded_at": "2025-09-27T12:00:00Z"
-  }
+  "message": string,
+  "data": generic_type, // optional
+  "token": string,      // for auth only
+  "exists": bool        // endpoint-specific
 }
 ```

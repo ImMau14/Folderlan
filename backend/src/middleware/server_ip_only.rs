@@ -1,4 +1,5 @@
 // Middleware that restricts access to localhost only
+use crate::models::responses::ApiResponse;
 use actix_web::{
     Error,
     body::EitherBody,
@@ -9,8 +10,6 @@ use std::{
     future::{Ready, ready},
     net::{IpAddr, Ipv4Addr, Ipv6Addr},
 };
-
-use crate::models::responses::ApiResponse;
 
 // Middleware factory struct
 pub struct LocalOnly;
