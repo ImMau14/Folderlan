@@ -1,6 +1,6 @@
 [package]
 name = "backend"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 
 [profile.release]
@@ -36,3 +36,6 @@ notify = "8.2.0"
 
 [dev-dependencies]
 reqwest = { version = "0.12.23", features = ["json", "multipart"] }
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
