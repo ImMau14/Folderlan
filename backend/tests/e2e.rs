@@ -3,6 +3,7 @@ mod common;
 use common::*;
 use serde_json::json;
 use std::time::Duration;
+use tokio::time::sleep;
 
 /// Tests the complete API workflow including database initialization, user management, file operations, and cleanup
 #[tokio::test(flavor = "multi_thread")]
@@ -135,7 +136,85 @@ async fn test_full_api_workflow() {
         .login_and_get_token("limited_visitor", "limited123")
         .await;
 
-    // Phase 3: File operations testing
+    // Phase 3: Filesystem watcher end-to-end testing (create -> modify -> remove workflow)
+    // This block writes files directly to `app.uploads_path` (no DB writes in the test),
+    // then polls the API via TestApp helpers to assert the watcher did its job
+    let watcher_test_name = "e2e_watcher_test.txt";
+    let initial = b"watcher initial content".to_vec();
+    let modified = b"watcher modified content".to_vec();
+    let path = app.uploads_path.join(watcher_test_name);
+
+    // Step 1: Create file in uploads_path (simulates external uploader)
+    tokio::fs::write(&path, &initial)
+        .await
+        .expect("Failed to write watcher test file");
+
+    // Poll for watcher to register the file (query via TestApp)
+    // Use owner_token because spawn() started the watcher with owner_user_id = Some(1)
+    let mut found_id: Option<i64> = None;
+    for _ in 0..80 {
+        if let Ok(Some(fid)) = app
+            .find_file_id_by_name(&owner_token, watcher_test_name)
+            .await
+        {
+            found_id = Some(fid);
+            break;
+        }
+        sleep(Duration::from_millis(150)).await;
+    }
+    let watcher_file_id = found_id.expect("Watcher did not register created file in time");
+
+    // Verify the API serves the content registered by the watcher
+    let got = app
+        .download_file_bytes(&owner_token, watcher_file_id)
+        .await
+        .expect("Failed to download watcher-registered file");
+    assert_eq!(got, initial, "Watcher-registered file content mismatch");
+
+    // Step 2: Modify file on disk
+    tokio::fs::write(&path, &modified)
+        .await
+        .expect("Failed to modify watcher test file");
+
+    // Poll until API serves the modified content
+    let mut seen_modified = false;
+    for _ in 0..80 {
+        match app.download_file_bytes(&owner_token, watcher_file_id).await {
+            Ok(bytes) if bytes == modified => {
+                seen_modified = true;
+                break;
+            }
+            _ => {
+                sleep(Duration::from_millis(150)).await;
+            }
+        }
+    }
+    assert!(
+        seen_modified,
+        "Watcher did not pick up modified file content in time"
+    );
+
+    // Step 3: Remove the file on disk
+    tokio::fs::remove_file(&path)
+        .await
+        .expect("Failed to remove watcher test file");
+
+    // Poll until download fails (watcher should mark deleted)
+    let mut seen_deleted = false;
+    for _ in 0..80 {
+        if app
+            .download_file_bytes(&owner_token, watcher_file_id)
+            .await
+            .is_err()
+        {
+            seen_deleted = true;
+            break;
+        }
+        sleep(Duration::from_millis(150)).await;
+    }
+    assert!(seen_deleted, "Watcher did not mark file deleted in time");
+
+    // Phase 4: File operations testing
     let file_content = b"This is a test file for the E2E test".to_vec();
     let upload_resp = app
         .upload_single_chunk_file(
@@ -157,17 +236,17 @@ async fn test_full_api_workflow() {
     let file_id = app
         .find_file_id_by_name(&visitor_token, "test_document.txt")
         .await
-        .expect("find file failed")
-        .expect("file should exist after upload");
+        .expect("Find file failed")
+        .expect("File should exist after upload");
 
     // List files endpoint verification
     let files_resp = app
         .get_files(&visitor_token, &[("limit", "10")])
         .await
-        .expect("list files failed");
+        .expect("List files failed");
     assert!(files_resp.status().is_success());
 
-    let files_body: serde_json::Value = files_resp.json().await.expect("invalid json");
+    let files_body: serde_json::Value = files_resp.json().await.expect("Invalid json");
     assert!(files_body["success"].as_bool().unwrap());
     assert!(!files_body["data"]["items"].as_array().unwrap().is_empty());
 
@@ -175,17 +254,17 @@ async fn test_full_api_workflow() {
     let downloaded_bytes = app
         .download_file_bytes(&visitor_token, file_id)
         .await
-        .expect("download failed");
+        .expect("Download failed");
     assert_eq!(downloaded_bytes, file_content);
 
-    // Phase 4: User management operations
+    // Phase 5: User management operations
     let users_resp = app
         .get_users_via_api(&owner_token, &[("limit", "10")])
         .await
         .expect("GET /api/users failed");
     assert!(users_resp.status().is_success());
 
-    let users_body: serde_json::Value = users_resp.json().await.expect("invalid json");
+    let users_body: serde_json::Value = users_resp.json().await.expect("Invalid json");
     assert!(users_body["success"].as_bool().unwrap());
     assert!(users_body["data"]["items"].as_array().unwrap().len() >= 3);
 
@@ -193,27 +272,27 @@ async fn test_full_api_workflow() {
     let visitor_id = app
         .find_user_id_by_username(&owner_token, "test_visitor")
         .await
-        .expect("find user failed")
-        .expect("visitor should exist");
+        .expect("Find user failed")
+        .expect("Visitor should exist");
 
     let limited_visitor_id = app
         .find_user_id_by_username(&owner_token, "limited_visitor")
         .await
-        .expect("find user failed")
-        .expect("limited visitor should exist");
+        .expect("Find user failed")
+        .expect("Limited visitor should exist");
 
     // User activation/deactivation testing
     let toggle_resp = app
         .toggle_user_active_via_api(&owner_token, visitor_id)
         .await
-        .expect("toggle user failed");
+        .expect("Toggle user failed");
     assert!(toggle_resp.status().is_success());
 
     // Verify user deactivation in user list
     let users_after_toggle = app
         .list_users_page(&owner_token, &[("is_active", "false")])
         .await
-        .expect("list users failed");
+        .expect("List users failed");
 
     let inactive_users: Vec<serde_json::Value> =
         serde_json::from_value(users_after_toggle["data"]["items"].clone()).unwrap();
@@ -222,7 +301,7 @@ async fn test_full_api_workflow() {
     // Reactivate user for continued testing
     app.toggle_user_active_via_api(&owner_token, visitor_id)
         .await
-        .expect("toggle user back failed");
+        .expect("Toggle user back failed");
 
     // Permission modification testing
     let perms_payload = json!({
@@ -234,43 +313,43 @@ async fn test_full_api_workflow() {
     let perms_resp = app
         .update_user_perms_via_api(&owner_token, visitor_id, &perms_payload)
         .await
-        .expect("update perms failed");
+        .expect("Update perms failed");
     assert!(perms_resp.status().is_success());
 
-    // Phase 5: File permission management
+    // Phase 6: File permission management
     let grant_resp = app
         .grant_or_update_permission_via_api(&visitor_token, file_id, limited_visitor_id, "viewer")
         .await
-        .expect("grant permission failed");
+        .expect("Grant permission failed");
     assert!(grant_resp.status().is_success());
 
     // List file permissions to verify grant
     let perms_list = app
         .list_permissions_via_api(&visitor_token, file_id)
         .await
-        .expect("list permissions failed");
+        .expect("List permissions failed");
     assert!(!perms_list["data"].as_array().unwrap().is_empty());
 
     // Verify permission enforcement through file download
     let limited_access_bytes = app
         .download_file_bytes(&limited_visitor_token, file_id)
         .await
-        .expect("limited visitor should be able to download");
+        .expect("Limited visitor should be able to download");
     assert_eq!(limited_access_bytes, file_content);
 
     // Permission revocation testing
     let revoke_resp = app
         .revoke_permission_via_api(&visitor_token, file_id, limited_visitor_id)
         .await
-        .expect("revoke permission failed");
+        .expect("Revoke permission failed");
     assert!(revoke_resp.status().is_success());
 
     // Confirm permission removal from system
     app.revoke_permission_and_assert_removed(&visitor_token, file_id, limited_visitor_id)
         .await
-        .expect("permission should be removed");
+        .expect("Permission should be removed");
 
-    // Phase 6: Multipart file upload testing with large files
+    // Phase 7: Multipart file upload testing with large files
     let large_content: Vec<u8> = (0..5000).map(|i| (i % 256) as u8).collect();
 
     let chunk_responses = app
@@ -297,20 +376,20 @@ async fn test_full_api_workflow() {
     let large_file_id = app
         .find_file_id_by_name(&visitor_token, "large_file.bin")
         .await
-        .expect("find large file failed")
-        .expect("large file should exist");
+        .expect("Find large file failed")
+        .expect("Large file should exist");
 
     let downloaded_large = app
         .download_file_bytes(&visitor_token, large_file_id)
         .await
-        .expect("download large file failed");
+        .expect("Download large file failed");
     assert_eq!(downloaded_large, large_content);
 
-    // Phase 7: Accessible files endpoint testing
+    // Phase 8: Accessible files endpoint testing
     let accessible_files = app
         .list_accessible_files(&visitor_token, visitor_id)
         .await
-        .expect("get accessible files failed");
+        .expect("Get accessible files failed");
 
     assert!(
         accessible_files.len() >= 2,
@@ -321,14 +400,14 @@ async fn test_full_api_workflow() {
     assert!(filenames.contains(&"test_document.txt".to_string()));
     assert!(filenames.contains(&"large_file.bin".to_string()));
 
-    // Phase 8: Audit log verification for security tracking
+    // Phase 9: Audit log verification for security tracking
     let audit_resp = app
         .get_audit_logs_via_api(&owner_token, &[("limit", "20")])
         .await
-        .expect("get audit logs failed");
+        .expect("Get audit logs failed");
     assert!(audit_resp.status().is_success());
 
-    let audit_body: serde_json::Value = audit_resp.json().await.expect("invalid json");
+    let audit_body: serde_json::Value = audit_resp.json().await.expect("Invalid json");
     assert!(audit_body["success"].as_bool().unwrap());
 
     // Verify specific audit events were recorded
@@ -336,18 +415,18 @@ async fn test_full_api_workflow() {
         .await
         .expect("FILE_UPLOAD event should be in audit logs");
 
-    // Phase 9: File deletion testing and cleanup verification
+    // Phase 10: File deletion testing and cleanup verification
     let delete_resp = app
         .delete_file_by_id(&visitor_token, file_id)
         .await
-        .expect("delete file failed");
+        .expect("Delete file failed");
     assert!(delete_resp.status().is_success());
 
     // Confirm file removal from accessible files list
     let accessible_after_delete = app
         .list_accessible_files(&visitor_token, visitor_id)
         .await
-        .expect("get accessible files after delete failed");
+        .expect("Get accessible files after delete failed");
 
     let filenames_after: Vec<String> = accessible_after_delete
         .iter()
@@ -355,11 +434,11 @@ async fn test_full_api_workflow() {
         .collect();
     assert!(!filenames_after.contains(&"test_document.txt".to_string()));
 
-    // Phase 10: User deletion testing with soft delete verification
+    // Phase 11: User deletion testing with soft delete verification
     let delete_user_resp = app
         .delete_user_via_api(&owner_token, visitor_id)
         .await
-        .expect("delete user failed");
+        .expect("Delete user failed");
     assert!(delete_user_resp.status().is_success());
 
     // Verify user soft deletion in system
@@ -369,17 +448,16 @@ async fn test_full_api_workflow() {
             &[("is_active", "false"), ("include_deleted", "true")],
         )
         .await
-        .expect("list users after delete failed");
+        .expect("List users after delete failed");
 
     let inactive_after: Vec<serde_json::Value> =
         serde_json::from_value(users_after_delete["data"]["items"].clone()).unwrap();
     assert!(inactive_after.iter().any(|u| u["id"] == visitor_id));
 
-    // Phase 11: Resource cleanup after test completion
+    // Phase 12: Resource cleanup after test completion
     app.cleanup();
 }
 
-/// Tests error cases, security boundaries, and permission validation
 #[tokio::test(flavor = "multi_thread")]
 async fn test_error_cases_and_security() {
     // Windows-specific configuration delay
@@ -420,7 +498,7 @@ async fn test_error_cases_and_security() {
         .get("/api/user")
         .send()
         .await
-        .expect("request failed");
+        .expect("Request failed");
     assert!(unauthorized_resp.status().is_client_error());
 
     // Test invalid token rejection
@@ -430,21 +508,21 @@ async fn test_error_cases_and_security() {
         .with_token("invalid_token")
         .send()
         .await
-        .expect("request failed");
+        .expect("Request failed");
     assert!(invalid_token_resp.status().is_client_error());
 
     // Test 2: Permission boundary testing for role-based access
     let forbidden_resp = app
         .get_users_via_api(&visitor_token, &[])
         .await
-        .expect("request failed");
+        .expect("Request failed");
     assert!(forbidden_resp.status().is_client_error());
 
     // Test 3: Input validation testing with excessive limits
     let excess_limit_resp = app
         .get_files(&visitor_token, &[("limit", "1000")])
         .await
-        .expect("request failed");
+        .expect("Request failed");
     assert!(excess_limit_resp.status().is_success());
 
     // Test 4: Password change security testing
@@ -536,7 +614,6 @@ async fn test_error_cases_and_security() {
     app.cleanup();
 }
 
-/// Tests pagination functionality, filtering, and result set management
 #[tokio::test(flavor = "multi_thread")]
 async fn test_pagination_and_filtering() {
     // Windows-specific configuration delay
@@ -593,7 +670,7 @@ async fn test_pagination_and_filtering() {
     let page1 = app
         .list_users_page(&owner_token, &[("limit", "5"), ("offset", "0")])
         .await
-        .expect("page1 failed");
+        .expect("Page1 failed");
 
     let items_page1: Vec<serde_json::Value> =
         serde_json::from_value(page1["data"]["items"].clone()).unwrap();
@@ -606,7 +683,7 @@ async fn test_pagination_and_filtering() {
     let page2 = app
         .list_users_page(&owner_token, &[("limit", "5"), ("offset", "5")])
         .await
-        .expect("page2 failed");
+        .expect("Page2 failed");
 
     let items_page2: Vec<serde_json::Value> =
         serde_json::from_value(page2["data"]["items"].clone()).unwrap();
@@ -631,7 +708,7 @@ async fn test_pagination_and_filtering() {
     let upload_users = app
         .list_users_page(&owner_token, &[("perm", "can_upload"), ("limit", "20")])
         .await
-        .expect("filter by perm failed");
+        .expect("Filter by perm failed");
 
     let upload_items: Vec<serde_json::Value> =
         serde_json::from_value(upload_users["data"]["items"].clone()).unwrap();
@@ -644,7 +721,7 @@ async fn test_pagination_and_filtering() {
     let filtered = app
         .list_users_page(&owner_token, &[("name", "user_1"), ("limit", "15")])
         .await
-        .expect("combined filter failed");
+        .expect("Combined filter failed");
 
     let filtered_items: Vec<serde_json::Value> =
         serde_json::from_value(filtered["data"]["items"].clone()).unwrap();
