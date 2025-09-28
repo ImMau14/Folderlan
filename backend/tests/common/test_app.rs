@@ -144,6 +144,21 @@ impl TestApp {
         let srv_cfg = jwt_cfg.clone();
         let uploads_path_str = uploads_path.to_str().unwrap().to_string();
 
+        // Choose uploads directory
+        let uploads_dir = PathBuf::from(uploads_path_str.clone());
+        let owner_user_id: Option<i64> = Some(1);
+
+        match backend::watcher::start_watcher(uploads_dir, "tmp", Some(pool.clone()), owner_user_id)
+            .await
+        {
+            Ok(_handle) => {
+                tracing::info!("Filesystem watcher started");
+            }
+            Err(e) => {
+                tracing::warn!("Failed to start filesystem watcher: {}", e);
+            }
+        }
+
         let server = actix_web::HttpServer::new(move || {
             let cors = build_cors(true, "127.0.0.1", port);
             let uploads_path = UploadsPath::new(&uploads_path_str);
