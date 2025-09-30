@@ -16,9 +16,6 @@ concurrency:
 
 env:
   NODE_VERSION: '20'
-  PNPM_ACTION: 'pnpm/action-setup@v4'
-  CHECKOUT_ACTION: 'actions/checkout@v4'
-  SETUP_NODE_ACTION: 'actions/setup-node@v4'
 
 jobs:
   lint:
@@ -26,28 +23,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: ${{ env.CHECKOUT_ACTION }}
+        uses: actions/checkout@v4
 
       - name: Install pnpm (action)
-        uses: ${{ env.PNPM_ACTION }}
+        uses: pnpm/action-setup@v4
         with:
           version: 'latest'
           run_install: false
 
       - name: Setup Node (no cache here)
-        uses: ${{ env.SETUP_NODE_ACTION }}
+        uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '20'
 
       - name: Get pnpm store path (for cache)
+        id: pnpm_store
         shell: bash
         run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          echo "store_path=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
 
       - name: Cache pnpm store
         uses: actions/cache@v4
         with:
-          path: ${{ env.STORE_PATH }}
+          path: ${{ steps.pnpm_store.outputs.store_path }}
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-store-${{ runner.os }}-
@@ -63,8 +61,8 @@ jobs:
           which pnpm || echo "pnpm not found"
           pnpm -v || true
           node -v
-          echo "PNPM STORE PATH: $STORE_PATH"
-          ls -la "$STORE_PATH" || true
+          echo "PNPM STORE PATH: ${{ steps.pnpm_store.outputs.store_path }}"
+          ls -la "${{ steps.pnpm_store.outputs.store_path }}" || true
 
       - name: Run ESLint
         working-directory: frontend
@@ -75,28 +73,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: ${{ env.CHECKOUT_ACTION }}
+        uses: actions/checkout@v4
 
       - name: Install pnpm (action)
-        uses: ${{ env.PNPM_ACTION }}
+        uses: pnpm/action-setup@v4
         with:
           version: 'latest'
           run_install: false
 
       - name: Setup Node (no cache here)
-        uses: ${{ env.SETUP_NODE_ACTION }}
+        uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '20'
 
       - name: Get pnpm store path (for cache)
+        id: pnpm_store
         shell: bash
         run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          echo "store_path=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
 
       - name: Cache pnpm store
         uses: actions/cache@v4
         with:
-          path: ${{ env.STORE_PATH }}
+          path: ${{ steps.pnpm_store.outputs.store_path }}
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-store-${{ runner.os }}-
@@ -114,28 +113,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: ${{ env.CHECKOUT_ACTION }}
+        uses: actions/checkout@v4
 
       - name: Install pnpm (action)
-        uses: ${{ env.PNPM_ACTION }}
+        uses: pnpm/action-setup@v4
         with:
           version: 'latest'
           run_install: false
 
       - name: Setup Node (no cache here)
-        uses: ${{ env.SETUP_NODE_ACTION }}
+        uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '20'
 
       - name: Get pnpm store path (for cache)
+        id: pnpm_store
         shell: bash
         run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          echo "store_path=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
 
       - name: Cache pnpm store
         uses: actions/cache@v4
         with:
-          path: ${{ env.STORE_PATH }}
+          path: ${{ steps.pnpm_store.outputs.store_path }}
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-store-${{ runner.os }}-
