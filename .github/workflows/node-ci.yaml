@@ -1,0 +1,149 @@
+name: NodeJS CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'frontend/**'
+
+concurrency:
+  group: ci-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  PNPM_ACTION: 'pnpm/action-setup@v4'
+  CHECKOUT_ACTION: 'actions/checkout@v4'
+  SETUP_NODE_ACTION: 'actions/setup-node@v4'
+
+jobs:
+  lint:
+    name: Lint (ESLint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: ${{ env.CHECKOUT_ACTION }}
+
+      - name: Install pnpm (action)
+        uses: ${{ env.PNPM_ACTION }}
+        with:
+          version: 'latest'
+          run_install: false
+
+      - name: Setup Node (no cache here)
+        uses: ${{ env.SETUP_NODE_ACTION }}
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Get pnpm store path (for cache)
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Debug (optional)
+        if: ${{ always() }}
+        run: |
+          echo "---- debug ----"
+          which pnpm || echo "pnpm not found"
+          pnpm -v || true
+          node -v
+          echo "PNPM STORE PATH: $STORE_PATH"
+          ls -la "$STORE_PATH" || true
+
+      - name: Run ESLint
+        working-directory: frontend
+        run: pnpm run lint
+
+  format:
+    name: Format check (Prettier)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: ${{ env.CHECKOUT_ACTION }}
+
+      - name: Install pnpm (action)
+        uses: ${{ env.PNPM_ACTION }}
+        with:
+          version: 'latest'
+          run_install: false
+
+      - name: Setup Node (no cache here)
+        uses: ${{ env.SETUP_NODE_ACTION }}
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Get pnpm store path (for cache)
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Prettier check
+        working-directory: frontend
+        run: pnpm run format:check
+
+  build:
+    name: Build (tsc + Vite)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: ${{ env.CHECKOUT_ACTION }}
+
+      - name: Install pnpm (action)
+        uses: ${{ env.PNPM_ACTION }}
+        with:
+          version: 'latest'
+          run_install: false
+
+      - name: Setup Node (no cache here)
+        uses: ${{ env.SETUP_NODE_ACTION }}
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Get pnpm store path (for cache)
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        working-directory: frontend
+        run: pnpm run build
