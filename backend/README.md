@@ -149,7 +149,6 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
   ```json
   {
     "success": true,
-    "message": "Database exists",
     "exists": true
   }
   ```
