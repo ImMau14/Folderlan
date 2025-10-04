@@ -13,6 +13,10 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@utils/*": ["src/utils/*"],
+      "@pages/*": ["src/pages/*"],
+      "@assets/*": ["src/assets/*"],
       "@styles/*": ["src/styles/*"]
     },
     "types": ["vite/client"]
