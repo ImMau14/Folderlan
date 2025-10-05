@@ -22,7 +22,7 @@ fn main() {
     // Parse CARGO_PKG_VERSION (e.g., "1.2.3" or "1.2.3-beta" -> extract numbers)
     let ver = env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.0.0".into());
     let mut parts = ver
-        .split(|c| c == '.' || c == '-' || c == '+')
+        .split(['.', '-', '+'])
         .map(|s| s.parse::<u64>().unwrap_or(0));
 
     // Extract semantic version components

@@ -2,6 +2,7 @@
 pub mod controllers;
 pub mod middleware;
 pub mod models;
+pub mod spa;
 pub mod utils;
 pub mod watcher;
 
@@ -18,6 +19,12 @@ pub fn configure_services(cfg: &mut web::ServiceConfig) {
             .configure(controllers::audit::audit_config)
             .configure(controllers::files::files_config),
     );
+}
+
+/// Configures the APP routes
+pub fn configure_app(cfg: &mut web::ServiceConfig) {
+    configure_services(cfg);
+    cfg.configure(spa::config);
 }
 
 /// Builds CORS policy with configurable restrictions

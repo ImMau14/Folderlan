@@ -1,7 +1,7 @@
 // Main entry point for the Actix-Web server with SQLite database integration
 use actix_web::{App, HttpServer, web::Data};
 use backend::{
-    build_cors, configure_services,
+    build_cors, configure_app,
     middleware::{jwt_middleware::JwtConfig, simple_access_logger::SimpleAccessLogger},
     models::types::UploadsPath,
 };
@@ -127,7 +127,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(cors)
             .wrap(TracingLogger::default())
             .wrap(SimpleAccessLogger)
-            .configure(configure_services)
+            .configure(configure_app)
     };
 
     // Start HTTP server
