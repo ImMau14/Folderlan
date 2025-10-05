@@ -5,6 +5,38 @@ on:
     types: [published]
 
 jobs:
+  frontend-build:
+    name: Build frontend and upload dist
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.17.1'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '10.18.0'
+
+      - name: Install frontend deps
+        working-directory: ./frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: pnpm build
+
+      - name: Upload frontend dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: ./frontend/dist
+
   build:
     strategy:
       matrix:
@@ -18,10 +50,31 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     continue-on-error: false
+    needs: frontend-build
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: ./frontend-dist
+
+      - name: Place frontend dist into backend/dist (Linux)
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          mkdir -p backend/dist
+          cp -r ./frontend-dist/* backend/dist/
+        shell: bash
+
+      - name: Place frontend dist into backend\dist (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          New-Item -ItemType Directory -Path backend\dist -Force | Out-Null
+          Copy-Item -Path .\frontend-dist\* -Destination backend\dist -Recurse -Force
+        shell: pwsh
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
