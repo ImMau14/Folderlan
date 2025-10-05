@@ -31,6 +31,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cargo-
 
+    - name: Create dist directory
+      if: ${{ contains(inputs.command, 'fmt') == false }}
+      run: mkdir -p dist
+      working-directory: ./backend
+
     - name: Run Cargo Command
       run: cargo ${{ inputs.command }}
       working-directory: ./backend
