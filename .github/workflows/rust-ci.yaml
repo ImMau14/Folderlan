@@ -5,10 +5,14 @@ on:
     branches: [ "main" ]
     paths:
       - 'backend/**'
+      - '.github/workflows/rust-ci.yaml'
+      - '.github/workflows/common-rust-steps.yaml'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'backend/**'
+      - '.github/workflows/rust-ci.yaml'
+      - '.github/workflows/common-rust-steps.yaml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
