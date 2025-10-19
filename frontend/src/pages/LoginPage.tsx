@@ -16,7 +16,7 @@ import { setThemeColor } from "@utils/setThemeColor"
 import { setPageName } from "@utils/setPageName"
 
 import { useToast } from "@components/ToastProvider"
-import { AuroraBackground } from "@components/AuroraBackground"
+import { AnimatedBackground } from "@components/AnimatedBackground"
 
 import { API_PATH } from "@/constants"
 
@@ -161,8 +161,8 @@ export const LoginPage: React.FC = () => {
       </aside>
 
       {/* Right side with login form */}
-      <AuroraBackground className="flex h-[100dvh] w-full flex-col items-center justify-center gap-8 p-8">
-        <div className="relative flex w-full max-w-md flex-col gap-8 rounded-xl border-2 border-gray-400 bg-gray-100 p-8  shadow-gray-900/10">
+      <AnimatedBackground className="p-8">
+        <div className="relative flex w-full max-w-md flex-col gap-8 rounded-xl border-2 border-gray-400 bg-gray-100/60 p-8  shadow-gray-900/10">
           <header className="flex items-center gap-4">
             <FaUserCircle className="text-3xl text-gray-900" />
             <h2 className="font-heading text-2xl font-bold text-gray-900">Log In</h2>
@@ -240,7 +240,7 @@ export const LoginPage: React.FC = () => {
             </a>
           </div>
         </div>
-      </AuroraBackground>
+      </AnimatedBackground>
     </div>
   )
 }
