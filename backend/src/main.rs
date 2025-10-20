@@ -32,6 +32,12 @@ async fn main() -> std::io::Result<()> {
         .and_then(|v| v.trim().parse().ok())
         .unwrap_or(false);
 
+    // Load local only middleware configuration from environment
+    let local_only: bool = std::env::var("LOCAL_ONLY")
+        .ok()
+        .and_then(|v| v.trim().parse().ok())
+        .unwrap_or(true);
+
     // Configure server network settings
     let port: u16 = std::env::var("PORT")
         .ok()
@@ -41,10 +47,11 @@ async fn main() -> std::io::Result<()> {
     let address: String = std::env::var("ADDRESS").unwrap_or_else(|_| "0.0.0.0".to_string());
 
     tracing::info!(
-        "OFF_CORS: {}  PORT: {}  ADDRESS: {}",
+        "OFF_CORS: {}  PORT: {}  ADDRESS: {}  LOCAL_ONLY: {}",
         off_cors,
         port,
-        address
+        address,
+        local_only,
     );
 
     // Initialize SQLite database connection

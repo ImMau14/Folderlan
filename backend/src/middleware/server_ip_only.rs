@@ -27,15 +27,24 @@ where
     type Transform = LocalOnlyMiddleware<S>;
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
-    // Creates new middleware instance
     fn new_transform(&self, service: S) -> Self::Future {
-        ready(Ok(LocalOnlyMiddleware { service }))
+        // Read LOCAL_ONLY env var at startup to enable/disable middleware.
+        let local_only: bool = std::env::var("LOCAL_ONLY")
+            .ok()
+            .and_then(|v| v.trim().parse().ok())
+            .unwrap_or(true);
+
+        ready(Ok(LocalOnlyMiddleware {
+            service,
+            local_only,
+        }))
     }
 }
 
 // Middleware service struct
 pub struct LocalOnlyMiddleware<S> {
     service: S,
+    local_only: bool, // Flag read from LOCAL_ONLY
 }
 
 // Service implementation for the middleware
@@ -64,26 +73,36 @@ where
             req.into_response(resp)
         }
 
-        // Checks if request comes from localhost
-        if let Some(socket_addr) = peer_opt {
-            let ip = socket_addr.ip();
-            let allowed =
-                ip == IpAddr::V4(Ipv4Addr::LOCALHOST) || ip == IpAddr::V6(Ipv6Addr::LOCALHOST);
+        // If protection is disabled via LOCAL_ONLY, just forward the request.
+        if !self.local_only {
+            // Proceed without localhost check
+            let fut = self.service.call(req);
+            Box::pin(async move {
+                let res = fut.await?;
+                Ok(res.map_into_left_body())
+            })
+        } else {
+            // Checks if request comes from localhost
+            if let Some(socket_addr) = peer_opt {
+                let ip = socket_addr.ip();
+                let allowed =
+                    ip == IpAddr::V4(Ipv4Addr::LOCALHOST) || ip == IpAddr::V6(Ipv6Addr::LOCALHOST);
 
-            if allowed {
-                // Proceeds with request processing for localhost
-                let fut = self.service.call(req);
-                Box::pin(async move {
-                    let res = fut.await?;
-                    Ok(res.map_into_left_body())
-                })
+                if allowed {
+                    // Proceeds with request processing for localhost
+                    let fut = self.service.call(req);
+                    Box::pin(async move {
+                        let res = fut.await?;
+                        Ok(res.map_into_left_body())
+                    })
+                } else {
+                    // Returns forbidden response for non-localhost
+                    Box::pin(async move { Ok(denied_response(req)) })
+                }
             } else {
-                // Returns forbidden response for non-localhost
+                // Returns forbidden response if IP cannot be determined
                 Box::pin(async move { Ok(denied_response(req)) })
             }
-        } else {
-            // Returns forbidden response if IP cannot be determined
-            Box::pin(async move { Ok(denied_response(req)) })
         }
     }
 }
