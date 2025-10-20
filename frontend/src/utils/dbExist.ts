@@ -7,7 +7,7 @@ export async function dbExist(): boolean {
   const callExist = async () => {
     const client = new ApiClient({ baseURL: API_PATH, timeoutMs: 30000 })
     const response = await client.getDb()
-    return response.wrapper
+    return response.data
   }
 
   try {
