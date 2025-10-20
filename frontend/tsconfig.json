@@ -17,7 +17,9 @@
       "@utils/*": ["src/utils/*"],
       "@pages/*": ["src/pages/*"],
       "@assets/*": ["src/assets/*"],
-      "@styles/*": ["src/styles/*"]
+      "@styles/*": ["src/styles/*"],
+      "@guards/*": ["src/guards/*"],
+      "@routes/*": ["src/routes/*"]
     },
     "types": ["vite/client"]
   },

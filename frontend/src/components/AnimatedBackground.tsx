@@ -2,6 +2,7 @@
 
 import React from "react"
 import bgVideo from "@assets/bg.webm"
+import { motion } from "framer-motion"
 
 // Props type definition for AnimatedBackground component
 type AnimatedBackgroundProps = {
@@ -14,7 +15,7 @@ export const AnimatedBackground = ({ children, className = "" }: AnimatedBackgro
   return (
     <section className={`relative h-full w-auto overflow-hidden ${className}`}>
       {/* Background video with accessibility considerations */}
-      <video
+      <motion.video
         src={bgVideo}
         autoPlay
         muted
@@ -29,8 +30,10 @@ export const AnimatedBackground = ({ children, className = "" }: AnimatedBackgro
           object-cover object-top
           opacity-50
         "
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.5 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
       />
-
       {/* Content container with higher z-index to appear above video */}
       <div className="relative z-10 flex h-full w-full flex-col items-center justify-start justify-center">
         {children}

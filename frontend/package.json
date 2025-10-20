@@ -13,8 +13,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@fontsource-variable/inter": "^5.2.8",
-    "@fontsource-variable/montserrat": "^5.2.8",
     "axios": "^1.12.2",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.22",

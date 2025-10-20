@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        heading: ["Montserrat Variable"],
+        heading: ["Kanit SemiBold"],
         body: ["Inter Variable"],
       },
     },

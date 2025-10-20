@@ -1,21 +1,20 @@
+// Checks if the database exists
+
 import { ApiClient } from "@utils/ApiClient"
 import { API_PATH } from "@/constants"
 
-export async function dbExist(): boolean {
-  let exist = false
-
-  const callExist = async () => {
+// Log entry to confirm function is called
+export async function dbExist(): Promise<boolean> {
+  try {
     const client = new ApiClient({ baseURL: API_PATH, timeoutMs: 30000 })
     const response = await client.getDb()
-    return response.data
-  }
 
-  try {
-    const resp = await callExist()
-    exist = resp.exist
+    const exists =
+      response?.data?.exists ?? response?.exists ?? response?.raw?.data?.exists ?? false
+
+    return Boolean(exists)
   } catch (e) {
-    console.log(e)
+    console.log("[dbExist] error:", e)
+    return false
   }
-
-  return exist
 }

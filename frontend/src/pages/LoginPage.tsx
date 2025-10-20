@@ -10,6 +10,7 @@ import { FaUserCircle, FaGithub, FaLock, FaUnlock } from "react-icons/fa"
 import { FolderlanSvg } from "@components/FolderlanSvg"
 import { FaGear } from "react-icons/fa6"
 import { Button } from "@components/Button"
+import { Input } from "@components/Input"
 
 import { saveToken } from "@utils/auth"
 import { setThemeColor } from "@utils/setThemeColor"
@@ -21,7 +22,7 @@ import { AnimatedBackground } from "@components/AnimatedBackground"
 import { API_PATH } from "@/constants"
 
 // Result type for login operation
-type LoginResult = { ok: true }
+type LoginResult = { ok: true; msg: string }
 
 export const LoginPage: React.FC = () => {
   // Set theme color on component mount
@@ -34,7 +35,6 @@ export const LoginPage: React.FC = () => {
   const { toast } = useToast()
 
   // Form element references
-  const signInButtonRef = useRef<HTMLButtonElement | null>(null)
   const userInputRef = useRef<HTMLInputElement | null>(null)
   const passwordInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -42,15 +42,6 @@ export const LoginPage: React.FC = () => {
   const inFlightRef = useRef<boolean>(false)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false)
-
-  // CSS classes for form styling
-  const labelClasses = "flex flex-col items-start gap-2 w-full"
-  const inputClasses = [
-    "block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 placeholder-gray-400",
-    "text-sm text-gray-900 font-body leading-5 shadow-sm",
-    "focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-    "transition-colors duration-150",
-  ].join(" ")
 
   // Authentication API call handler
   const loginRequest = useCallback(
@@ -137,7 +128,7 @@ export const LoginPage: React.FC = () => {
       <aside className="hidden flex-col justify-center gap-8 border-b-2 border-gray-400 bg-gray-100 bg-gray-100/80 p-10 md:flex md:border-r-2">
         <header className="flex flex-col items-start gap-8 ">
           <FolderlanSvg className="h-30 text-gray-900 md:h-28" />
-          <h1 className="font-heading text-3xl font-bold text-gray-900">Welcome to Folderlan!</h1>
+          <h1 className="font-heading text-3xl text-gray-900">Welcome to Folderlan!</h1>
         </header>
 
         <p className="lg:prose-md prose font-body text-gray-900">
@@ -154,7 +145,7 @@ export const LoginPage: React.FC = () => {
               className="flex items-center gap-4 duration-100 hover:text-gray-600 active:text-gray-500"
             >
               <FaGithub className="text-4xl text-gray-900" />
-              <p className="font-body text-sm text-gray-900">ImMau14 - Folderlan 0.0.1</p>
+              <p className="font-body text-sm text-gray-900">ImMau14 - Folderlan 0.1.0-alpha</p>
             </a>
           </div>
         </footer>
@@ -165,50 +156,34 @@ export const LoginPage: React.FC = () => {
         <div className="relative flex w-full max-w-md flex-col gap-8 rounded-xl border-2 border-gray-400 bg-gray-100/60 p-8  shadow-gray-900/10">
           <header className="flex items-center gap-4">
             <FaUserCircle className="text-3xl text-gray-900" />
-            <h2 className="font-heading text-2xl font-bold text-gray-900">Log In</h2>
+            <h2 className="font-heading text-2xl text-gray-900">Log In</h2>
           </header>
 
           <form
             className="flex flex-col items-stretch justify-center gap-6"
             onSubmit={handleSubmit}
           >
-            <label htmlFor="username" className={labelClasses}>
-              <span className="font-body text-sm font-medium text-gray-900">Username</span>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                autoComplete="username"
-                className={inputClasses}
-                placeholder="jhon.cena"
-                ref={userInputRef}
-                required
-                disabled={isLoading}
-              />
-            </label>
-
-            <label htmlFor="password" className={labelClasses}>
-              <span className="font-body text-sm font-medium text-gray-900">Password</span>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                className={inputClasses}
-                placeholder="••••••••"
-                ref={passwordInputRef}
-                required
-                disabled={isLoading}
-              />
-            </label>
-
-            <Button
-              color="green"
-              type="submit"
-              ref={signInButtonRef}
+            <Input
+              title="Username"
+              id="username"
+              placeholder="jhon.cena"
+              autoComplete="username"
+              required
+              ref={userInputRef}
               disabled={isLoading}
-              aria-busy={isLoading}
-            >
+            />
+
+            <Input
+              title="Password"
+              id="password"
+              placeholder="••••••••"
+              autoComplete="current-password"
+              required
+              ref={passwordInputRef}
+              disabled={isLoading}
+            />
+
+            <Button color="green" type="submit" disabled={isLoading} aria-busy={isLoading}>
               <motion.div layout className={`flex items-center gap-2`}>
                 <div>
                   {isLoading ? (
