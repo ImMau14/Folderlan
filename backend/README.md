@@ -78,13 +78,14 @@ cargo build --release
 
 ## Main server variables
 
-|      Name     |      Type     |         Default         | Purpose / Notes                                                                       |
-| :-----------: | :-----------: | :---------------------: | ------------------------------------------------------------------------------------- |
-|   `OFF_CORS`  |    boolean    |         `false`         | If `true`, modifies CORS builder behavior. Set to `true` for restricted environments. |
-|     `PORT`    |    integer    |          `8080`         | TCP port to bind server.                                                              |
-|   `ADDRESS`   |     string    |        `0.0.0.0`        | Bind address. Use `127.0.0.1` for local-only.                                         |
-| `SQLITE_FILE` | string (path) |       `db/app.db`       | SQLite DB file path. Parent dirs are created automatically.                           |
-|  `SECRET_JWT` |     string    | `"12345"` (dev default) | JWT signing secret. **Change in production.**                                         |
+|      Name       |      Type     |         Default         | Purpose / Notes                                                                       |
+| :-----------:   | :-----------: | :---------------------: | ------------------------------------------------------------------------------------- |
+|   `OFF_CORS`    |    boolean    |         `false`         | If `true`, modifies CORS builder behavior. Set to `true` for restricted environments. |
+|   `LOCAL_ONLY`  |    boolean    |         `true`          | If `true`, disable the protection middleware only for local endpoints                 |
+|     `PORT`      |    integer    |         `8080`          | TCP port to bind server.                                                              |
+|   `ADDRESS`     |     string    |        `0.0.0.0`        | Bind address. Use `127.0.0.1` for local-only.                                         |
+| `SQLITE_FILE`   | string (path) |       `db/app.db`       | SQLite DB file path. Parent dirs are created automatically.                           |
+|  `SECRET_JWT`   |     string    |         Random          | JWT signing secret.                                                                   |
 
 **Usage:** set env vars in shell, systemd, or container env. Example:
 
