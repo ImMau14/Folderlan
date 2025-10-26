@@ -1,8 +1,9 @@
 # Folderlan 1.0.0 — Backend Documentation
 
-![Rust](https://img.shields.io/badge/Rust-393127?style=for-the-badge&logo=rust)
-![Actix-web](https://img.shields.io/badge/Actix--Web-2d2d2d?style=for-the-badge&logo=actix)
-![SQLite](https://img.shields.io/badge/SQLite-272939?style=for-the-badge&logo=sqlite)
+![Rust](https://img.shields.io/badge/Rust-563600?style=plastic&logo=rust)
+![Actix-web](https://img.shields.io/badge/Actix--web-202020?style=plastic&logo=actix)
+![SQLite](https://img.shields.io/badge/SQLite-001d6b?style=plastic&logo=sqlite)
+[![Rust CI](https://github.com/ImMau14/Folderlan/actions/workflows/rust-ci.yaml/badge.svg)](https://github.com/ImMau14/Folderlan/actions/workflows/rust-ci.yaml)
 
 ---
 
@@ -140,7 +141,7 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 
 ### GET `/api/db` — Check database existence
 
-* **Access**: Local-only (request must originate from server host / `127.0.0.1` or equivalent LocalOnly middleware).
+* **Access**: public
 * **Method**: `GET`
 * **Headers**: none
 * **Query**: none
