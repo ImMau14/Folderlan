@@ -58,8 +58,11 @@ pub async fn db_exists(pool: web::Data<SqlitePool>) -> impl Responder {
 pub fn db_config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/db")
-            .wrap(LocalOnly)
             .route("", web::get().to(db_exists))
-            .route("", web::post().to(init_db)),
+            .service(
+                web::resource("")
+                    .wrap(LocalOnly)
+                    .route(web::post().to(init_db)),
+            ),
     );
 }
