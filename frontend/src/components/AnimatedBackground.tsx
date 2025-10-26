@@ -1,6 +1,6 @@
 // An animated background component
 
-import React from "react"
+import React, { useEffect, useRef, useState, useCallback } from "react"
 import bgVideo from "@assets/bg.webm"
 import { motion } from "framer-motion"
 
@@ -8,14 +8,80 @@ import { motion } from "framer-motion"
 type AnimatedBackgroundProps = {
   children?: React.ReactNode
   className?: string
+  loadTimeoutMs?: number
 }
 
 // Background component with video animation and content overlay
-export const AnimatedBackground = ({ children, className = "" }: AnimatedBackgroundProps) => {
+export const AnimatedBackground = ({
+  children,
+  className = "",
+  loadTimeoutMs = 5000,
+}: AnimatedBackgroundProps) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const [isReady, setIsReady] = useState(false)
+  const timeoutRef = useRef<number | null>(null)
+
+  // Mark Ready: set state and clear fallback timeout
+  // Stable callback version (doesn't read isReady) so it can be used safely in useEffect deps
+  const markReady = useCallback(() => {
+    // set state unconditionally (no isReady read) — safe and avoids stale closure issues
+    setIsReady(true)
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+
+    // If already buffered enough, mark ready immediately
+    if (v.readyState >= 4) {
+      markReady()
+      return
+    }
+
+    const onCanPlayThrough = () => markReady()
+    const onLoadedData = () => markReady()
+    const onPlaying = () => markReady()
+
+    v.addEventListener("canplaythrough", onCanPlayThrough)
+    v.addEventListener("loadeddata", onLoadedData)
+    v.addEventListener("playing", onPlaying)
+
+    // Try to start playback programmatically; capture any autoplay errors
+    const tryPlay = async () => {
+      try {
+        await v.play()
+      } catch (err) {
+        // Autoplay may be blocked; fallback to showing when frames are available or timeout.
+        console.warn("Video autoplay prevented or failed to play programmatically:", err)
+      }
+    }
+    tryPlay().catch(() => {})
+
+    // Fallback: force-ready after timeout to avoid indefinite hidden state
+    timeoutRef.current = window.setTimeout(() => {
+      markReady()
+    }, loadTimeoutMs)
+
+    return () => {
+      v.removeEventListener("canplaythrough", onCanPlayThrough)
+      v.removeEventListener("loadeddata", onLoadedData)
+      v.removeEventListener("playing", onPlaying)
+      if (timeoutRef.current !== null) {
+        window.clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+    }
+  }, [loadTimeoutMs, markReady])
+
   return (
     <section className={`relative h-full w-auto overflow-hidden ${className}`}>
       {/* Background video with accessibility considerations */}
       <motion.video
+        ref={videoRef}
         src={bgVideo}
         autoPlay
         muted
@@ -31,7 +97,7 @@ export const AnimatedBackground = ({ children, className = "" }: AnimatedBackgro
           opacity-50
         "
         initial={{ opacity: 0 }}
-        animate={{ opacity: 0.5 }}
+        animate={isReady ? { opacity: 0.5 } : { opacity: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       />
       {/* Content container with higher z-index to appear above video */}
