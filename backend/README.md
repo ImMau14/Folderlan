@@ -1,9 +1,8 @@
-# Folderlan 1.0.0 — Backend Documentation
+# Folderlan Backend Documentation · [![Rust CI](https://github.com/ImMau14/Folderlan/actions/workflows/rust-ci.yaml/badge.svg)](https://github.com/ImMau14/Folderlan/actions/workflows/rust-ci.yaml)
 
 ![Rust](https://img.shields.io/badge/Rust-563600?style=plastic&logo=rust)
 ![Actix-web](https://img.shields.io/badge/Actix--web-202020?style=plastic&logo=actix)
 ![SQLite](https://img.shields.io/badge/SQLite-001d6b?style=plastic&logo=sqlite)
-[![Rust CI](https://github.com/ImMau14/Folderlan/actions/workflows/rust-ci.yaml/badge.svg)](https://github.com/ImMau14/Folderlan/actions/workflows/rust-ci.yaml)
 
 ---
 
