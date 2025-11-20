@@ -5,9 +5,10 @@ import { Navigate, useLocation } from "react-router-dom"
 import { dbExist } from "@utils/dbExist"
 import { isTokenValid } from "@utils/auth"
 import Loading from "@components/Loading"
+import { useI18n } from "@i18n/I18nProvider"
 
 interface DatabaseGuardProps {
-  children: HTMLElement
+  children: React.ReactNode
 }
 
 // DatabaseGuard: Verifies DB existence using async dbExist().
@@ -15,6 +16,7 @@ export const DatabaseGuard: React.FC<DatabaseGuardProps> = ({ children }) => {
   const location = useLocation()
   const [checked, setChecked] = useState(false)
   const [exists, setExists] = useState(false)
+  const { t } = useI18n()
 
   useEffect(() => {
     let mounted = true
@@ -43,7 +45,7 @@ export const DatabaseGuard: React.FC<DatabaseGuardProps> = ({ children }) => {
   if (!checked)
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
-        <Loading message="Checking database..." />
+        <Loading message={t("loading.checkingDatabase") ?? undefined} />
       </div>
     )
 

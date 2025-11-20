@@ -1,0 +1,96 @@
+{
+  "global": {
+    "appName": "Folderlan",
+    "tagline": "Compartilhamento de arquivos self-hosted",
+    "logoLabel": "Logotipo da Folderlan"
+  },
+  "header": {
+    "title": "Folderlan",
+    "subtitle": "Central de controle"
+  },
+  "language": {
+    "label": "Idioma",
+    "english": "Inglês",
+    "spanish": "Espanhol",
+    "italian": "Italiano",
+    "portuguese": "Português"
+  },
+  "theme": {
+    "dark": "Modo escuro",
+    "light": "Modo claro",
+    "ariaDark": "Mudar para modo claro",
+    "ariaLight": "Mudar para modo escuro"
+  },
+  "loading": {
+    "checkingDatabase": "Verificando banco de dados...",
+    "default": "Carregando..."
+  },
+  "setup": {
+    "welcomeTitle": "Bem-vindo ao Folderlan, sinta-se em casa!",
+    "welcomeDescription": "Para começar, pressione o botão abaixo para criar sua conta de proprietário e começar a compartilhar arquivos entre todos os seus dispositivos.",
+    "startButton": "Iniciar configuração",
+    "formTitle": "Registrar proprietário",
+    "formSubtitle": "Crie uma conta de proprietário para começar.",
+    "usernameLabel": "Nome de usuário",
+    "usernamePlaceholder": "ImMau14",
+    "passwordLabel": "Senha",
+    "passwordPlaceholder": "••••••••",
+    "confirmPasswordLabel": "Confirmar senha",
+    "confirmPasswordPlaceholder": "••••••••",
+    "registerButton": "Registrar proprietário",
+    "toast": {
+      "databaseCreateErrorTitle": "Falha ao criar o banco de dados",
+      "databaseCreateErrorDescription": "{{message}}",
+      "databaseNetworkErrorTitle": "Erro ao criar o banco de dados",
+      "databaseNetworkErrorDescription": "Erro de rede ao criar o banco de dados.",
+      "databaseCreatedTitle": "Banco de dados criado",
+      "databaseCreatedDescription": "Banco de dados inicializado com sucesso.",
+      "registrationFailedTitle": "Registro falhou",
+      "registrationFailedDescription": "{{message}}",
+      "registrationNetworkErrorTitle": "Erro de registro",
+      "registrationNetworkErrorDescription": "Erro de rede durante o registro.",
+      "ownerRegisteredTitle": "Proprietário registrado",
+      "ownerRegisteredDescription": "Usuário {{username}} criado com sucesso.",
+      "loginFailedTitle": "Autenticação falhou",
+      "loginFailedDescription": "{{message}}",
+      "loginErrorTitle": "Erro de login",
+      "loginErrorDescription": "Erro de rede ao realizar login.",
+      "loginNoTokenTitle": "Erro de login",
+      "loginNoTokenDescription": "Nenhum token recebido do servidor.",
+      "loginSuccessTitle": "Autenticado",
+      "loginSuccessDescription": "Bem-vindo — você está autenticado.",
+      "missingFieldsTitle": "Campos incompletos",
+      "missingFieldsDescription": "Preencha todos os campos para continuar.",
+      "passwordMismatchTitle": "Senhas não coincidem",
+      "passwordMismatchDescription": "Verifique se as senhas são iguais.",
+      "registrationIncompleteTitle": "Registro incompleto",
+      "registrationIncompleteDescription": "{{message}}",
+      "unexpectedErrorTitle": "Erro inesperado",
+      "unexpectedErrorDescription": "Ocorreu um erro inesperado. Tente novamente mais tarde."
+    }
+  },
+  "login": {
+    "sidebarTitle": "Bem-vindo ao Folderlan!",
+    "sidebarDescription": "Compartilhe arquivos de forma privada, rápida e simples com o Folderlan: um aplicativo nativo com Rust, Actix-web e uma bela interface React.",
+    "sidebarVersion": "ImMau14 · Folderlan 0.1.0-alpha",
+    "formTitle": "Entrar",
+    "usernameLabel": "Nome de usuário",
+    "usernamePlaceholder": "jhon.cena",
+    "passwordLabel": "Senha",
+    "passwordPlaceholder": "••••••••",
+    "submit": "Entrar",
+    "forgotOwner": "Você é o proprietário e esqueceu sua senha?",
+    "toast": {
+      "successTitle": "Login bem-sucedido",
+      "successDescription": "Bem-vindo {{username}}.",
+      "errorTitle": "Falha no login",
+      "errorDescription": "{{message}}",
+      "networkErrorDescription": "Erro de rede. Tente novamente mais tarde."
+    }
+  },
+  "notFound": {
+    "title": "404: Esta página não existe",
+    "description": "A página que você tentou acessar não existe.",
+    "altDescription": "Não sabemos o que você está fazendo aqui, mas pegue este Homero Chino!"
+  }
+}

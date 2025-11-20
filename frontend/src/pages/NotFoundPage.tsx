@@ -2,73 +2,34 @@
 
 import { motion } from "framer-motion"
 import { IoIosWarning } from "react-icons/io"
-import { useEffect } from "react"
+import React from "react"
+import { Link } from "react-router-dom"
+import { Button } from "@components/Button"
+import notFoundImage from "@assets/homerochino.webp"
+import { useI18n } from "@i18n/I18nProvider"
 import { setThemeColor } from "@utils/setThemeColor"
-import { setPageName } from "@utils/setPageName"
 
-import HomeroChino from "@assets/homerochino.webp"
+export const NotFoundPage: React.FC = () => {
+  const { t } = useI18n()
 
-export const NotFoundPage = () => {
   // Set page theme color on component mount
-  useEffect(() => {
+  React.useEffect(() => {
     setThemeColor("#f5f6f7")
-    setPageName("Not Found")
   }, [])
 
-  // Generate random number for conditional content display
-  const randomNum = Math.floor(Math.random() * (10 - 1 + 1)) + 1
-  const msg =
-    randomNum === 1
-      ? "I don't know what are you doing on this route, but, take this Homero Chino!"
-      : "The page you are trying to access does not exist."
-
-  // Animation variants for container element
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  }
-
-  // Animation variants for child elements
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.4,
-        ease: "easeOut",
-      },
-    },
-  }
-
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="flex h-full w-full flex-col items-center justify-center gap-4 bg-gray-100 p-8"
-    >
-      {/* Conditionally render Homero Chino image or warning icon based on random number */}
-      {randomNum === 1 ? (
-        <motion.img src={HomeroChino} className="h-40" variants={itemVariants} />
-      ) : (
-        <motion.div variants={itemVariants}>
-          <IoIosWarning className="text-5xl text-yellow-500" />
-        </motion.div>
-      )}
-
-      <motion.h1 className="text-center font-heading text-2xl" variants={itemVariants}>
-        <b>404</b>: This page not exists!
-      </motion.h1>
-
-      <motion.p className="text-center font-body" variants={itemVariants}>
-        {msg}
-      </motion.p>
-    </motion.div>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 text-center text-slate-900 transition-colors dark:bg-slate-950 dark:text-slate-100">
+      <img src={notFoundImage} alt={t("notFound.altDescription")} className="mb-8 w-72" />
+      <h1 className="mb-4 text-4xl font-bold">{t("notFound.title")}</h1>
+      <p className="mb-6 max-w-md text-base text-slate-600 dark:text-slate-300">
+        {t("notFound.description")}
+      </p>
+      <p className="mb-8 max-w-md text-base text-slate-600 dark:text-slate-300">
+        {t("notFound.altDescription")}
+      </p>
+      <Link to="/">
+        <Button color="green">{t("global.appName")}</Button>
+      </Link>
+    </div>
   )
 }

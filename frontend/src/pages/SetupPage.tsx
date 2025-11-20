@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react"
 import { FaRegUser, FaUserCircle } from "react-icons/fa"
 import { FaArrowRightToBracket, FaGear } from "react-icons/fa6"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, type Transition } from "framer-motion"
 
 import { setPageName } from "@utils/setPageName"
 import { setThemeColor } from "@utils/setThemeColor"
@@ -16,6 +16,7 @@ import { Input } from "@components/Input"
 import { useToast } from "@components/ToastProvider"
 import { AnimatedBackground } from "@components/AnimatedBackground"
 import { FolderlanSvg } from "@components/FolderlanSvg"
+import { useI18n } from "@i18n/I18nProvider"
 
 import { API_PATH } from "@/constants"
 
@@ -39,6 +40,7 @@ export const SetupPage = () => {
   const inFlightRef = useRef<boolean>(false)
 
   const { toast } = useToast()
+  const { t } = useI18n()
 
   // RegisterOwnerRequest performs three sequential operations:
   // 1) Initialize database, 2) Register owner, 3) Log in and save token.
@@ -52,13 +54,15 @@ export const SetupPage = () => {
 
         // Validate result; treat falsy or explicit ok:false as failure.
         if (!initDbRes || initDbRes.ok === false) {
-          const msg =
-            (initDbRes && (initDbRes.message || initDbRes.error || initDbRes.error_description)) ??
-            "Failed to initialize the database."
+          const data = initDbRes as Record<string, any> | undefined
+          const rawMessage =
+            data?.wrapper?.message ?? data?.message ?? data?.error ?? data?.error_description ?? undefined
+          const fallbackMessage = t("setup.toast.unexpectedErrorDescription")
+          const msg = rawMessage ?? fallbackMessage
           toast({
             type: "error",
-            title: "Database creation failed",
-            description: msg,
+            title: t("setup.toast.databaseCreateErrorTitle"),
+            description: t("setup.toast.databaseCreateErrorDescription", { message: msg }),
             duration: 4000,
           })
           console.warn("initDb failed:", initDbRes)
@@ -68,16 +72,16 @@ export const SetupPage = () => {
         // Show single success toast after DB is created.
         toast({
           type: "success",
-          title: "Database created",
-          description: "Database initialized successfully.",
+          title: t("setup.toast.databaseCreatedTitle"),
+          description: t("setup.toast.databaseCreatedDescription"),
           duration: 2000,
         })
       } catch (err) {
         console.error("initDb threw:", err)
-        const msg = "Network error while creating the database."
+        const msg = t("setup.toast.databaseNetworkErrorDescription")
         toast({
           type: "error",
-          title: "Database creation error",
+          title: t("setup.toast.databaseNetworkErrorTitle"),
           description: msg,
           duration: 4000,
         })
@@ -89,16 +93,17 @@ export const SetupPage = () => {
         const registerRes = await client.ownerRegister(username, password)
 
         if (!registerRes || registerRes.ok === false) {
+          const data = registerRes as Record<string, any> | undefined
           const msg =
-            (registerRes &&
-              (registerRes.wrapper?.message ||
-                registerRes.error ||
-                registerRes.error_description)) ??
-            "Registration failed."
+            data?.wrapper?.message ??
+            data?.message ??
+            data?.error ??
+            data?.error_description ??
+            t("setup.toast.unexpectedErrorDescription")
           toast({
             type: "error",
-            title: "Registration failed",
-            description: msg,
+            title: t("setup.toast.registrationFailedTitle"),
+            description: t("setup.toast.registrationFailedDescription", { message: msg }),
             duration: 4000,
           })
           console.warn("ownerRegister failed:", registerRes)
@@ -108,16 +113,16 @@ export const SetupPage = () => {
         // Show single success toast after owner is registered.
         toast({
           type: "success",
-          title: "Owner registered",
-          description: `User ${username} created successfully.`,
+          title: t("setup.toast.ownerRegisteredTitle"),
+          description: t("setup.toast.ownerRegisteredDescription", { username }),
           duration: 2000,
         })
       } catch (err) {
         console.error("ownerRegister threw:", err)
-        const msg = "Network error during registration."
+        const msg = t("setup.toast.registrationNetworkErrorDescription")
         toast({
           type: "error",
-          title: "Registration error",
+          title: t("setup.toast.registrationNetworkErrorTitle"),
           description: msg,
           duration: 4000,
         })
@@ -129,14 +134,17 @@ export const SetupPage = () => {
         const loginRes = await client.login(username, password)
 
         if (!loginRes || loginRes.ok === false) {
+          const data = loginRes as Record<string, any> | undefined
           const msg =
-            (loginRes &&
-              (loginRes.wrapper?.message || loginRes.error || loginRes.error_description)) ??
-            "Authentication failed."
+            data?.wrapper?.message ??
+            data?.message ??
+            data?.error ??
+            data?.error_description ??
+            t("setup.toast.unexpectedErrorDescription")
           toast({
             type: "error",
-            title: "Authentication failed",
-            description: msg,
+            title: t("setup.toast.loginFailedTitle"),
+            description: t("setup.toast.loginFailedDescription", { message: msg }),
             duration: 4000,
           })
           console.warn("login failed:", loginRes)
@@ -145,10 +153,10 @@ export const SetupPage = () => {
 
         const token = loginRes.wrapper?.token
         if (!token) {
-          const msg = "No token received from server."
+          const msg = t("setup.toast.loginNoTokenDescription")
           toast({
             type: "error",
-            title: "Login Error",
+            title: t("setup.toast.loginNoTokenTitle"),
             description: msg,
             duration: 4000,
           })
@@ -160,25 +168,25 @@ export const SetupPage = () => {
         // Show single success toast after login success.
         toast({
           type: "success",
-          title: "Signed In",
-          description: "Welcome — you are now signed in.",
+          title: t("setup.toast.loginSuccessTitle"),
+          description: t("setup.toast.loginSuccessDescription"),
           duration: 2000,
         })
 
         return { ok: true }
       } catch (err) {
         console.error("login threw:", err)
-        const msg = "Network error while signing in."
+        const msg = t("setup.toast.loginErrorDescription")
         toast({
           type: "error",
-          title: "Login error",
+          title: t("setup.toast.loginErrorTitle"),
           description: msg,
           duration: 4000,
         })
         return { ok: false, message: msg }
       }
     },
-    [toast]
+    [t, toast]
   )
 
   // Handle submit, guard duplicates, basic client validation and UX touches.
@@ -198,8 +206,8 @@ export const SetupPage = () => {
     if (!username || !password || !confirmPassword) {
       toast({
         type: "error",
-        title: "Incomplete fields",
-        description: "Please fill in all fields to continue.",
+        title: t("setup.toast.missingFieldsTitle"),
+        description: t("setup.toast.missingFieldsDescription"),
         duration: 2500,
       })
       return
@@ -208,8 +216,8 @@ export const SetupPage = () => {
     if (password !== confirmPassword) {
       toast({
         type: "error",
-        title: "Passwords do not match",
-        description: "Make sure both passwords match to register.",
+        title: t("setup.toast.passwordMismatchTitle"),
+        description: t("setup.toast.passwordMismatchDescription"),
         duration: 2500,
       })
       return
@@ -238,8 +246,8 @@ export const SetupPage = () => {
         if (res.message) {
           toast({
             type: "error",
-            title: "Registration incomplete",
-            description: res.message,
+            title: t("setup.toast.registrationIncompleteTitle"),
+            description: t("setup.toast.registrationIncompleteDescription", { message: res.message }),
             duration: 3500,
           })
         }
@@ -250,8 +258,8 @@ export const SetupPage = () => {
       console.error("handleSubmit unexpected error:", err)
       toast({
         type: "error",
-        title: "Unexpected Error",
-        description: "An unexpected error occurred. Please try again later.",
+        title: t("setup.toast.unexpectedErrorTitle"),
+        description: t("setup.toast.unexpectedErrorDescription"),
         duration: 3500,
       })
     } finally {
@@ -262,11 +270,10 @@ export const SetupPage = () => {
 
   useEffect(() => {
     setThemeColor("#f5f6f7")
-    setPageName(onForm ? "Register Owner" : "Welcome")
-  }, [onForm])
+    setPageName(onForm ? t("setup.formTitle") : t("setup.welcomeTitle"))
+  }, [onForm, t])
 
-  // Variants for card animations
-  const cardTransition = { duration: 0.35, ease: "easeOut" }
+  const cardTransition: Transition = { duration: 0.35, ease: [0.16, 1, 0.3, 1] }
 
   // For red password mismatch effect
   const onChangeConfirmPassword = () => {
@@ -278,7 +285,7 @@ export const SetupPage = () => {
   }
 
   return (
-    <AnimatedBackground className="flex h-full w-full flex-col items-center justify-center text-gray-900">
+    <AnimatedBackground className="flex min-h-screen w-full flex-col items-center justify-center text-gray-900 dark:text-slate-100">
       <div className="relative flex h-full w-full items-center justify-center">
         <AnimatePresence>
           {!onForm ? (
@@ -287,18 +294,17 @@ export const SetupPage = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, x: 12 }}
               transition={cardTransition}
-              className="absolute flex w-[90%] flex-col items-center gap-6 rounded-xl border-2 border-gray-400 bg-gray-100/60 p-10 md:w-[600px]"
+              className="absolute flex w-[90%] flex-col items-center gap-6 rounded-2xl border border-slate-200/80 bg-white/80 p-10 shadow-2xl shadow-slate-900/20 backdrop-blur-md md:w-[600px] dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-900/50"
               key="welcome"
             >
               <header className="flex flex-col items-start gap-6 md:items-center">
                 <FolderlanSvg className="h-24" />
                 <div className="flex flex-col items-center gap-2">
-                  <h1 className="font-heading text-3xl font-semibold">
-                    Welcome to Folderlan, feel at home!
+                  <h1 className="font-heading text-3xl font-semibold text-gray-900 dark:text-slate-50">
+                    {t("setup.welcomeTitle")}
                   </h1>
-                  <p className="font-body text-gray-500 md:text-center">
-                    Welcome to Folderlan! To get started, hit the green button to create your owner
-                    account and begin sharing files between all your devices!
+                  <p className="font-body text-center text-gray-600 dark:text-slate-300">
+                    {t("setup.welcomeDescription")}
                   </p>
                 </div>
               </header>
@@ -309,12 +315,12 @@ export const SetupPage = () => {
                 onClick={() => setOnForm(true)}
               >
                 <FaArrowRightToBracket className="text-md" />
-                Start Setup
+                {t("setup.startButton")}
               </Button>
             </motion.main>
           ) : (
             <motion.main
-              className="absolute flex w-[90%] flex-col gap-4 rounded-xl border-2 border-gray-400 bg-gray-100/60 p-8 md:w-96"
+              className="absolute flex w-[90%] flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white/85 p-8 shadow-2xl shadow-slate-900/20 backdrop-blur-md md:w-96 dark:border-slate-700/60 dark:bg-slate-900/75 dark:shadow-slate-900/50"
               initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -12 }}
@@ -324,17 +330,21 @@ export const SetupPage = () => {
               <header className="flex flex-col gap-2">
                 <div className="flex items-center gap-4">
                   <FaUserCircle className="text-3xl" />
-                  <h2 className="font-heading text-2xl">Register Owner</h2>
+                  <h2 className="font-heading text-2xl text-gray-900 dark:text-slate-50">
+                    {t("setup.formTitle")}
+                  </h2>
                 </div>
 
-                <div className="text-sm text-gray-500">Create an owner account to get started.</div>
+                <div className="text-sm text-gray-500 dark:text-slate-300">
+                  {t("setup.formSubtitle")}
+                </div>
               </header>
 
               <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
                 <Input
-                  title="Username"
+                  title={t("setup.usernameLabel")}
                   id="username"
-                  placeholder="ImMau14"
+                  placeholder={t("setup.usernamePlaceholder")}
                   type="text"
                   required
                   ref={userInputRef}
@@ -342,9 +352,9 @@ export const SetupPage = () => {
                 />
 
                 <Input
-                  title="Password"
+                  title={t("setup.passwordLabel")}
                   id="password"
-                  placeholder="••••••••"
+                  placeholder={t("setup.passwordPlaceholder")}
                   type="password"
                   required
                   ref={passwordInputRef}
@@ -353,9 +363,9 @@ export const SetupPage = () => {
                 />
 
                 <Input
-                  title="Confirm Password"
+                  title={t("setup.confirmPasswordLabel")}
                   id="confirm-password"
-                  placeholder="••••••••"
+                  placeholder={t("setup.confirmPasswordPlaceholder")}
                   type="password"
                   required
                   ref={confirmPasswordInputRef}
@@ -387,7 +397,7 @@ export const SetupPage = () => {
                         <FaRegUser className="text-md" />
                       )}
                     </div>
-                    <p>Register Owner</p>
+                    <p>{t("setup.registerButton")}</p>
                   </motion.div>
                 </Button>
               </form>
