@@ -16,6 +16,8 @@ export default defineConfig(({ mode }) => {
         "@styles": path.resolve(__dirname, "./src/styles"),
         "@guards": path.resolve(__dirname, "./src/guards"),
         "@routes": path.resolve(__dirname, "./src/routes"),
+        "@i18n": path.resolve(__dirname, "./src/i18n"),
+        "@theme": path.resolve(__dirname, "./src/theme"),
       },
     },
     define: {
