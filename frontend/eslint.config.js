@@ -1,70 +1,77 @@
-import { defineConfig } from "eslint/config"
-import js from "@eslint/js"
-import globals from "globals"
+import { defineConfig } from 'eslint/config'
+import js from '@eslint/js'
+import globals from 'globals'
 
-import tsPlugin from "@typescript-eslint/eslint-plugin"
-import tsParser from "@typescript-eslint/parser"
+import tsPlugin from '@typescript-eslint/eslint-plugin'
+import tsParser from '@typescript-eslint/parser'
 
-import reactHooks from "eslint-plugin-react-hooks"
-import tailwind from "eslint-plugin-tailwindcss"
-import importPlugin from "eslint-plugin-import"
-import prettierPlugin from "eslint-plugin-prettier"
+import reactHooks from 'eslint-plugin-react-hooks'
+import tailwind from 'eslint-plugin-tailwindcss'
+import importPlugin from 'eslint-plugin-import'
 
 export default defineConfig([
   {
-    ignores: ["dist", "build", "node_modules", ".cache", "*.config.*"],
+    ignores: ['dist', 'build', 'node_modules', '.cache', '*.config.*'],
   },
 
   js.configs.recommended,
 
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
+    files: ['**/*.{ts,tsx}'],
     plugins: {
-      "@typescript-eslint": tsPlugin,
-      "react-hooks": reactHooks,
+      '@typescript-eslint': tsPlugin,
+      'react-hooks': reactHooks,
       tailwindcss: tailwind,
       import: importPlugin,
-      prettier: prettierPlugin,
     },
     settings: {
-      "import/resolver": {
+      'import/resolver': {
         typescript: {
-          project: ["./tsconfig.eslint.json"],
+          project: ['./tsconfig.eslint.json'],
         },
       },
+      tailwindcss: {
+        config: './tailwind.config.js',
+      },
+      react: { version: 'detect' },
     },
     languageOptions: {
       parser: tsParser,
       parserOptions: {
         ecmaVersion: 2020,
-        sourceType: "module",
+        sourceType: 'module',
         ecmaFeatures: { jsx: true },
-        project: ["./tsconfig.eslint.json"],
+        project: ['./tsconfig.eslint.json'],
       },
       globals: globals.browser,
     },
     rules: {
-      "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
         {
-          args: "all",
-          argsIgnorePattern: "^_",
-          caughtErrors: "all",
-          caughtErrorsIgnorePattern: "^_",
-          destructuredArrayIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
+          args: 'all',
+          argsIgnorePattern: '^_',
+          caughtErrors: 'all',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
           ignoreRestSiblings: true,
         },
       ],
-      "@typescript-eslint/no-explicit-any": "warn",
-      "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "warn",
-      "prefer-const": "error",
-      "no-var": "error",
-      "tailwindcss/classnames-order": "warn",
-      "import/no-unresolved": "error",
-      "prettier/prettier": "error",
+      '@typescript-eslint/no-explicit-any': 'warn',
+
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+
+      'react/prop-types': 'off',
+
+      'prefer-const': 'error',
+      'no-var': 'error',
+      'tailwindcss/classnames-order': 'warn',
+      'tailwindcss/no-custom-classname': 'warn',
+      'tailwindcss/no-contradicting-classname': 'warn',
+      'import/no-unresolved': 'error',
     },
   },
 ])

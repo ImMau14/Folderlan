@@ -2,7 +2,8 @@
   "global": {
     "appName": "Folderlan",
     "tagline": "Condivisione di file self-hosted",
-    "logoLabel": "Logo di Folderlan"
+    "logoLabel": "Logo di Folderlan",
+    "error": "Errore"
   },
   "header": {
     "title": "Folderlan",
@@ -24,6 +25,10 @@
   "loading": {
     "checkingDatabase": "Verifica del database...",
     "default": "Caricamento..."
+  },
+  "databaseContext": {
+    "checkingError": "Errore durante il controllo del database",
+    "refreshError": "Errore di aggiornamento"
   },
   "setup": {
     "welcomeTitle": "Benvenuto su Folderlan, sentiti a casa!",

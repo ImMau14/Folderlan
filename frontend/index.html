@@ -22,6 +22,36 @@
     <title>Folderlan</title>
   </head>
   <body class="h-full w-full">
+    <!-- Inline script to set initial locale in localStorage and html lang before React mounts -->
+    <script>
+      ;(function () {
+        try {
+          var KEY = 'folderlan:locale'
+          var supported = ['en', 'es', 'it', 'pt']
+          // Check existing preference
+          var stored = localStorage.getItem(KEY)
+          if (!stored) {
+            // Detect browser language and store base code (es from es-ES)
+            var code = (
+              navigator.language ||
+              (navigator.languages && navigator.languages[0]) ||
+              ''
+            ).split('-')[0]
+            var chosen = supported.indexOf(code) !== -1 ? code : 'en'
+            localStorage.setItem(KEY, chosen)
+            document.documentElement.lang = chosen
+            // Expose for React if needed
+            window.__INITIAL_LOCALE__ = chosen
+          } else {
+            document.documentElement.lang = stored
+            window.__INITIAL_LOCALE__ = stored
+          }
+        } catch (e) {
+          // Silent fail: leave fallback lang to React
+        }
+      })()
+    </script>
+
     <div id="root" class="h-full w-full"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

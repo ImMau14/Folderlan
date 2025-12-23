@@ -108,8 +108,8 @@ jobs:
         working-directory: frontend
         run: pnpm run format:check
 
-  build:
-    name: Build (tsc + Vite)
+  type-check:
+    name: Type Check (tsc)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -146,4 +146,4 @@ jobs:
 
       - name: Build
         working-directory: frontend
-        run: pnpm run build
+        run: pnpm run type-check

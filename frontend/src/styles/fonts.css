@@ -2,16 +2,16 @@
 /* @import "@fontsource-variable/inter"; */
 
 @font-face {
-  font-family: "Inter Variable";
-  src: url("/fonts/Inter-Variable.ttf") format("truetype");
+  font-family: 'Inter Variable';
+  src: url('/fonts/Inter-Variable.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Kanit SemiBold";
-  src: url("/fonts/Kanit-SemiBold.ttf") format("truetype");
+  font-family: 'Kanit SemiBold';
+  src: url('/fonts/Kanit-SemiBold.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;

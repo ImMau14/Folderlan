@@ -1,45 +1,51 @@
 // Main application routing configuration with DatabaseGuard and protected routes.
 
-import React from "react"
-import { Routes, Route } from "react-router-dom"
-import { NotFoundPage } from "@pages/NotFoundPage"
-import { SetupPage } from "@pages/SetupPage"
+import { useMemo, type FC } from 'react'
+import { Routes, Route } from 'react-router-dom'
 
-import { ProtectedRoute } from "@routes/ProtectedRoute"
-import { RootRedirect } from "@routes/RootRedirect"
-import { LoginRouteElement } from "@routes/LoginRouteElement"
-import { DatabaseGuard } from "@guards/DatabaseGuard"
-import { GlobalControlsOverlay } from "@components/GlobalControlsOverlay"
+import NotFoundPage from '@pages/NotFoundPage'
+import LoginPage from '@pages/LoginPage'
+import SetupPage from '@pages/SetupPage'
 
-export const App: React.FC = () => {
+import { useTheme } from '@contexts/ThemeContext'
+
+import { DatabaseGuard } from '@guards/DatabaseGuard'
+
+import clsx from 'clsx'
+
+export const App: FC = () => {
+  const { theme } = useTheme()
+
+  // eslint-disable-next-line tailwindcss/no-custom-classname
+  const classes = useMemo(() => clsx('h-full w-full', theme === 'dark' && 'dark'), [theme])
+
+  // Single source of route metadata used by DatabaseGuard
+  const routesConfig = [
+    { path: '/', handle: { isRoot: true } },
+    { path: '/login', handle: { public: true } },
+    { path: '/setup', handle: { public: true } },
+    { path: '/dashboard', handle: { requiresAuth: true, requiresDb: true } },
+    { path: '*', handle: { public: true } },
+  ]
+
   return (
-    <div className="relative min-h-screen">
-      <DatabaseGuard>
+    <div className={classes}>
+      <DatabaseGuard routes={routesConfig}>
         <Routes>
-          {/* Root path redirects to dashboard if authenticated, otherwise to login */}
-          <Route path="/" element={<RootRedirect />} />
-
-          {/* Login route redirects to dashboard if user is already authenticated */}
-          <Route path="/login" element={<LoginRouteElement />} />
-
-          {/* Setup route (render the page that initializes DB) */}
+          {/* Public routes */}
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/setup" element={<SetupPage />} />
 
-          {/* Protected dashboard route - requires valid authentication */}
+          {/* Protected routes*/}
           <Route
             path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <div className="p-6 text-center text-gray-700">Dashboard not yet</div>
-              </ProtectedRoute>
-            }
+            element={<div className="p-6 text-center text-gray-700">Dashboard not yet</div>}
           />
 
-          {/* Catch-all route for undefined paths */}
+          {/* Catch-all NotFound */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </DatabaseGuard>
-      <GlobalControlsOverlay />
     </div>
   )
 }
