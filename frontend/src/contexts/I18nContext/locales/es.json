@@ -2,7 +2,8 @@
   "global": {
     "appName": "Folderlan",
     "tagline": "Compartir archivos autoalojado",
-    "logoLabel": "Logotipo de Folderlan"
+    "logoLabel": "Logotipo de Folderlan",
+    "error": "Error"
   },
   "header": {
     "title": "Folderlan",
@@ -24,6 +25,10 @@
   "loading": {
     "checkingDatabase": "Comprobando base de datos...",
     "default": "Cargando..."
+  },
+  "databaseContext": {
+    "checkingError": "Error revisando la base de datos",
+    "refreshError": "Error al refrescar"
   },
   "setup": {
     "welcomeTitle": "¡Bienvenido a Folderlan, siéntete como en casa!",

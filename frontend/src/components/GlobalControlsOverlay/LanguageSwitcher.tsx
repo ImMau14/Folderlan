@@ -1,16 +1,12 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react"
-import { AnimatePresence, motion } from "framer-motion"
-import { Languages, Check } from "lucide-react"
-import clsx from "clsx"
-import { SUPPORTED_LOCALES, useI18n } from "@i18n/I18nProvider"
+// Language switcher component with dropdown menu and visual feedback.
 
-type LanguageSwitcherVariant = "default" | "mobile"
+import { useCallback, useEffect, useMemo, useRef, useState, type FC } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Languages, Check } from 'lucide-react'
+import { SUPPORTED_LOCALES, useI18n } from '@contexts/I18nContext'
+import clsx from 'clsx'
+
+type LanguageSwitcherVariant = 'default' | 'mobile'
 
 interface LanguageSwitcherProps {
   className?: string
@@ -22,19 +18,21 @@ interface LanguageOption {
   label: string
 }
 
+// Mapping between locale codes and translation keys for language labels
 const LANGUAGE_LABEL_KEYS: Record<string, string> = {
-  en: "language.english",
-  es: "language.spanish",
-  it: "language.italian",
-  pt: "language.portuguese",
+  en: 'language.english',
+  es: 'language.spanish',
+  it: 'language.italian',
+  pt: 'language.portuguese',
 }
 
-export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className, variant = "default" }) => {
+export const LanguageSwitcher: FC<LanguageSwitcherProps> = ({ className, variant = 'default' }) => {
   const { locale, setLocale, t } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const menuRef = useRef<HTMLUListElement | null>(null)
 
+  // Generate language options from supported locales
   const options = useMemo<LanguageOption[]>(() => {
     return SUPPORTED_LOCALES.map((code) => ({
       code,
@@ -44,7 +42,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className, v
 
   const currentOption = useMemo(
     () => options.find((option) => option.code === locale) ?? options[0],
-    [locale, options],
+    [locale, options]
   )
 
   const toggleMenu = useCallback(() => {
@@ -60,9 +58,10 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className, v
       setLocale(code)
       closeMenu()
     },
-    [closeMenu, setLocale],
+    [closeMenu, setLocale]
   )
 
+  // Close menu when clicking outside or pressing Escape
   useEffect(() => {
     if (!isOpen) {
       return
@@ -80,30 +79,30 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className, v
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         closeMenu()
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside)
-    document.addEventListener("touchstart", handleClickOutside)
-    document.addEventListener("keydown", handleKeyDown)
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-      document.removeEventListener("touchstart", handleClickOutside)
-      document.removeEventListener("keydown", handleKeyDown)
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
     }
   }, [closeMenu, isOpen])
 
   const buttonClasses = clsx(
-    "group relative flex items-center justify-center rounded-full border border-white/40 bg-white/70 text-slate-600 shadow-md backdrop-blur transition hover:border-brand-200 hover:text-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-brand-500 dark:hover:text-brand-300",
-    variant === "mobile" ? "h-10 w-10" : "h-11 w-11",
-    className,
+    'group relative flex items-center justify-center rounded-full border border-white/40 bg-white/70 text-slate-600 shadow-md backdrop-blur transition hover:border-brand-200 hover:text-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-brand-500 dark:hover:text-brand-300',
+    variant === 'mobile' ? 'h-10 w-10' : 'h-11 w-11',
+    className
   )
 
   return (
-    <div className={clsx("relative", className)}>
+    <div className={clsx('relative', className)}>
       <button
         type="button"
         ref={triggerRef}
@@ -113,7 +112,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className, v
         className={buttonClasses}
       >
         <Languages className="h-5 w-5" />
-        <span className="sr-only">{`${t("language.label")}: ${currentOption?.label ?? locale.toUpperCase()}`}</span>
+        <span className="sr-only">{`${t('language.label')}: ${currentOption?.label ?? locale.toUpperCase()}`}</span>
         <span
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 rounded-full border border-transparent transition group-hover:border-brand-200/70 dark:group-hover:border-brand-500/70"
@@ -140,10 +139,10 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className, v
                     aria-selected={isActive}
                     onClick={() => handleSelect(option.code)}
                     className={clsx(
-                      "flex w-full items-center justify-between rounded-xl px-3 py-2 transition hover:bg-brand-100/70 hover:text-brand-700 dark:hover:bg-brand-500/20 dark:hover:text-brand-200",
+                      'flex w-full items-center justify-between rounded-xl px-3 py-2 transition hover:bg-brand-100/70 hover:text-brand-700 dark:hover:bg-brand-500/20 dark:hover:text-brand-200',
                       isActive
-                        ? "bg-brand-100/80 text-brand-700 dark:bg-brand-500/30 dark:text-brand-200"
-                        : undefined,
+                        ? 'bg-brand-100/80 text-brand-700 dark:bg-brand-500/30 dark:text-brand-200'
+                        : undefined
                     )}
                   >
                     <span>{option.label}</span>

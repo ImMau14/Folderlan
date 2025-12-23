@@ -16,11 +16,12 @@
       "@/*": ["src/*"],
       "@components/*": ["src/components/*"],
       "@utils/*": ["src/utils/*"],
+      "@config/*": ["src/config/*"],
       "@pages/*": ["src/pages/*"],
       "@assets/*": ["src/assets/*"],
       "@styles/*": ["src/styles/*"],
       "@guards/*": ["src/guards/*"],
-      "@routes/*": ["src/routes/*"],
+      "@contexts/*": ["src/contexts/*"],
       "@i18n/*": ["src/i18n/*"],
       "@theme/*": ["src/theme/*"]
     },
