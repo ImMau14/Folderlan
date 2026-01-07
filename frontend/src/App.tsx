@@ -6,6 +6,7 @@ import { Routes, Route } from 'react-router-dom'
 import NotFoundPage from '@pages/NotFoundPage'
 import LoginPage from '@pages/LoginPage'
 import SetupPage from '@pages/SetupPage'
+import DashboardPage from '@pages/DashboardPage'
 
 import { useTheme } from '@contexts/ThemeContext'
 
@@ -36,11 +37,8 @@ export const App: FC = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/setup" element={<SetupPage />} />
 
-          {/* Protected routes*/}
-          <Route
-            path="/dashboard"
-            element={<div className="p-6 text-center text-gray-700">Dashboard not yet</div>}
-          />
+          {/* Protected routes */}
+          <Route path="/dashboard/*" element={<DashboardPage />} />
 
           {/* Catch-all NotFound */}
           <Route path="*" element={<NotFoundPage />} />

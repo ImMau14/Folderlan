@@ -63,8 +63,10 @@ export const DatabaseGuard = ({ children, routes }: Props) => {
   }
 
   // If DB does not exist -> only allow public routes (e.g., /setup)
-  const routeIsPublic = Boolean(handle.public)
-  if (!dbExists && !routeIsPublic) {
+  if (!dbExists) {
+    if (location.pathname === '/setup') {
+      return <>{children}</>
+    }
     return <Navigate to="/setup" replace />
   }
 
@@ -75,7 +77,7 @@ export const DatabaseGuard = ({ children, routes }: Props) => {
 
   // If route requires auth and user is not authenticated -> redirect to login
   const routeRequiresAuth = Boolean(handle.requiresAuth)
-  if (routeRequiresAuth && !isAuthenticated) {
+  if (routeRequiresAuth && !isAuthenticated && dbExists) {
     return <Navigate to="/login" replace />
   }
 
