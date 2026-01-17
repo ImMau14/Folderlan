@@ -5,7 +5,7 @@ import { IoLogOut } from 'react-icons/io5'
 
 export const TopBar: FC = () => {
   return (
-    <div className="flex items-center justify-between p-6">
+    <div className="flex items-center justify-between p-4">
       <div className="flex flex-row items-center gap-4">
         <FaUserCircle className="text-3xl text-ui-text opacity-80" />
         <div className="flex flex-col">
