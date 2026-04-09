@@ -46,6 +46,7 @@ export default {
         glass: '0 20px 45px -20px rgba(15, 23, 42, 0.35)',
         'ui-0': 'inset 0px 2px 0px hsl(156, 100%, 99%), inset 0px -2px 0px rgba(0,0,0,7%), 0px 3px 5px rgba(0,0,0,10%)',
         'ui-1': 'inset 0px 2px 0px hsl(156, 100%, 99%), inset 0px -2px 0px rgba(0,0,0,7%), 0px 1px 5px rgba(0,0,0,10%)',
+        'ui-2': 'inset 0px 2px 0px hsl(156, 100%, 99%), inset 0px -2px 0px rgba(0,0,0,7%), 0px 1px 5px rgba(0,0,0,5%)',
       },
     },
   },
