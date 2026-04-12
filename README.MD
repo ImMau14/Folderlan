@@ -1,14 +1,5 @@
 # Folderlan · [![NodeJS CI](https://github.com/ImMau14/Folderlan/actions/workflows/node-ci.yaml/badge.svg)](https://github.com/ImMau14/Folderlan/actions/workflows/node-ci.yaml) [![Rust CI](https://github.com/ImMau14/Folderlan/actions/workflows/rust-ci.yaml/badge.svg)](https://github.com/ImMau14/Folderlan/actions/workflows/rust-ci.yaml)
 
-<div align="left">
-  <img src="https://img.shields.io/badge/Rust-c64200?style=plastic&logo=rust&logoSize=auto" alt="Badge">
-  <img src="https://img.shields.io/badge/TypeScript-162438?style=plastic&logo=typescript&logoSize=auto" alt="Badge">
-  <img src="https://img.shields.io/badge/Actix-303a49?style=plastic&logo=actix&logoSize=auto" alt="Badge">
-  <img src="https://img.shields.io/badge/React-436570?style=plastic&logo=react&logoSize=auto" alt="Badge">
-  <img src="https://img.shields.io/badge/TailwindCSS-546f8b?style=plastic&logo=tailwindcss&logoSize=auto" alt="Badge">
-  <img src="https://img.shields.io/badge/SQLite-1c4978?style=plastic&logo=sqlite&logoSize=auto" alt="Badge">
-</div>
-
 Forget about limitations. Share files instantly, directly between devices.
 
 Folderlan is the perfect solution for transferring documents, photos, videos, and more, without the need for the internet, Bluetooth, or cables. Simply connect your devices to the same Wi-Fi network and start sharing with an interface so intuitive that anyone can use it.
