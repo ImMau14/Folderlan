@@ -381,6 +381,7 @@ dependencies = [
  "actix-web-httpauth",
  "argon2",
  "chrono",
+ "dotenvy",
  "futures-util",
  "include_dir",
  "jsonwebtoken",

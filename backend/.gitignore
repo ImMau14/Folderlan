@@ -1,7 +1,7 @@
 .env
 dist
 target
-app.db
-app.db-shm
-app.db-wal
+*.db
+*.db-shm
+*.db-wal
 uploads
