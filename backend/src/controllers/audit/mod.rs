@@ -2,9 +2,7 @@
 
 pub mod handlers;
 
-use crate::{
-    middleware::{jwt_middleware::jwt_validator_adapter, role_middleware::RoleAuth},
-};
+use crate::middleware::{jwt_middleware::jwt_validator_adapter, role_middleware::RoleAuth};
 use actix_web::web;
 use actix_web_httpauth::middleware::HttpAuthentication;
 use handlers::list_audit_logs;
