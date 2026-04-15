@@ -1,4 +1,5 @@
 // Middleware for permission-based authorization.
+
 use crate::{middleware::jwt_middleware::AuthUser, models::responses::ApiResponse};
 use actix_service::Service;
 use actix_web::{
@@ -16,11 +17,12 @@ use std::{
 };
 
 // User permissions structure
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct UserPermissions {
     pub can_upload: bool,
     pub can_delete_own_files: bool,
     pub has_upload_limits: bool,
+    pub upload_limit: i64,
 }
 
 // Permission-based authentication middleware
@@ -100,7 +102,8 @@ where
                 let user_perms = UserPermissions {
                     can_upload: true,
                     can_delete_own_files: true,
-                    has_upload_limits: false, // Owner has no upload limits
+                    has_upload_limits: false,
+                    upload_limit: 0, // Owner has no upload limit
                 };
                 req.extensions_mut().insert(user_perms);
                 return svc.call(req).await;
@@ -116,8 +119,13 @@ where
                 }
             };
 
-            // Build dynamic SQL query based on required permissions
-            let base_columns = ["can_upload", "can_delete_own_files", "has_upload_limits"];
+            // Build list of columns to fetch, including all required permissions and base ones.
+            let base_columns = [
+                "can_upload",
+                "can_delete_own_files",
+                "has_upload_limits",
+                "upload_limit",
+            ];
             let mut all_columns_to_fetch: Vec<String> = required_perms.clone();
             all_columns_to_fetch.extend(base_columns.iter().map(|s| s.to_string()));
             all_columns_to_fetch.sort();
@@ -150,8 +158,7 @@ where
 
             // Validate each required permission
             for perm_name in &required_perms {
-                let has_perm: bool =
-                    row.try_get::<i64, _>(perm_name.as_str()).unwrap_or(0_i64) != 0;
+                let has_perm: bool = row.try_get::<i64, _>(perm_name.as_str()).unwrap_or(0) != 0;
                 if !has_perm {
                     let msg = "Access denied: insufficient permissions";
                     let resp = ApiResponse::<()>::builder().message(msg).forbidden();
@@ -161,12 +168,11 @@ where
 
             // Store user permissions in request extensions
             let user_perms = UserPermissions {
-                can_upload: row.try_get::<i64, _>("can_upload").unwrap_or(0_i64) != 0,
-                can_delete_own_files: row
-                    .try_get::<i64, _>("can_delete_own_files")
-                    .unwrap_or(0_i64)
+                can_upload: row.try_get::<i64, _>("can_upload").unwrap_or(0) != 0,
+                can_delete_own_files: row.try_get::<i64, _>("can_delete_own_files").unwrap_or(0)
                     != 0,
-                has_upload_limits: row.try_get::<i64, _>("has_upload_limits").unwrap_or(0_i64) != 0,
+                has_upload_limits: row.try_get::<i64, _>("has_upload_limits").unwrap_or(0) != 0,
+                upload_limit: row.try_get::<i64, _>("upload_limit").unwrap_or(0),
             };
             req.extensions_mut().insert(user_perms);
 
