@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT\n            f.id as \"id!\",\n            f.name as \"name!\",\n            f.size_bytes as \"size_bytes!\",\n            f.internal_path as \"internal_path!\",\n            f.mime_type as \"mime_type: _\",\n            f.is_public as \"is_public!\",\n            u.username as \"uploaded_by: _\",\n            f.uploaded_at as \"uploaded_at: _\", \n            COUNT(*) OVER () as \"total_count!\"\n        FROM Files f\n        JOIN Users ru ON ru.id = ? AND ru.is_deleted = 0 AND ru.is_active = 1\n        LEFT JOIN Users u ON u.id = f.uploaded_by\n        WHERE f.is_deleted = 0\n        AND (\n            ru.role = 'owner'\n            OR f.uploaded_by = ru.id\n            OR EXISTS (\n                SELECT 1 FROM FilePermissions fp\n                WHERE fp.file_id = f.id AND fp.user_id = ru.id\n            )\n            OR f.is_public = 1\n        )\n        AND (? IS NULL OR f.name LIKE ?)\n        AND (? IS NULL OR f.size_bytes >= ?)\n        AND (? IS NULL OR f.size_bytes <= ?)\n        AND (? IS NULL OR date(f.uploaded_at) >= date(?))\n        AND (? IS NULL OR date(f.uploaded_at) <= date(?))\n        ORDER BY f.uploaded_at DESC\n        LIMIT ? OFFSET ?\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "name!",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "size_bytes!",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "internal_path!",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "mime_type: _",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "is_public!",
+        "ordinal": 5,
+        "type_info": "Bool"
+      },
+      {
+        "name": "uploaded_by: _",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "uploaded_at: _",
+        "ordinal": 7,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "total_count!",
+        "ordinal": 8,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 13
+    },
+    "nullable": [
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "329a09e9db78e1fd3faa189af55f16fc96551ce96ef3ab9f7d5d219163505ad2"
+}

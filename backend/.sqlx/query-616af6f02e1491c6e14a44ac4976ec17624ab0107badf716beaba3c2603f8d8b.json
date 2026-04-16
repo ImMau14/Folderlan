@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        SELECT COALESCE(SUM(size_bytes), 0) AS \"used!\"\n                        FROM Files\n                        WHERE uploaded_by = ? AND is_deleted = 0\n                        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "used!",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "616af6f02e1491c6e14a44ac4976ec17624ab0107badf716beaba3c2603f8d8b"
+}
