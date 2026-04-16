@@ -34,8 +34,41 @@ pub async fn upload_file(
             .internal();
     }
 
-    // Extract user permission flags.
-    let user_perms = req
+    let user_perms_db = match sqlx::query!(
+        r#"
+        SELECT 
+            can_upload,
+            has_upload_limits,
+            upload_limit
+        FROM Users 
+        WHERE id = ? AND is_active = 1 AND is_deleted = 0
+        "#,
+        user_id_i64
+    )
+    .fetch_one(pool.get_ref())
+    .await
+    {
+        Ok(row) => row,
+        Err(sqlx::Error::RowNotFound) => {
+            return ApiResponse::<()>::builder()
+                .message("User not found or inactive")
+                .unauthorized();
+        }
+        Err(e) => {
+            tracing::error!("DB error fetching user permissions: {:?}", e);
+            return ApiResponse::<()>::builder()
+                .message("Database error")
+                .internal();
+        }
+    };
+
+    if user_perms_db.can_upload == 0 {
+        return ApiResponse::<()>::builder()
+            .message("You do not have permission to upload files")
+            .forbidden();
+    }
+
+    let _user_perms = req
         .extensions()
         .get::<UserPermissions>()
         .cloned()
@@ -96,37 +129,21 @@ pub async fn upload_file(
             // Stream chunks to file, enforcing quota if needed.
             while let Ok(Some(chunk)) = field.try_next().await {
                 file_size += chunk.len() as u64;
-
-                if user_perms.has_upload_limits {
-                    let limit_row = match sqlx::query!(
+                if user_perms_db.has_upload_limits != 0 {
+                    let used_bytes: i64 = sqlx::query_scalar!(
                         r#"
-                            SELECT
-                                upload_limit as "upload_limit!",
-                                COALESCE((
-                                    SELECT SUM(size_bytes)
-                                    FROM Files
-                                    WHERE uploaded_by = ? AND is_deleted = 0
-                                ), 0) AS used_bytes
-                            FROM Users
-                            WHERE id = ?
-                            "#,
-                        user_id_i64,
+                        SELECT COALESCE(SUM(size_bytes), 0) AS "used!"
+                        FROM Files
+                        WHERE uploaded_by = ? AND is_deleted = 0
+                        "#,
                         user_id_i64
                     )
                     .fetch_one(pool.get_ref())
                     .await
-                    {
-                        Ok(row) => row,
-                        Err(_) => {
-                            let _ = tokio::fs::remove_file(&full_path).await;
-                            return ApiResponse::<()>::builder()
-                                .message("Failed to verify quota")
-                                .internal();
-                        }
-                    };
+                    .unwrap_or(0);
 
-                    let limit = limit_row.upload_limit as u64;
-                    let used = limit_row.used_bytes as u64;
+                    let limit = user_perms_db.upload_limit.unwrap_or(0) as u64;
+                    let used = used_bytes as u64;
 
                     if limit > 0 && (file_size > limit || used + file_size > limit) {
                         let _ = tokio::fs::remove_file(&full_path).await;
