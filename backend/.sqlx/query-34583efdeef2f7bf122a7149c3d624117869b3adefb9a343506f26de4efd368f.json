@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT \n            can_upload,\n            has_upload_limits,\n            upload_limit\n        FROM Users \n        WHERE id = ? AND is_active = 1 AND is_deleted = 0\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "can_upload",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "has_upload_limits",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "upload_limit",
+        "ordinal": 2,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "34583efdeef2f7bf122a7149c3d624117869b3adefb9a343506f26de4efd368f"
+}

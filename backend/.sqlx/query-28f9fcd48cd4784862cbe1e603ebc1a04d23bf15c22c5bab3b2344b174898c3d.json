@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM FilePermissions WHERE file_id = ? AND user_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "28f9fcd48cd4784862cbe1e603ebc1a04d23bf15c22c5bab3b2344b174898c3d"
+}
