@@ -1,18 +1,14 @@
 // SPA handler for serving embedded static files in Actix-Web applications
-
 use actix_web::{HttpRequest, HttpResponse, Result, web};
 use mime_guess::from_path;
 use percent_encoding::percent_decode_str;
 
-// Import ApiResponse only when the SPA is NOT embedded
 #[cfg(not(has_dist))]
 use crate::models::responses::ApiResponse;
 
-// Embeds entire `dist/` directory into binary at compile time
 #[cfg(has_dist)]
 static ASSETS: include_dir::Dir<'_> = include_dir::include_dir!("$CARGO_MANIFEST_DIR/dist");
 
-// Normal SPA handler when dist is embedded
 #[cfg(has_dist)]
 async fn spa_handler(req: HttpRequest) -> Result<HttpResponse> {
     let raw = req.path().trim_start_matches('/');
@@ -29,27 +25,22 @@ async fn spa_handler(req: HttpRequest) -> Result<HttpResponse> {
             .content_type(mime.essence_str())
             .body(file.contents()))
     } else {
-        // SPA fallback – serve index.html for client-side routing
         let index = ASSETS
             .get_file("index.html")
-            .expect("dist/index.html must exist when has_dist is defined");
+            .expect("dist/index.html must exist");
         Ok(HttpResponse::Ok()
             .content_type("text/html; charset=utf-8")
             .body(index.contents()))
     }
 }
 
-// Fallback handler when dist is missing – return JSON error using ApiResponse
 #[cfg(not(has_dist))]
 async fn spa_handler(_req: HttpRequest) -> Result<HttpResponse> {
-    let response = ApiResponse::<()>::builder()
+    Ok(ApiResponse::<()>::builder()
         .message("SPA not available: the 'dist' directory was not embedded at compile time")
-        .not_found(); // or .bad_request() / .internal()
-
-    Ok(response)
+        .not_found())
 }
 
-// Configures Actix-Web application to use SPA handler as default service
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.default_service(web::route().to(spa_handler));
 }
