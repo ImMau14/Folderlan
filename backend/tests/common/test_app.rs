@@ -1,31 +1,23 @@
-// Test application for backend API integration tests. Manages server lifecycle, database, file storage, and API client.
-use backend::{
-    build_cors, configure_services,
-    middleware::jwt_middleware::JwtConfig,
-    models::types::UploadsPath,
-    utils::db::{RegisterPayload, register_user, register_user::RegisterOwnerPayload},
-    watcher::start_watcher,
-};
+// tests/common/test_app.rs
+use super::api_client::ApiClient;
+use super::test_db::{cleanup_db, create_test_db};
+use super::test_fs::{cleanup_uploads_dir, create_test_uploads_dir};
+use super::test_server::spawn_test_server;
 use reqwest::{
     Response,
     multipart::{Form, Part},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlx::{
-    SqlitePool,
-    sqlite::{SqliteConnectOptions, SqlitePoolOptions},
-};
-use std::{fs, net::TcpListener, path::PathBuf, time::Duration};
+use sqlx::SqlitePool;
+use std::path::PathBuf;
+use std::time::Duration;
 use tokio::time::sleep;
 
-use super::api_client::ApiClient;
-
-// =============================================================================
+// -----------------------------------------------------------------------------
 // DATA STRUCTURES
-// =============================================================================
+// -----------------------------------------------------------------------------
 
-// Represents a file accessible to users with metadata
 #[derive(Debug, Deserialize, Clone, Serialize)]
 pub struct AccessibleFile {
     pub id: i64,
@@ -37,18 +29,6 @@ pub struct AccessibleFile {
     pub access_type: String,
 }
 
-// Metadata for file chunk during upload process
-#[derive(Deserialize, Clone, Debug, Serialize)]
-pub struct ChunkMetaSerde {
-    pub file_id: String,
-    pub chunk_index: u64,
-    pub total_chunks: u64,
-    pub chunk_size: u64,
-    pub total_size: u64,
-    pub filename: String,
-}
-
-// Database row representing file permissions
 #[derive(Debug, Deserialize, Clone)]
 #[allow(dead_code)]
 pub struct PermissionRow {
@@ -59,7 +39,6 @@ pub struct PermissionRow {
     pub granted_by: Option<i64>,
 }
 
-// Database row representing audit log entries
 #[derive(Debug, Deserialize, Clone)]
 #[allow(dead_code)]
 pub struct AuditLogRow {
@@ -75,7 +54,6 @@ pub struct AuditLogRow {
     pub success: bool,
 }
 
-// Configuration options for visitor user accounts
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct VisitorOptions {
     pub can_upload: bool,
@@ -84,104 +62,36 @@ pub struct VisitorOptions {
     pub upload_limit: u64,
 }
 
-// =============================================================================
+// -----------------------------------------------------------------------------
 // MAIN TEST APPLICATION
-// =============================================================================
+// -----------------------------------------------------------------------------
 
-// Main test application managing server, database, and API interactions
 pub struct TestApp {
     pub api: ApiClient,
     pub db_path: PathBuf,
     pub uploads_path: PathBuf,
     pub pool: SqlitePool,
+    _server_handle: tokio::task::JoinHandle<()>, // keep server alive
 }
 
 impl TestApp {
-    // =========================================================================
+    // -------------------------------------------------------------------------
     // INITIALIZATION & SETUP
-    // =========================================================================
+    // -------------------------------------------------------------------------
 
-    // Creates and starts test server with unique temporary resources
     pub async fn spawn() -> Self {
         let _ = tracing_subscriber::fmt::try_init();
-        std::panic::set_hook(Box::new(|panic_info| {
-            eprintln!("panic hook: {panic_info}");
-        }));
 
-        // Bind to random available port
-        let listener = TcpListener::bind("127.0.0.1:0").expect("failed to bind random port");
-        let port = listener.local_addr().unwrap().port();
+        // Create temporary resources
+        let (pool, db_path) = create_test_db().await;
+        let uploads_path = create_test_uploads_dir();
 
-        // Create unique identifiers for test isolation
-        let test_id = chrono::Utc::now().timestamp_nanos_opt().unwrap();
+        // Start server
+        let jwt_secret = "test_secret_for_tests".to_string();
+        let (base_url, server_handle) =
+            spawn_test_server(pool.clone(), uploads_path.clone(), jwt_secret).await;
 
-        // Create unique database path
-        let mut db_path = std::env::temp_dir();
-        db_path.push(format!("test_db_{}.sqlite", test_id));
-        if let Some(parent) = db_path.parent() {
-            let _ = fs::create_dir_all(parent);
-        }
-
-        // Create unique uploads directory
-        let mut uploads_path = std::env::temp_dir();
-        uploads_path.push(format!("test_uploads_{}", test_id));
-        fs::create_dir_all(&uploads_path).expect("failed to create unique uploads directory");
-
-        // Initialize SQLite database connection
-        let sqlite_opts = SqliteConnectOptions::new()
-            .filename(&db_path)
-            .create_if_missing(true);
-
-        let pool = SqlitePoolOptions::new()
-            .max_connections(10)
-            .connect_with(sqlite_opts)
-            .await
-            .expect("cannot create sqlite pool");
-
-        // Configure and start Actix web server
-        let jwt_cfg = JwtConfig {
-            secret: "test_secret_for_tests".to_string(),
-        };
-
-        let srv_pool = pool.clone();
-        let srv_cfg = jwt_cfg.clone();
-        let uploads_path_str = uploads_path.to_str().unwrap().to_string();
-
-        // Choose uploads directory
-        let uploads_dir = PathBuf::from(uploads_path_str.clone());
-        let owner_user_id: Option<i64> = Some(1);
-
-        match start_watcher(uploads_dir, "tmp", Some(pool.clone()), owner_user_id).await {
-            Ok(_handle) => {
-                tracing::info!("Filesystem watcher started");
-            }
-            Err(e) => {
-                tracing::warn!("Failed to start filesystem watcher: {}", e);
-            }
-        }
-
-        let server = actix_web::HttpServer::new(move || {
-            let cors = build_cors(true, "127.0.0.1", port);
-            let uploads_path = UploadsPath::new(&uploads_path_str);
-            actix_web::App::new()
-                .wrap(actix_web::middleware::Logger::default())
-                .app_data(actix_web::web::Data::new(uploads_path))
-                .app_data(actix_web::web::Data::new(srv_pool.clone()))
-                .app_data(actix_web::web::Data::new(srv_cfg.clone()))
-                .wrap(cors)
-                .configure(configure_services)
-        })
-        .listen(listener)
-        .expect("failed to listen")
-        .run();
-
-        // Start server in background task
-        tokio::spawn(server);
-
-        // Initialize API client with timeout
-        let base_url = format!("http://127.0.0.1:{}", port);
         let api = ApiClient::new(base_url).with_timeout(Duration::from_secs(30));
-
         Self::wait_for_server_ready(&api).await;
 
         TestApp {
@@ -189,10 +99,10 @@ impl TestApp {
             db_path,
             uploads_path,
             pool,
+            _server_handle: server_handle,
         }
     }
 
-    // Waits for server to become responsive before proceeding
     async fn wait_for_server_ready(api: &ApiClient) {
         let start = std::time::Instant::now();
         let timeout = Duration::from_secs(30);
@@ -202,14 +112,9 @@ impl TestApp {
                 panic!("server did not become ready in time");
             }
 
+            // Use GET /api/db to check server responsiveness
             match api.get("/api/db").send().await {
-                Ok(resp) if resp.status().is_success() => break,
-                Ok(resp) => {
-                    let status = resp.status();
-                    let body = resp.text().await.unwrap_or_default();
-                    eprintln!("Server responded with status {}: {}", status, body);
-                    sleep(Duration::from_millis(500)).await;
-                }
+                Ok(_) => break,
                 Err(e) => {
                     eprintln!("Server not ready yet: {}", e);
                     sleep(Duration::from_millis(500)).await;
@@ -218,7 +123,7 @@ impl TestApp {
         }
     }
 
-    // Initializes database schema via API call
+    /// Initialize database via API endpoint (mimics user action)
     pub async fn post_init_db(&self) {
         let resp = self
             .api
@@ -234,12 +139,15 @@ impl TestApp {
         );
     }
 
-    // =========================================================================
+    // -------------------------------------------------------------------------
     // AUTHENTICATION & USER MANAGEMENT
-    // =========================================================================
+    // -------------------------------------------------------------------------
 
-    // Creates owner user directly in database
     pub async fn create_owner_direct(&self, username: &str, password: &str) {
+        use backend::utils::db::{
+            RegisterPayload, register_user, register_user::RegisterOwnerPayload,
+        };
+
         let payload = RegisterPayload::Owner(RegisterOwnerPayload {
             username: username.to_string(),
             password: password.to_string(),
@@ -248,7 +156,6 @@ impl TestApp {
         assert_eq!(resp.status().as_u16(), 201);
     }
 
-    // Authenticates user and returns JWT token
     pub async fn login_and_get_token(&self, username: &str, password: &str) -> String {
         let resp = self
             .send_request_with_retry(
@@ -271,7 +178,6 @@ impl TestApp {
         body["token"].as_str().expect("token missing").to_owned()
     }
 
-    // Creates visitor user via API using owner credentials
     pub async fn create_visitor_via_api_as_owner(
         &self,
         owner_token: &str,
@@ -302,12 +208,8 @@ impl TestApp {
         );
     }
 
-    // Change the owner's password (only accessible from localhost)
     pub async fn change_owner_password(&self, new_password: &str) -> Result<Response, String> {
-        let payload = serde_json::json!({
-            "password": new_password
-        });
-
+        let payload = serde_json::json!({ "password": new_password });
         self.api
             .post("api/auth/owner_reset_password")
             .with_json(&payload)
@@ -316,7 +218,6 @@ impl TestApp {
             .map_err(|e| format!("owner password change failed: {e}"))
     }
 
-    // Change a visitor's password (requires owner token)
     pub async fn change_visitor_password(
         &self,
         owner_token: &str,
@@ -327,7 +228,6 @@ impl TestApp {
             "username": visitor_username,
             "password": new_password
         });
-
         self.api
             .post("api/auth/visitor_reset_password")
             .with_token(owner_token)
@@ -337,84 +237,45 @@ impl TestApp {
             .map_err(|e| format!("visitor password change failed: {e}"))
     }
 
-    // =========================================================================
+    // -------------------------------------------------------------------------
     // FILE OPERATIONS
-    // =========================================================================
+    // -------------------------------------------------------------------------
 
-    // Uploads complete file in single chunk
+    /// Upload a complete file in a single multipart request.
+    /// The new backend expects a field named "file" containing the file.
     pub async fn upload_single_chunk_file(
         &self,
         visitor_token: &str,
-        file_id: &str,
+        _file_id: &str, // kept for backward compatibility, ignored
         filename: &str,
         file_bytes: Vec<u8>,
     ) -> Response {
-        let meta = ChunkMetaSerde {
-            file_id: file_id.to_string(),
-            chunk_index: 0,
-            total_chunks: 1,
-            chunk_size: file_bytes.len() as u64,
-            total_size: file_bytes.len() as u64,
-            filename: filename.to_string(),
-        };
+        let part = Part::bytes(file_bytes)
+            .file_name(filename.to_string())
+            .mime_str("application/octet-stream")
+            .unwrap();
+        let form = Form::new().part("file", part);
 
-        let form = Self::build_chunk_form_from_parts(&meta, &file_bytes);
-        self.send_multipart_with_auth(visitor_token, "/api/files/upload", form)
+        self.api
+            .post("/api/files/upload")
+            .with_token(visitor_token)
+            .send_multipart(form)
             .await
             .expect("upload request failed")
     }
 
-    // Uploads file split into multiple chunks
-    pub async fn upload_chunks(
-        &self,
-        visitor_token: &str,
-        file_id: &str,
-        filename: &str,
-        data: &[u8],
-        chunk_size: usize,
-    ) -> Vec<Response> {
-        let chunks: Vec<&[u8]> = data.chunks(chunk_size).collect();
-        let total = chunks.len() as u64;
-
-        chunks
-            .into_iter()
-            .enumerate()
-            .map(|(idx, chunk)| {
-                let meta = ChunkMetaSerde {
-                    file_id: file_id.to_string(),
-                    chunk_index: idx as u64,
-                    total_chunks: total,
-                    chunk_size: chunk.len() as u64,
-                    total_size: data.len() as u64,
-                    filename: filename.to_string(),
-                };
-                tokio::task::block_in_place(|| {
-                    tokio::runtime::Handle::current().block_on(self.upload_chunk(
-                        visitor_token,
-                        meta,
-                        chunk.to_vec(),
-                    ))
-                })
-            })
-            .collect()
-    }
-
-    // Retrieves files list with optional query parameters
     pub async fn get_files(
         &self,
         token: &str,
         query_params: &[(&str, &str)],
     ) -> Result<Response, reqwest::Error> {
         let mut request = self.api.get("/api/files").with_token(token);
-
         for (key, value) in query_params {
             request = request.with_query_param(key, value);
         }
-
         request.send().await
     }
 
-    // Finds file ID by filename in files list
     pub async fn find_file_id_by_name(
         &self,
         token: &str,
@@ -424,7 +285,6 @@ impl TestApp {
             .await
     }
 
-    // Deletes file by ID via API
     pub async fn delete_file_by_id(&self, token: &str, file_id: i64) -> Result<Response, String> {
         self.api
             .delete(&format!("/api/files/{}", file_id))
@@ -434,7 +294,6 @@ impl TestApp {
             .map_err(|e| format!("delete request failed: {e}"))
     }
 
-    // Downloads file and returns raw bytes
     pub async fn download_file_bytes(&self, token: &str, file_id: i64) -> Result<Vec<u8>, String> {
         let resp = self
             .download_file(token, file_id)
@@ -454,11 +313,10 @@ impl TestApp {
         Ok(bytes.to_vec())
     }
 
-    // =========================================================================
+    // -------------------------------------------------------------------------
     // PERMISSION MANAGEMENT
-    // =========================================================================
+    // -------------------------------------------------------------------------
 
-    // Grants or updates file permissions for user
     pub async fn grant_or_update_permission_via_api(
         &self,
         token: &str,
@@ -470,7 +328,6 @@ impl TestApp {
             "user_id": target_user_id,
             "access_level": access_level
         });
-
         self.send_permission_request(
             "POST",
             token,
@@ -480,7 +337,6 @@ impl TestApp {
         .await
     }
 
-    // Lists permissions for specific file
     pub async fn list_permissions_via_api(
         &self,
         token: &str,
@@ -490,7 +346,6 @@ impl TestApp {
             .await
     }
 
-    // Revokes permission from user for file
     pub async fn revoke_permission_via_api(
         &self,
         token: &str,
@@ -506,7 +361,6 @@ impl TestApp {
         .await
     }
 
-    // Revokes permission and verifies removal
     pub async fn revoke_permission_and_assert_removed(
         &self,
         token: &str,
@@ -540,26 +394,22 @@ impl TestApp {
         }
     }
 
-    // =========================================================================
+    // -------------------------------------------------------------------------
     // USER MANAGEMENT
-    // =========================================================================
+    // -------------------------------------------------------------------------
 
-    // Retrieves users list with query parameters
     pub async fn get_users_via_api(
         &self,
         token: &str,
         query_params: &[(&str, &str)],
     ) -> Result<Response, reqwest::Error> {
         let mut request = self.api.get("/api/user").with_token(token);
-
         for (key, value) in query_params {
             request = request.with_query_param(key, value);
         }
-
         request.send().await
     }
 
-    // Retrieves paginated users list
     pub async fn list_users_page(
         &self,
         token: &str,
@@ -569,7 +419,6 @@ impl TestApp {
             .await
     }
 
-    // Finds user ID by username
     pub async fn find_user_id_by_username(
         &self,
         token: &str,
@@ -579,13 +428,11 @@ impl TestApp {
             .await
     }
 
-    // Deletes user via API
     pub async fn delete_user_via_api(&self, token: &str, user_id: i64) -> Result<Response, String> {
         self.send_permission_request("DELETE", token, &format!("/api/user/{}", user_id), None)
             .await
     }
 
-    // Toggles user active status
     pub async fn toggle_user_active_via_api(
         &self,
         token: &str,
@@ -600,7 +447,6 @@ impl TestApp {
         .await
     }
 
-    // Updates user permissions
     pub async fn update_user_perms_via_api(
         &self,
         token: &str,
@@ -616,11 +462,10 @@ impl TestApp {
         .await
     }
 
-    // =========================================================================
+    // -------------------------------------------------------------------------
     // ACCESSIBLE FILES & AUDIT LOGS
-    // =========================================================================
+    // -------------------------------------------------------------------------
 
-    // Lists files accessible to specific user
     pub async fn list_accessible_files(
         &self,
         token: &str,
@@ -642,22 +487,18 @@ impl TestApp {
             .collect()
     }
 
-    // Retrieves audit logs with query parameters
     pub async fn get_audit_logs_via_api(
         &self,
         token: &str,
         query_params: &[(&str, &str)],
     ) -> Result<Response, reqwest::Error> {
         let mut request = self.api.get("/api/audit").with_token(token);
-
         for (key, value) in query_params {
             request = request.with_query_param(key, value);
         }
-
         request.send().await
     }
 
-    // Retrieves paginated audit logs
     pub async fn list_audit_logs_page(
         &self,
         token: &str,
@@ -667,7 +508,6 @@ impl TestApp {
             .await
     }
 
-    // Verifies audit log contains specific event
     pub async fn assert_audit_contains_event(
         &self,
         token: &str,
@@ -688,11 +528,10 @@ impl TestApp {
         }
     }
 
-    // =========================================================================
-    // HELPER METHODS (Internal)
-    // =========================================================================
+    // -------------------------------------------------------------------------
+    // INTERNAL HELPER METHODS
+    // -------------------------------------------------------------------------
 
-    // Extracts items array from API response body
     fn extract_items_array_from_body(body: &Value) -> Option<Vec<Value>> {
         if let Some(items) = body
             .get("data")
@@ -701,19 +540,15 @@ impl TestApp {
         {
             return Some(items.clone());
         }
-
         if let Some(items) = body.get("data").and_then(|d| d.as_array()) {
             return Some(items.clone());
         }
-
         if let Some(items) = body.as_array() {
             return Some(items.clone());
         }
-
         None
     }
 
-    // Sends request with retry logic for transient failures
     async fn send_request_with_retry<F>(
         &self,
         request_builder: F,
@@ -737,7 +572,6 @@ impl TestApp {
         }
     }
 
-    // Finds item ID by name field in paginated API responses
     async fn find_item_id_by_name(
         &self,
         token: &str,
@@ -747,7 +581,6 @@ impl TestApp {
         name: &str,
     ) -> Result<Option<i64>, String> {
         let max_attempts = 5;
-
         for attempt in 1..=max_attempts {
             let resp = self
                 .api
@@ -759,7 +592,6 @@ impl TestApp {
                 .map_err(|e| format!("request error: {e}"))?;
 
             let status = resp.status();
-
             if !status.is_success() {
                 let text = resp.text().await.unwrap_or_else(|_| "<no-body>".into());
                 return Err(format!(
@@ -773,7 +605,6 @@ impl TestApp {
                 .map_err(|e| format!("invalid json: {e}"))?;
 
             let items_opt = Self::extract_items_array_from_body(&body);
-
             if let Some(items) = items_opt {
                 for item in items {
                     if let (Some(item_name), Some(id)) = (
@@ -790,11 +621,9 @@ impl TestApp {
                 sleep(Duration::from_millis(500 * attempt)).await;
             }
         }
-
         Ok(None)
     }
 
-    // Retrieves paginated data from API endpoint
     async fn get_paginated_data(
         &self,
         token: &str,
@@ -802,29 +631,24 @@ impl TestApp {
         query_params: &[(&str, &str)],
     ) -> Result<Value, String> {
         let mut request = self.api.get(endpoint).with_token(token);
-
         for (key, value) in query_params {
             request = request.with_query_param(key, value);
         }
-
         let resp = request
             .send()
             .await
             .map_err(|e| format!("request error: {e}"))?;
 
         let status = resp.status();
-
         if !status.is_success() {
             let text = resp.text().await.unwrap_or_else(|_| "<no-body>".into());
             return Err(format!(
                 "GET {endpoint} failed: status={status} body={text}"
             ));
         }
-
         resp.json().await.map_err(|e| format!("invalid json: {e}"))
     }
 
-    // Builds visitor registration payload from options
     fn build_visitor_register_payload(
         &self,
         username: &str,
@@ -841,47 +665,6 @@ impl TestApp {
         })
     }
 
-    // Builds multipart form for chunk upload
-    fn build_chunk_form_from_parts(meta: &ChunkMetaSerde, chunk_bytes: &[u8]) -> Form {
-        let meta_json = serde_json::to_string(meta).expect("serialize metadata");
-        let part_chunk = Part::bytes(chunk_bytes.to_vec())
-            .file_name(meta.filename.clone())
-            .mime_str("application/octet-stream")
-            .unwrap();
-
-        Form::new()
-            .text("metadata", meta_json)
-            .part("chunk", part_chunk)
-    }
-
-    // Sends multipart request with authentication
-    async fn send_multipart_with_auth(
-        &self,
-        token: &str,
-        endpoint: &str,
-        form: Form,
-    ) -> Result<Response, reqwest::Error> {
-        self.api
-            .post(endpoint)
-            .with_token(token)
-            .send_multipart(form)
-            .await
-    }
-
-    // Uploads single file chunk
-    async fn upload_chunk(
-        &self,
-        visitor_token: &str,
-        meta: ChunkMetaSerde,
-        chunk_bytes: Vec<u8>,
-    ) -> Response {
-        let form = Self::build_chunk_form_from_parts(&meta, &chunk_bytes);
-        self.send_multipart_with_auth(visitor_token, "/api/files/upload", form)
-            .await
-            .expect("chunk upload request failed")
-    }
-
-    // Downloads file from server
     async fn download_file(&self, token: &str, file_id: i64) -> Result<Response, reqwest::Error> {
         self.api
             .get(&format!("/api/files/download/{}", file_id))
@@ -890,7 +673,6 @@ impl TestApp {
             .await
     }
 
-    // Sends permission-related API request
     async fn send_permission_request(
         &self,
         method: &str,
@@ -904,19 +686,16 @@ impl TestApp {
             "DELETE" => self.api.delete(endpoint),
             _ => panic!("Unsupported HTTP method"),
         };
-
         let mut request = request_builder.with_token(token);
         if let Some(p) = payload {
             request = request.with_json(p);
         }
-
         request
             .send()
             .await
             .map_err(|e| format!("{method} request failed: {e}"))
     }
 
-    // Retrieves specific permission row from database
     async fn get_permission_row(
         &self,
         token: &str,
@@ -924,10 +703,8 @@ impl TestApp {
         target_user_id: i64,
     ) -> Result<Option<PermissionRow>, String> {
         let body = self.list_permissions_via_api(token, file_id).await?;
-
         let items = Self::extract_items_array_from_body(&body)
             .ok_or_else(|| format!("unexpected permissions response shape: {body}"))?;
-
         items
             .iter()
             .find(|it| it.get("user_id").and_then(|v| v.as_i64()) == Some(target_user_id))
@@ -938,25 +715,21 @@ impl TestApp {
             .transpose()
     }
 
-    // Fetches audit log rows from API
     async fn fetch_audit_log_rows(
         &self,
         token: &str,
         query_params: &[(&str, &str)],
     ) -> Result<Vec<AuditLogRow>, String> {
         let body = self.list_audit_logs_page(token, query_params).await?;
-
         let arr_val = if let Some(items) = Self::extract_items_array_from_body(&body) {
             Value::Array(items)
         } else {
             return Err(format!("unexpected audit logs response shape: {body}"));
         };
-
         serde_json::from_value(arr_val)
             .map_err(|e| format!("failed to deserialize audit rows: {e}"))
     }
 
-    // Finds specific audit log entry by event and file
     async fn find_audit_row_by_event_and_file(
         &self,
         token: &str,
@@ -965,36 +738,31 @@ impl TestApp {
     ) -> Result<Option<AuditLogRow>, String> {
         for attempt in 1..=6 {
             let mut query_params = vec![("event_type", event_type), ("limit", "100")];
-
             let file_id_str;
             if let Some(fid) = file_id {
                 file_id_str = fid.to_string();
                 query_params.push(("file_id", &file_id_str));
             }
-
             let rows = self.fetch_audit_log_rows(token, &query_params).await?;
-
             if let Some(row) = rows.into_iter().find(|row| {
                 row.event_type == event_type && file_id.is_none_or(|fid| row.file_id == Some(fid))
             }) {
                 return Ok(Some(row));
             }
-
             if attempt < 6 {
                 sleep(Duration::from_millis(500 * attempt)).await;
             }
         }
-
         Ok(None)
     }
 
-    // =========================================================================
+    // -------------------------------------------------------------------------
     // CLEANUP
-    // =========================================================================
+    // -------------------------------------------------------------------------
 
-    // Cleans up temporary test resources
     pub fn cleanup(self) {
-        let _ = fs::remove_file(self.db_path);
-        let _ = fs::remove_dir_all(&self.uploads_path);
+        cleanup_db(&self.db_path);
+        cleanup_uploads_dir(&self.uploads_path);
+        // Server handle will be dropped, stopping the server.
     }
 }

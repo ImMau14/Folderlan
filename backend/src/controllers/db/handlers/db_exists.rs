@@ -1,5 +1,4 @@
 use crate::models::responses::ApiResponse;
-
 use actix_web::{Responder, web};
 use sqlx::SqlitePool;
 
@@ -20,8 +19,14 @@ pub async fn db_exists(pool: web::Data<SqlitePool>) -> impl Responder {
 
     match result {
         Ok(val) => ApiResponse::<()>::builder().exists(val == 1).ok(),
-        Err(e) => ApiResponse::<()>::builder()
-            .message(e.to_string())
-            .internal(),
+        Err(e) => {
+            if e.to_string().contains("no such table: Users") {
+                ApiResponse::<()>::builder().exists(false).ok()
+            } else {
+                ApiResponse::<()>::builder()
+                    .message(e.to_string())
+                    .internal()
+            }
+        }
     }
 }

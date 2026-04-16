@@ -1,5 +1,7 @@
-pub mod api_client;
-pub mod test_app;
+mod api_client;
+mod test_app;
+mod test_db;
+mod test_fs;
+mod test_server;
 
-#[allow(dead_code)]
 pub use test_app::{TestApp, VisitorOptions};
