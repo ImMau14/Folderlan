@@ -10,6 +10,7 @@ use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use futures_util::TryStreamExt;
 use sanitize_filename::sanitize;
 use sqlx::SqlitePool;
+use std::path::{Path, PathBuf};
 use tokio::io::AsyncWriteExt;
 
 /// Accepts a file upload via multipart form, validates against user quotas, and stores it.
@@ -24,7 +25,6 @@ pub async fn upload_file(
         Ok(id) => id,
         Err(e) => return e,
     };
-    // SQLite does not support u64 parameters.
     let user_id_i64 = user_id as i64;
 
     // Ensure upload directory exists.
@@ -78,13 +78,13 @@ pub async fn upload_file(
     let mut file_name = None;
     let mut mime_type = None;
     let mut file_size = 0u64;
-    let mut temp_file_path = None;
+    let mut final_relative_path = None;
 
     while let Ok(Some(mut field)) = payload.try_next().await {
         if let Some(content_disposition) = field.content_disposition()
             && let Some(name) = content_disposition.get_filename()
         {
-            // Sanitize filename.
+            // Sanitize original filename.
             let safe_name = sanitize(name);
             if safe_name.is_empty() {
                 return ApiResponse::<()>::builder()
@@ -99,22 +99,8 @@ pub async fn upload_file(
                     .map(String::from)
             });
 
-            // Create a unique internal path: user_id/timestamp_random/filename
-            let timestamp = chrono::Utc::now().timestamp_millis();
-            let random_part: u32 = rand::random();
-            let unique_dir = format!("{}_{:08x}", timestamp, random_part);
-            let relative_dir = format!("{}/{}", user_id, unique_dir);
-            let relative_path = format!("{}/{}", relative_dir, safe_name);
-            let full_path = base.join(&relative_path);
-
-            // Create parent directories.
-            if let Some(parent) = full_path.parent()
-                && let Err(e) = tokio::fs::create_dir_all(parent).await
-            {
-                return ApiResponse::<()>::builder()
-                    .message(format!("Failed to create directory: {e}"))
-                    .internal();
-            }
+            // Resolve a unique filename in the base directory.
+            let (relative_path, full_path) = resolve_unique_filename(&base, &safe_name).await;
 
             // Open file for writing.
             let mut file = match tokio::fs::File::create(&full_path).await {
@@ -166,12 +152,12 @@ pub async fn upload_file(
             drop(file);
 
             file_name = Some(safe_name);
-            temp_file_path = Some((relative_path, full_path));
+            final_relative_path = Some(relative_path);
             break;
         }
     }
 
-    let (relative_path, _full_path) = match temp_file_path {
+    let relative_path = match final_relative_path {
         Some(p) => p,
         None => {
             return ApiResponse::<()>::builder()
@@ -197,4 +183,34 @@ pub async fn upload_file(
     crate::watcher::mark_handled_internal_path(&relative_path);
 
     register_result
+}
+/// Returns (relative_path, full_path) where relative_path is the filename (since we store flat).
+async fn resolve_unique_filename(base: &Path, desired_name: &str) -> (String, PathBuf) {
+    let path = Path::new(desired_name);
+    let stem = path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or(desired_name);
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| format!(".{}", e))
+        .unwrap_or_default();
+
+    let mut candidate_name = desired_name.to_string();
+    let mut candidate_path = base.join(&candidate_name);
+    let mut counter = 1;
+
+    while tokio::fs::metadata(&candidate_path).await.is_ok() {
+        // File exists, generate a new name: "stem (counter).ext"
+        candidate_name = format!("{} ({}).{}", stem, counter, ext.trim_start_matches('.'));
+        candidate_path = base.join(&candidate_name);
+        counter += 1;
+        // Safety guard against infinite loop (should not happen, but just in case)
+        if counter > 1000 {
+            panic!("Too many name collisions for file: {}", desired_name);
+        }
+    }
+
+    (candidate_name, candidate_path)
 }

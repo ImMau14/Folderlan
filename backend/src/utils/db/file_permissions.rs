@@ -30,31 +30,35 @@ pub async fn check_file_permission(
         internal_path: String,
         name: Option<String>,
         uploaded_by: Option<i64>,
-        is_public: i64, // 0/1
+        is_public: bool,
         requester_role: Option<String>,
-        requester_can_delete_own_files: Option<i64>, // 0/1
-        access_level: Option<String>,                // From FilePermissions
+        requester_can_delete_own_files: Option<bool>,
+        access_level: Option<String>, // From FilePermissions
     }
 
+    let current_user_id_i64 = current_user_id as i64;
+    let file_id_i64 = file_id as i64;
+
     // Query file and user permission data
-    let rec_opt = sqlx::query_as::<_, PermCheckRow>(
+    let rec_opt = sqlx::query_as!(
+        PermCheckRow,
         r#"
         SELECT
           f.internal_path,
           f.name,
           f.uploaded_by,
-          f.is_public,
+          f.is_public as "is_public!: bool",
           u.role AS requester_role,
-          u.can_delete_own_files AS requester_can_delete_own_files,
+          u.can_delete_own_files as "requester_can_delete_own_files: bool",
           (SELECT fp.access_level FROM FilePermissions fp WHERE fp.file_id = f.id AND fp.user_id = ?) AS access_level
         FROM Files f
         LEFT JOIN Users u ON u.id = ?
         WHERE f.id = ? AND f.is_deleted = 0
         "#,
+        current_user_id_i64,
+        current_user_id_i64,
+        file_id_i64
     )
-    .bind(current_user_id as i64)
-    .bind(current_user_id as i64)
-    .bind(file_id as i64)
     .fetch_optional(pool)
     .await
     .map_err(|e| {
@@ -79,7 +83,7 @@ pub async fn check_file_permission(
     }
 
     // Public files are accessible to viewers
-    if matches!(min_level, MinLevel::Viewer) && row.is_public == 1 {
+    if matches!(min_level, MinLevel::Viewer) && row.is_public {
         return Ok((row.internal_path, row.name));
     }
 
@@ -89,7 +93,7 @@ pub async fn check_file_permission(
     {
         // Uploaders need special permission for delete operations
         if matches!(min_level, MinLevel::Collaborator) {
-            if row.requester_can_delete_own_files == Some(1) {
+            if row.requester_can_delete_own_files == Some(true) {
                 return Ok((row.internal_path, row.name));
             } else {
                 return Err(ApiResponse::<()>::builder()
