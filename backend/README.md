@@ -1,11 +1,5 @@
 # Folderlan Backend Documentation · [![Rust CI](https://github.com/ImMau14/Folderlan/actions/workflows/rust-ci.yaml/badge.svg)](https://github.com/ImMau14/Folderlan/actions/workflows/rust-ci.yaml)
 
-![Rust](https://img.shields.io/badge/Rust-563600?style=plastic&logo=rust)
-![Actix-web](https://img.shields.io/badge/Actix--web-202020?style=plastic&logo=actix)
-![SQLite](https://img.shields.io/badge/SQLite-001d6b?style=plastic&logo=sqlite)
-
----
-
 ## Table of contents
 
 1. [Quick start](#quick-start)  
@@ -354,7 +348,7 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
 
 All file endpoints require `Authorization: Bearer <token>` and appropriate permissions.
 
-### POST `/api/files/upload` — Chunked file upload
+### `POST /api/files/upload` — Single file upload (multipart)
 
 * **Permission required**: `can_upload`
 
@@ -362,38 +356,36 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 
 * **Headers**: `Authorization`, `Content-Type: multipart/form-data`
 
-* **Multipart fields**:
+* **Multipart field**:
 
-  * `metadata` (JSON string) — **required**
-
-    ```json
-    {
-      "file_id": "abc123",
-      "chunk_index": 0,
-      "total_chunks": 5,
-      "chunk_size": 1048576,
-      "total_size": 5242880,
-      "filename": "video.mp4"
-    }
-    ```
-
-  * `chunk` — binary chunk (required)
+  * `file` (binary) — **required** (the first file field found; field name can be arbitrary)
 
 * **Behavior**:
 
-  * Server validates metadata and assembles chunks when all are received.
-  * On finalization, file is stored under `uploads` and DB row created/updated.
+  * Server receives the complete file in a single multipart request.
+  * Filename is sanitized; if a file with the same name already exists in the upload directory, a counter is added (e.g., `file (1).ext`).
+  * User quota is enforced during streaming:
+    - If the user has upload limits (`has_upload_limits != 0`), the server calculates used space by summing `size_bytes` of all non-deleted files owned by the user.
+    - If the new file would exceed the individual limit or total quota (`used + file_size > upload_limit`), the upload is rejected and any partial file is deleted.
+  * After successful write, the file is registered in the `Files` table via `register_file`.
+  * The internal path is marked as handled in the watcher system to avoid duplicate events.
 
-* **Response (200)**:
+* **Response (200 OK)**:
 
   ```json
   {
     "success": true,
-    "message": "Chunk received"
+    "message": "File registered successfully",
+    "data": { ... }   // structure depends on register_file output
   }
   ```
 
-* **Errors**: `400` invalid metadata, `403` permission denied, `500` storage/db error.
+* **Errors**:
+
+  * `401 Unauthorized` – Invalid or missing authentication
+  * `403 Forbidden` – User lacks `can_upload`, is inactive, or deleted
+  * `400 Bad Request` – Invalid filename after sanitization, no file provided, or quota exceeded
+  * `500 Internal Server Error` – Directory creation failure, file write error, database error, or registration failure
 
 ### GET `/api/files` — List files
 
