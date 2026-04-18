@@ -1,8 +1,8 @@
 // Type definitions and Zod schemas for the API client.
 // Provides runtime validation and compile-time type safety for all API responses.
 
-import { z } from 'zod'
-import type { CancelToken } from 'axios'
+import { z } from "zod"
+import type { CancelToken } from "axios"
 
 // ==================== CORE SCHEMAS ====================
 
@@ -81,11 +81,7 @@ export const FilesListDataSchema = z.object({
 
 export const FilesListSchema = ApiResponseSchema(FilesListDataSchema)
 
-export const UploadChunkSchema = ApiResponseSchema(
-  z.object({
-    success: z.boolean(),
-  })
-)
+export const UploadFileSchema = ApiResponseSchema(FileItemSchema)
 
 export const DeleteFileSchema = ApiResponseSchema(
   z.object({
@@ -136,7 +132,7 @@ export const AccessibleFileSchema = z.object({
   mime_type: z.string(),
   uploaded_by: z.number(),
   uploaded_at: z.string(),
-  access_type: z.enum(['owner', 'viewer', 'collaborator']),
+  access_type: z.enum(["owner", "viewer", "collaborator"]),
 })
 
 export const AccessibleFilesSchema = ApiResponseSchema(z.array(AccessibleFileSchema))
@@ -152,7 +148,7 @@ export type AuditListResponse = z.infer<typeof AuditListSchema>
 export type FileItem = z.infer<typeof FileItemSchema>
 export type FilesListData = z.infer<typeof FilesListDataSchema>
 export type FilesListResponse = z.infer<typeof FilesListSchema>
-export type UploadChunkResponse = z.infer<typeof UploadChunkSchema>
+export type UploadFileResponse = z.infer<typeof UploadFileSchema>
 export type DeleteFileResponse = z.infer<typeof DeleteFileSchema>
 export type FilePermission = z.infer<typeof FilePermissionSchema>
 export type FilePermsResponse = z.infer<typeof FilePermsListSchema>
@@ -207,7 +203,7 @@ export class ApiError extends Error {
     public readonly details?: unknown
   ) {
     super(message)
-    this.name = 'ApiError'
+    this.name = "ApiError"
   }
 }
 

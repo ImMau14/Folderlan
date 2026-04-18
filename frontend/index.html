@@ -26,8 +26,8 @@
     <script>
       ;(function () {
         try {
-          var KEY = 'folderlan:locale'
-          var supported = ['en', 'es', 'it', 'pt']
+          var KEY = "folderlan:locale"
+          var supported = ["en", "es", "it", "pt"]
           // Check existing preference
           var stored = localStorage.getItem(KEY)
           if (!stored) {
@@ -35,9 +35,9 @@
             var code = (
               navigator.language ||
               (navigator.languages && navigator.languages[0]) ||
-              ''
-            ).split('-')[0]
-            var chosen = supported.indexOf(code) !== -1 ? code : 'en'
+              ""
+            ).split("-")[0]
+            var chosen = supported.indexOf(code) !== -1 ? code : "en"
             localStorage.setItem(KEY, chosen)
             document.documentElement.lang = chosen
             // Expose for React if needed

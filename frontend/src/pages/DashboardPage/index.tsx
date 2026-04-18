@@ -1,9 +1,9 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import type { FC } from 'react'
+import { Routes, Route, Navigate } from "react-router-dom"
+import type { FC } from "react"
 
-import Menu from './components/Menu'
-import UploadPage from './components/UploadPage'
-import TopBar from './components/TopBar'
+import Menu from "./components/Menu"
+import UploadPage from "./components/UploadPage"
+import TopBar from "./components/TopBar"
 
 function FilesPage() {
   return <div>Files</div>

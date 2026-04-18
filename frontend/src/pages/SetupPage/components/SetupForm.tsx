@@ -1,19 +1,19 @@
 // SetupForm - Presentational form with internal validation and UX logic.
 // Handles client-side validation, input state, and submission flow.
 
-import { useRef, useState, type FC, type FormEvent, type ChangeEvent } from 'react'
-import { FaRegUser, FaUserCircle } from 'react-icons/fa'
-import { motion, type Transition } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
+import { useRef, useState, type FC, type FormEvent, type ChangeEvent } from "react"
+import { FaRegUser, FaUserCircle } from "react-icons/fa"
+import { motion, type Transition } from "framer-motion"
+import { useNavigate } from "react-router-dom"
 
-import { FaGear } from 'react-icons/fa6'
+import { FaGear } from "react-icons/fa6"
 
-import { Input } from '@components/Input'
-import { Button } from '@components/Button'
+import { Input } from "@components/Input"
+import { Button } from "@components/Button"
 
-import { useI18n } from '@contexts/I18nContext'
-import { useToast } from '@contexts/ToastContext'
-import { useDatabase } from '@contexts/DatabaseContext'
+import { useI18n } from "@contexts/I18nContext"
+import { useToast } from "@contexts/ToastContext"
+import { useDatabase } from "@contexts/DatabaseContext"
 
 type Props = {
   cardTransition: Transition
@@ -28,9 +28,9 @@ const SetupForm: FC<Props> = ({ cardTransition, onRegister }) => {
   const { toast } = useToast()
 
   // Local input state (form is responsible for validation & UX).
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [passwordMatchs, setPasswordMatchs] = useState(true)
   const [disabled, setDisabled] = useState(false)
 
@@ -64,16 +64,16 @@ const SetupForm: FC<Props> = ({ cardTransition, onRegister }) => {
 
     // Guard duplicate submits
     if (inFlightRef.current) {
-      console.debug('submit ignored: request in flight (form)')
+      console.debug("submit ignored: request in flight (form)")
       return
     }
 
     // Basic client validation (form responsibility)
     if (!username.trim() || !password || !confirmPassword) {
       toast({
-        type: 'error',
-        title: t('setup.toast.missingFieldsTitle'),
-        description: t('setup.toast.missingFieldsDescription'),
+        type: "error",
+        title: t("setup.toast.missingFieldsTitle"),
+        description: t("setup.toast.missingFieldsDescription"),
         duration: 2500,
       })
       return
@@ -82,9 +82,9 @@ const SetupForm: FC<Props> = ({ cardTransition, onRegister }) => {
     if (password !== confirmPassword) {
       setPasswordMatchs(false)
       toast({
-        type: 'error',
-        title: t('setup.toast.passwordMismatchTitle'),
-        description: t('setup.toast.passwordMismatchDescription'),
+        type: "error",
+        title: t("setup.toast.passwordMismatchTitle"),
+        description: t("setup.toast.passwordMismatchDescription"),
         duration: 2500,
       })
       return
@@ -100,36 +100,36 @@ const SetupForm: FC<Props> = ({ cardTransition, onRegister }) => {
       if (res.ok) {
         // Wait a short bit to allow the final toast to be visible, then do a full page load to dashboard.
         setDbExists(true)
-        refresh().catch((e) => console.error('refresh after setup', e))
-        navigate('/dashboard', { replace: true })
+        refresh().catch((e) => console.error("refresh after setup", e))
+        navigate("/dashboard", { replace: true })
         return
       } else {
         // Clear password inputs and focus password for retry.
-        setPassword('')
-        setConfirmPassword('')
+        setPassword("")
+        setConfirmPassword("")
         setPasswordMatchs(true)
         if (passwordInputRef.current) passwordInputRef.current.focus()
 
         // If server returned a message, show fallback toast (page-level toasts also run in registerOwnerRequest).
         if (res.message) {
           toast({
-            type: 'error',
-            title: t('setup.toast.registrationIncompleteTitle'),
-            description: t('setup.toast.registrationIncompleteDescription', {
+            type: "error",
+            title: t("setup.toast.registrationIncompleteTitle"),
+            description: t("setup.toast.registrationIncompleteDescription", {
               message: res.message,
             }),
             duration: 3500,
           })
         }
 
-        console.warn('Register flow failed:', res.message)
+        console.warn("Register flow failed:", res.message)
       }
     } catch (err) {
-      console.error('handleSubmit unexpected error (form):', err)
+      console.error("handleSubmit unexpected error (form):", err)
       toast({
-        type: 'error',
-        title: t('setup.toast.unexpectedErrorTitle'),
-        description: t('setup.toast.unexpectedErrorDescription'),
+        type: "error",
+        title: t("setup.toast.unexpectedErrorTitle"),
+        description: t("setup.toast.unexpectedErrorDescription"),
         duration: 3500,
       })
     } finally {
@@ -150,18 +150,18 @@ const SetupForm: FC<Props> = ({ cardTransition, onRegister }) => {
         <div className="flex items-center gap-4">
           <FaUserCircle className="text-3xl text-gray-900 dark:text-slate-100" />
           <h2 className="font-heading text-2xl text-gray-900 dark:text-slate-50">
-            {t('setup.formTitle')}
+            {t("setup.formTitle")}
           </h2>
         </div>
 
-        <div className="text-sm text-gray-500 dark:text-slate-300">{t('setup.formSubtitle')}</div>
+        <div className="text-sm text-gray-500 dark:text-slate-300">{t("setup.formSubtitle")}</div>
       </header>
 
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <Input
-          title={t('setup.usernameLabel')}
+          title={t("setup.usernameLabel")}
           id="username"
-          placeholder={t('setup.usernamePlaceholder')}
+          placeholder={t("setup.usernamePlaceholder")}
           type="text"
           required
           value={username}
@@ -175,9 +175,9 @@ const SetupForm: FC<Props> = ({ cardTransition, onRegister }) => {
         />
 
         <Input
-          title={t('setup.passwordLabel')}
+          title={t("setup.passwordLabel")}
           id="password"
-          placeholder={t('setup.passwordPlaceholder')}
+          placeholder={t("setup.passwordPlaceholder")}
           type="password"
           required
           ref={passwordInputRef}
@@ -187,9 +187,9 @@ const SetupForm: FC<Props> = ({ cardTransition, onRegister }) => {
         />
 
         <Input
-          title={t('setup.confirmPasswordLabel')}
+          title={t("setup.confirmPasswordLabel")}
           id="confirm-password"
-          placeholder={t('setup.confirmPasswordPlaceholder')}
+          placeholder={t("setup.confirmPasswordPlaceholder")}
           type="password"
           required
           ref={confirmPasswordInputRef}
@@ -197,7 +197,7 @@ const SetupForm: FC<Props> = ({ cardTransition, onRegister }) => {
           onChange={(e: ChangeEvent<HTMLInputElement>) => onChangeConfirmPassword(e.target.value)}
           disabled={disabled}
           className={
-            !passwordMatchs ? 'border-red-400 hover:border-red-500 focus:ring-red-500' : ''
+            !passwordMatchs ? "border-red-400 hover:border-red-500 focus:ring-red-500" : ""
           }
         />
 
@@ -214,7 +214,7 @@ const SetupForm: FC<Props> = ({ cardTransition, onRegister }) => {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
-                  transition={{ type: 'spring', stiffness: 900, damping: 25 }}
+                  transition={{ type: "spring", stiffness: 900, damping: 25 }}
                 >
                   <FaGear className="animate-spin" />
                 </motion.div>
@@ -222,7 +222,7 @@ const SetupForm: FC<Props> = ({ cardTransition, onRegister }) => {
                 <FaRegUser />
               )}
             </div>
-            <p>{t('setup.registerButton')}</p>
+            <p>{t("setup.registerButton")}</p>
           </motion.div>
         </Button>
       </form>

@@ -7,9 +7,9 @@ import axios, {
   type AxiosError,
   type CancelTokenSource,
   type AxiosProgressEvent,
-} from 'axios'
-import { z, type ZodError } from 'zod'
-import { envConfig } from '@config/env'
+} from "axios"
+import { z, type ZodError } from "zod"
+import { envConfig } from "@config/env"
 
 import {
   // Zod schemas
@@ -18,7 +18,7 @@ import {
   LoginSchema,
   SimpleMessageSchema,
   AuditListSchema,
-  UploadChunkSchema,
+  UploadFileSchema,
   FilesListSchema,
   DeleteFileSchema,
   FilePermsListSchema,
@@ -36,7 +36,7 @@ import {
   type LoginResponse,
   type SimpleMessageResponse,
   type AuditListResponse,
-  type UploadChunkResponse,
+  type UploadFileResponse,
   type FilesListResponse,
   type DeleteFileResponse,
   type FilePermsResponse,
@@ -46,7 +46,7 @@ import {
 
   // ApiError class
   ApiError,
-} from './types'
+} from "./types"
 
 export class ApiClient {
   private axiosInstance
@@ -58,7 +58,7 @@ export class ApiClient {
       baseURL: this.baseUrl,
       timeout: opts?.timeoutMs ?? 30_000,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...(opts?.defaultHeaders ?? {}),
       },
     })
@@ -79,11 +79,11 @@ export class ApiClient {
     this.axiosInstance.interceptors.response.use(
       (response) => response,
       (error: AxiosError) => {
-        if (error.code === 'ECONNABORTED') {
-          throw new ApiError(408, 'Request timeout')
+        if (error.code === "ECONNABORTED") {
+          throw new ApiError(408, "Request timeout")
         }
         if (!error.response) {
-          throw new ApiError(0, 'Network error', error.message)
+          throw new ApiError(0, "Network error", error.message)
         }
         return Promise.reject(error)
       }
@@ -95,9 +95,9 @@ export class ApiClient {
   setToken(token: string | null): void {
     this.token = token
     if (token) {
-      this.axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      this.axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`
     } else {
-      delete this.axiosInstance.defaults.headers.common['Authorization']
+      delete this.axiosInstance.defaults.headers.common["Authorization"]
     }
   }
 
@@ -111,7 +111,7 @@ export class ApiClient {
     return axios.CancelToken.source()
   }
 
-  cancelWithMessage(source: CancelTokenSource, message: string = 'Request cancelled'): void {
+  cancelWithMessage(source: CancelTokenSource, message: string = "Request cancelled"): void {
     source.cancel(message)
   }
 
@@ -149,7 +149,7 @@ export class ApiClient {
         return {
           success: false,
           error: {
-            message: error.message || 'Request cancelled',
+            message: error.message || "Request cancelled",
             code: 499,
             details: error,
           },
@@ -162,7 +162,7 @@ export class ApiClient {
         return {
           success: false,
           error: {
-            message: 'Response validation failed',
+            message: "Response validation failed",
             code: 0,
             details: (error as ZodError).issues,
           },
@@ -191,7 +191,7 @@ export class ApiClient {
         let message = `HTTP ${response.status}`
         if (data?.message) {
           message = data.message
-        } else if (typeof data === 'string') {
+        } else if (typeof data === "string") {
           message = data
         }
 
@@ -210,7 +210,7 @@ export class ApiClient {
       return {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'Unknown error',
+          message: error instanceof Error ? error.message : "Unknown error",
           code: 0,
           details: error,
         },
@@ -227,7 +227,7 @@ export class ApiClient {
     try {
       const finalConfig: AxiosRequestConfig = {
         ...config,
-        responseType: 'blob',
+        responseType: "blob",
         cancelToken: options?.cancelToken,
         onDownloadProgress: options?.onDownloadProgress as
           | ((progressEvent: AxiosProgressEvent) => void)
@@ -237,7 +237,7 @@ export class ApiClient {
       const response = await this.axiosInstance.request(finalConfig)
 
       let filename: string | undefined
-      const contentDisposition = response.headers['content-disposition']
+      const contentDisposition = response.headers["content-disposition"]
       if (contentDisposition) {
         const match = contentDisposition.match(/filename="(.+?)"/)
         if (match?.[1]) {
@@ -260,7 +260,7 @@ export class ApiClient {
         return {
           success: false,
           error: {
-            message: error.message || 'Request cancelled',
+            message: error.message || "Request cancelled",
             code: 499,
             details: error,
           },
@@ -286,7 +286,7 @@ export class ApiClient {
         const response = error.response
         let message = `HTTP ${response.status}`
 
-        if (response.headers['content-type']?.includes('application/json')) {
+        if (response.headers["content-type"]?.includes("application/json")) {
           try {
             const blob = response.data as Blob
             const text = await blob.text()
@@ -314,7 +314,7 @@ export class ApiClient {
       return {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'Unknown error',
+          message: error instanceof Error ? error.message : "Unknown error",
           code: 0,
           details: error,
         },
@@ -332,31 +332,31 @@ export class ApiClient {
     schema?: z.ZodType<T>,
     options?: ApiRequestOptions
   ) {
-    return this.request<T>({ method: 'GET', url, params }, schema!, options)
+    return this.request<T>({ method: "GET", url, params }, schema!, options)
   }
 
   private post<T>(url: string, data?: unknown, schema?: z.ZodType<T>, options?: ApiRequestOptions) {
-    return this.request<T>({ method: 'POST', url, data }, schema!, options)
+    return this.request<T>({ method: "POST", url, data }, schema!, options)
   }
 
   private delete<T>(url: string, schema?: z.ZodType<T>, options?: ApiRequestOptions) {
-    return this.request<T>({ method: 'DELETE', url }, schema!, options)
+    return this.request<T>({ method: "DELETE", url }, schema!, options)
   }
 
   // ==================== DATABASE ENDPOINTS ====================
 
   async checkDb(): Promise<ApiResult<DbCheckResponse>> {
-    return this.get('/api/db', undefined, DbCheckSchema)
+    return this.get("/api/db", undefined, DbCheckSchema)
   }
 
   async initDb(): Promise<ApiResult<DbInitResponse>> {
-    return this.post('/api/db', undefined, DbInitSchema)
+    return this.post("/api/db", undefined, DbInitSchema)
   }
 
   // ==================== AUTHENTICATION ENDPOINTS ====================
 
   async login(username: string, password: string): Promise<ApiResult<LoginResponse>> {
-    const result = await this.post('/api/auth/login', { username, password }, LoginSchema)
+    const result = await this.post("/api/auth/login", { username, password }, LoginSchema)
     if (result.success && result.data.token) {
       this.setToken(result.data.token)
     }
@@ -371,18 +371,18 @@ export class ApiClient {
     has_upload_limits: boolean
     upload_limit: number
   }): Promise<ApiResult<SimpleMessageResponse>> {
-    return this.post('/api/auth/register', payload, SimpleMessageSchema)
+    return this.post("/api/auth/register", payload, SimpleMessageSchema)
   }
 
   async ownerRegister(
     username: string,
     password: string
   ): Promise<ApiResult<SimpleMessageResponse>> {
-    return this.post('/api/auth/owner_register', { username, password }, SimpleMessageSchema)
+    return this.post("/api/auth/owner_register", { username, password }, SimpleMessageSchema)
   }
 
   async ownerResetPassword(password: string): Promise<ApiResult<SimpleMessageResponse>> {
-    return this.post('/api/auth/owner_reset_password', { password }, SimpleMessageSchema)
+    return this.post("/api/auth/owner_reset_password", { password }, SimpleMessageSchema)
   }
 
   async visitorResetPassword(
@@ -390,7 +390,7 @@ export class ApiClient {
     password: string
   ): Promise<ApiResult<SimpleMessageResponse>> {
     return this.post(
-      '/api/auth/visitor_reset_password',
+      "/api/auth/visitor_reset_password",
       { username, password },
       SimpleMessageSchema
     )
@@ -408,35 +408,26 @@ export class ApiClient {
     limit?: number
     offset?: number
   }): Promise<ApiResult<AuditListResponse>> {
-    return this.get('/api/audit', params, AuditListSchema)
+    return this.get("/api/audit", params, AuditListSchema)
   }
 
   // ==================== FILE ENDPOINTS ====================
 
-  async uploadChunk(
-    metadata: {
-      file_id: string
-      chunk_index: number
-      total_chunks: number
-      chunk_size: number
-      total_size: number
-      filename: string
-    },
-    chunkFile: File,
+  async uploadFile(
+    file: File,
     options?: ApiRequestOptions
-  ): Promise<ApiResult<UploadChunkResponse>> {
+  ): Promise<ApiResult<UploadFileResponse>> {
     const form = new FormData()
-    form.append('metadata', JSON.stringify(metadata))
-    form.append('chunk', chunkFile, metadata.filename)
+    form.append("file", file)
 
     return this.request(
       {
-        method: 'POST',
-        url: '/api/files/upload',
+        method: "POST",
+        url: "/api/files/upload",
         data: form,
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { "Content-Type": "multipart/form-data" },
       },
-      UploadChunkSchema,
+      UploadFileSchema,
       options
     )
   }
@@ -450,7 +441,7 @@ export class ApiClient {
     limit?: number
     offset?: number
   }): Promise<ApiResult<FilesListResponse>> {
-    return this.get('/api/files', params, FilesListSchema)
+    return this.get("/api/files", params, FilesListSchema)
   }
 
   async deleteFile(id: number): Promise<ApiResult<DeleteFileResponse>> {
@@ -460,7 +451,7 @@ export class ApiClient {
   async downloadFile(id: number, options?: ApiRequestOptions): Promise<ApiResult<BlobResult>> {
     return this.requestBlob(
       {
-        method: 'GET',
+        method: "GET",
         url: `/api/files/download/${id}`,
       },
       options
@@ -492,7 +483,7 @@ export class ApiClient {
     limit?: number
     offset?: number
   }): Promise<ApiResult<UsersListResponse>> {
-    return this.get('/api/user', params, UsersListSchema)
+    return this.get("/api/user", params, UsersListSchema)
   }
 
   async deleteUser(id: number): Promise<ApiResult<SimpleMessageResponse>> {

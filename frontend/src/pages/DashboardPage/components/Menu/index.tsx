@@ -1,16 +1,16 @@
-import { type FC, useState, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { type FC, useState, useEffect } from "react"
+import { useLocation } from "react-router-dom"
 
-import { FolderlanSvg } from '@components/FolderlanSvg'
+import { FolderlanSvg } from "@components/FolderlanSvg"
 
-import MenuLink from './components/MenuLink'
+import MenuLink from "./components/MenuLink"
 
-import { TiUploadOutline, TiFolder, TiUserOutline } from 'react-icons/ti'
-import { FiSettings } from 'react-icons/fi'
+import { TiUploadOutline, TiFolder, TiUserOutline } from "react-icons/ti"
+import { FiSettings } from "react-icons/fi"
 
-import type { IconType } from 'react-icons'
+import type { IconType } from "react-icons"
 
-export type OptionsType = 'Upload' | 'Files' | 'User' | 'Settings'
+export type OptionsType = "Upload" | "Files" | "User" | "Settings"
 
 export type MenuOptionType = {
   name: OptionsType
@@ -18,19 +18,19 @@ export type MenuOptionType = {
 }
 
 const PATH_BY_OPTION: Record<OptionsType, string> = {
-  Upload: '/upload',
-  Files: '/files',
-  User: '/user',
-  Settings: '/settings',
+  Upload: "/upload",
+  Files: "/files",
+  User: "/user",
+  Settings: "/settings",
 }
 
-const joinPaths = (base: string, path: string) => `${base.replace(/\/$/, '')}${path}`
+const joinPaths = (base: string, path: string) => `${base.replace(/\/$/, "")}${path}`
 
 type MenuProps = {
   basePath?: string
 }
 
-export const Menu: FC<MenuProps> = ({ basePath = '/dashboard' }) => {
+export const Menu: FC<MenuProps> = ({ basePath = "/dashboard" }) => {
   const [focusedOption, setFocusedOption] = useState<OptionsType | null>(null)
   const location = useLocation()
 
@@ -42,10 +42,10 @@ export const Menu: FC<MenuProps> = ({ basePath = '/dashboard' }) => {
   }, [location.pathname, basePath])
 
   const options: MenuOptionType[] = [
-    { name: 'Upload', icon: TiUploadOutline },
-    { name: 'Files', icon: TiFolder },
-    { name: 'User', icon: TiUserOutline },
-    { name: 'Settings', icon: FiSettings },
+    { name: "Upload", icon: TiUploadOutline },
+    { name: "Files", icon: TiFolder },
+    { name: "User", icon: TiUserOutline },
+    { name: "Settings", icon: FiSettings },
   ]
 
   return (

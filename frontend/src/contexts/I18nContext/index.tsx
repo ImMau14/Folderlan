@@ -8,14 +8,14 @@ import React, {
   useMemo,
   useState,
   type ReactNode,
-} from 'react'
+} from "react"
 
-import en from './locales/en.json'
-import es from './locales/es.json'
-import it from './locales/it.json'
-import pt from './locales/pt.json'
+import en from "./locales/en.json"
+import es from "./locales/es.json"
+import it from "./locales/it.json"
+import pt from "./locales/pt.json"
 
-export type Locale = 'en' | 'es' | 'it' | 'pt'
+export type Locale = "en" | "es" | "it" | "pt"
 
 type TranslationValue = string | TranslationMap
 interface TranslationMap {
@@ -34,11 +34,11 @@ interface I18nContextValue {
 }
 
 // LocalStorage key used to persist user language
-const STORAGE_KEY = 'folderlan:locale'
+const STORAGE_KEY = "folderlan:locale"
 // Fallback language when detection fails
-const FALLBACK_LOCALE: Locale = 'en'
+const FALLBACK_LOCALE: Locale = "en"
 // Explicit list of supported locales
-export const SUPPORTED_LOCALES: Locale[] = ['en', 'es', 'it', 'pt']
+export const SUPPORTED_LOCALES: Locale[] = ["en", "es", "it", "pt"]
 
 // Translation dictionaries mapped by locale
 const translations: Dictionary = {
@@ -59,13 +59,13 @@ const normalizeLocale = (value: string | null | undefined): Locale => {
 
 // Detects browser preferred language synchronously
 const detectBrowserLocale = (): Locale => {
-  if (typeof navigator === 'undefined') return FALLBACK_LOCALE
+  if (typeof navigator === "undefined") return FALLBACK_LOCALE
   return normalizeLocale(navigator.language)
 }
 
 // Reads persisted locale from localStorage if available
 const getStoredLocale = (): Locale | undefined => {
-  if (typeof window === 'undefined') return undefined
+  if (typeof window === "undefined") return undefined
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY)
     return stored ? normalizeLocale(stored) : undefined
@@ -94,11 +94,11 @@ export const I18nProvider = ({ children }: I18nProviderProps) => {
 
   // Sync document language attribute and persist locale
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      document.documentElement.setAttribute('lang', locale)
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("lang", locale)
     }
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
         window.localStorage.setItem(STORAGE_KEY, locale)
       } catch {
@@ -124,15 +124,15 @@ export const I18nProvider = ({ children }: I18nProviderProps) => {
   // Translation function with nested keys, replacements, and plural support
   const translate = useCallback(
     (key: string, replacements: ReplacementValues = {}) => {
-      if (!key) return ''
+      if (!key) return ""
 
-      const segments = key.split('.')
+      const segments = key.split(".")
       let pointer: TranslationValue | undefined = dictionary
       let parent: TranslationMap | null = null
       let lastSegment: string | null = null
 
       for (const segment of segments) {
-        if (pointer && typeof pointer === 'object' && segment in pointer) {
+        if (pointer && typeof pointer === "object" && segment in pointer) {
           parent = pointer as TranslationMap
           lastSegment = segment
           pointer = parent[segment]
@@ -143,14 +143,14 @@ export const I18nProvider = ({ children }: I18nProviderProps) => {
       }
 
       const { count } = replacements
-      if (typeof count === 'number' && parent && lastSegment && count !== 1) {
+      if (typeof count === "number" && parent && lastSegment && count !== 1) {
         const pluralKey = `${lastSegment}_plural`
         if (pluralKey in parent) {
           pointer = parent[pluralKey]
         }
       }
 
-      if (typeof pointer === 'string') {
+      if (typeof pointer === "string") {
         return pointer.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, token) =>
           token in replacements ? String(replacements[token]) : match
         )
@@ -178,7 +178,7 @@ export const I18nProvider = ({ children }: I18nProviderProps) => {
 export const useI18n = (): I18nContextValue => {
   const context = useContext(I18nContext)
   if (!context) {
-    throw new Error('useI18n must be used within an I18nProvider')
+    throw new Error("useI18n must be used within an I18nProvider")
   }
   return context
 }

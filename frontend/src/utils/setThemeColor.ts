@@ -10,13 +10,13 @@ export const setThemeColor = (color: hexColor) => {
 
   // Update existing meta tag if found
   if (themeMetaTag instanceof HTMLMetaElement) {
-    themeMetaTag.setAttribute('content', color)
+    themeMetaTag.setAttribute("content", color)
     return
   }
 
   // Create new meta tag if one doesn't exist
-  const newThemeMetaTag = document.createElement('meta')
-  newThemeMetaTag.name = 'theme-color'
+  const newThemeMetaTag = document.createElement("meta")
+  newThemeMetaTag.name = "theme-color"
   newThemeMetaTag.content = color
   document.head.appendChild(newThemeMetaTag)
 }

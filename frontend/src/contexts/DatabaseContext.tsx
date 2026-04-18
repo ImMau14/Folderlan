@@ -1,10 +1,10 @@
 // Provides a React Context for managing database existence state and checking operations.
 
-import React, { createContext, useContext, useEffect, useState, type FC, useCallback } from 'react'
-import { ApiClient } from '@utils/ApiClient'
+import React, { createContext, useContext, useEffect, useState, type FC, useCallback } from "react"
+import { ApiClient } from "@utils/ApiClient"
 
-import { useToast } from '@contexts/ToastContext'
-import { useI18n } from '@contexts/I18nContext'
+import { useToast } from "@contexts/ToastContext"
+import { useI18n } from "@contexts/I18nContext"
 
 // Shape of the context value exposed to consumers
 type DbContextType = {
@@ -39,7 +39,7 @@ export const DatabaseProvider: FC<{ children: React.ReactNode }> = ({ children }
 
         if (!res.success) {
           console.error(res)
-          throw new Error(t('databaseContext.checkingError'))
+          throw new Error(t("databaseContext.checkingError"))
         }
 
         setDbExists(res?.data?.exists ?? false)
@@ -48,9 +48,9 @@ export const DatabaseProvider: FC<{ children: React.ReactNode }> = ({ children }
         setDbExists(false)
 
         toast({
-          type: 'error',
-          title: t('global.error'),
-          description: e instanceof Error ? e?.message : '-',
+          type: "error",
+          title: t("global.error"),
+          description: e instanceof Error ? e?.message : "-",
           duration: 3000,
         })
       } finally {
@@ -72,15 +72,15 @@ export const DatabaseProvider: FC<{ children: React.ReactNode }> = ({ children }
 
       if (!res.success) {
         console.error(res)
-        throw new Error(t('databaseContext.refreshError'))
+        throw new Error(t("databaseContext.refreshError"))
       }
 
       setDbExists(res?.data?.exists ?? false)
     } catch (e) {
       toast({
-        type: 'error',
-        title: t('global.error'),
-        description: e instanceof Error ? e?.message : '-',
+        type: "error",
+        title: t("global.error"),
+        description: e instanceof Error ? e?.message : "-",
         duration: 3000,
       })
     } finally {
@@ -102,6 +102,6 @@ export const DatabaseProvider: FC<{ children: React.ReactNode }> = ({ children }
 // Custom hook to consume DatabaseContext. Throws if used outside provider
 export const useDatabase = () => {
   const ctx = useContext(DatabaseContext)
-  if (!ctx) throw new Error('useDatabase must be used inside DatabaseProvider')
+  if (!ctx) throw new Error("useDatabase must be used inside DatabaseProvider")
   return ctx
 }

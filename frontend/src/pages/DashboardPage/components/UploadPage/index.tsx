@@ -1,7 +1,7 @@
-import { type FC, useState } from 'react'
+import { type FC, useState } from "react"
 
-import DropZone from './components/DropZone'
-import FileQueue from './components/FileQueue'
+import DropZone from "./components/DropZone"
+import FileQueue from "./components/FileQueue"
 
 export const UploadPage: FC = () => {
   const [files, setFiles] = useState<File[]>([])

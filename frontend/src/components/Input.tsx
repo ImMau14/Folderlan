@@ -1,6 +1,6 @@
 // Reusable input component with consistent styling and native prop passthrough
 
-import { type InputHTMLAttributes, forwardRef } from 'react'
+import { type InputHTMLAttributes, forwardRef } from "react"
 
 // Input component properties
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -22,14 +22,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
         id={resolvedId}
         name={name ?? resolvedId}
         className={[
-          'block w-full rounded-md border-2 border-gray-300 bg-gray-50 px-3 py-2 font-body text-sm leading-5 text-gray-900 placeholder-gray-400 shadow-sm transition-colors duration-150 hover:border-green-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-400',
-          className ?? '',
-        ].join(' ')}
+          "block w-full rounded-md border-2 border-gray-300 bg-gray-50 px-3 py-2 font-body text-sm leading-5 text-gray-900 placeholder-gray-400 shadow-sm transition-colors duration-150 hover:border-green-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-400",
+          className ?? "",
+        ].join(" ")}
         {...inputProps}
       />
     </label>
   )
 })
 
-Input.displayName = 'Input'
+Input.displayName = "Input"
 export default Input

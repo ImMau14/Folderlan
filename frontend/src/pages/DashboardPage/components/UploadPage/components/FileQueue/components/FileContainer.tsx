@@ -1,14 +1,14 @@
-import { type FC } from 'react'
-import { motion, easeOut } from 'framer-motion'
-import { FaFile, FaPlay, FaStop } from 'react-icons/fa6'
-import { IoClose } from 'react-icons/io5'
+import { type FC } from "react"
+import { motion, easeOut } from "framer-motion"
+import { FaFile, FaPlay, FaStop } from "react-icons/fa6"
+import { IoClose } from "react-icons/io5"
 
-import formatBytes from '@utils/formatBytes'
+import formatBytes from "@utils/formatBytes"
 
 interface FileContainerProps {
   file: File
   percent?: number
-  status: 'idle' | 'uploading' | 'paused' | 'done'
+  status: "idle" | "uploading" | "paused" | "done"
   onToggleStartPause: () => void
   onRemove: () => void
 }
@@ -20,8 +20,8 @@ export const FileContainer: FC<FileContainerProps> = ({
   onToggleStartPause,
   onRemove,
 }) => {
-  const isUploading = status === 'uploading'
-  const isDone = status === 'done'
+  const isUploading = status === "uploading"
+  const isDone = status === "done"
 
   return (
     <article className="flex w-full flex-row items-center gap-4 rounded-2xl border-2 border-ui-border-muted/50 bg-ui-front p-3 shadow-sm duration-100 hover:scale-105">
@@ -42,7 +42,7 @@ export const FileContainer: FC<FileContainerProps> = ({
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-ui-back">
             <motion.div
               className="h-full bg-green-700"
-              initial={{ width: '0%' }}
+              initial={{ width: "0%" }}
               animate={{ width: `${percent}%` }}
               transition={{ duration: 0.2, ease: easeOut }}
               aria-valuenow={Math.round(percent)}
@@ -56,12 +56,12 @@ export const FileContainer: FC<FileContainerProps> = ({
               aria-pressed={isUploading}
               aria-label={
                 isUploading
-                  ? 'Pausar subida'
+                  ? "Pausar subida"
                   : isDone
-                    ? 'Reiniciar no disponible'
-                    : 'Iniciar / Reanudar subida'
+                    ? "Reiniciar no disponible"
+                    : "Iniciar / Reanudar subida"
               }
-              title={isUploading ? 'Pausar' : 'Iniciar / Reanudar'}
+              title={isUploading ? "Pausar" : "Iniciar / Reanudar"}
               disabled={isDone}
             >
               {isUploading ? (
@@ -69,7 +69,7 @@ export const FileContainer: FC<FileContainerProps> = ({
               ) : (
                 <FaPlay className="text-sm" aria-hidden />
               )}
-              <span className="sr-only">{isUploading ? 'Pausar' : 'Iniciar'}</span>
+              <span className="sr-only">{isUploading ? "Pausar" : "Iniciar"}</span>
             </button>
 
             <button onClick={onRemove} aria-label="Eliminar archivo" title="Eliminar">

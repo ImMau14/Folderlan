@@ -8,11 +8,11 @@ import React, {
   useMemo,
   useState,
   type ReactNode,
-} from 'react'
+} from "react"
 
-import { setThemeColor } from '@utils/setThemeColor'
+import { setThemeColor } from "@utils/setThemeColor"
 
-export type Theme = 'light' | 'dark'
+export type Theme = "light" | "dark"
 
 interface ThemeContextValue {
   theme: Theme
@@ -20,26 +20,26 @@ interface ThemeContextValue {
   toggleTheme: () => void
 }
 
-const STORAGE_KEY = 'folderlan:theme'
-const FALLBACK_THEME: Theme = 'light'
+const STORAGE_KEY = "folderlan:theme"
+const FALLBACK_THEME: Theme = "light"
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 
 const prefersDarkMode = (): boolean => {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     return false
   }
 
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
 }
 
 const normalizeTheme = (value: string | null | undefined): Theme => {
   if (!value) return FALLBACK_THEME
-  return value.toLowerCase() === 'dark' ? 'dark' : 'light'
+  return value.toLowerCase() === "dark" ? "dark" : "light"
 }
 
 const getInitialTheme = (): Theme => {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return FALLBACK_THEME
   }
 
@@ -49,10 +49,10 @@ const getInitialTheme = (): Theme => {
       return normalizeTheme(stored)
     }
   } catch (error) {
-    console.warn('[theme] Unable to read stored theme.', error)
+    console.warn("[theme] Unable to read stored theme.", error)
   }
 
-  return prefersDarkMode() ? 'dark' : FALLBACK_THEME
+  return prefersDarkMode() ? "dark" : FALLBACK_THEME
 }
 
 interface ThemeProviderProps {
@@ -67,28 +67,28 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     try {
       window.localStorage.setItem(STORAGE_KEY, theme)
     } catch (error) {
-      console.warn('[theme] Unable to persist theme.', error)
+      console.warn("[theme] Unable to persist theme.", error)
     }
   }, [theme])
 
   // Sync browser UI and document with current theme
   useEffect(() => {
-    const color = theme === 'dark' ? '#020617' : '#ffffff'
+    const color = theme === "dark" ? "#020617" : "#ffffff"
     setThemeColor(color)
-    document.documentElement.setAttribute('data-theme', theme)
+    document.documentElement.setAttribute("data-theme", theme)
   }, [theme])
 
   // Listen to system theme changes
   useEffect(() => {
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
 
       const handleChange = (event: MediaQueryListEvent) => {
-        setThemeState(event.matches ? 'dark' : 'light')
+        setThemeState(event.matches ? "dark" : "light")
       }
 
-      mediaQuery.addEventListener('change', handleChange)
-      return () => mediaQuery.removeEventListener('change', handleChange)
+      mediaQuery.addEventListener("change", handleChange)
+      return () => mediaQuery.removeEventListener("change", handleChange)
     }
 
     return undefined
@@ -99,7 +99,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   }, [])
 
   const toggleTheme = useCallback(() => {
-    setThemeState((current) => (current === 'dark' ? 'light' : 'dark'))
+    setThemeState((current) => (current === "dark" ? "light" : "dark"))
   }, [])
 
   const value = useMemo<ThemeContextValue>(
@@ -117,7 +117,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 export const useTheme = (): ThemeContextValue => {
   const context = useContext(ThemeContext)
   if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider')
+    throw new Error("useTheme must be used within a ThemeProvider")
   }
   return context
 }

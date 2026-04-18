@@ -1,17 +1,17 @@
 // Toast notification system providing contextual feedback for user actions
 // Uses Framer Motion for animations and React Context for state management
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { MdError } from 'react-icons/md'
-import { FaCheckCircle, FaInfoCircle } from 'react-icons/fa'
-import { IoIosWarning } from 'react-icons/io'
-import { IoClose } from 'react-icons/io5'
-import { useTheme } from '@contexts/ThemeContext'
-import clsx from 'clsx'
+import React, { createContext, useContext, useState, useCallback, useMemo } from "react"
+import { AnimatePresence, motion } from "framer-motion"
+import { MdError } from "react-icons/md"
+import { FaCheckCircle, FaInfoCircle } from "react-icons/fa"
+import { IoIosWarning } from "react-icons/io"
+import { IoClose } from "react-icons/io5"
+import { useTheme } from "@contexts/ThemeContext"
+import clsx from "clsx"
 
 // Toast type definitions
-type ToastType = 'success' | 'error' | 'info' | 'warning'
+type ToastType = "success" | "error" | "info" | "warning"
 type ToastItem = {
   id: string
   type: ToastType
@@ -22,7 +22,7 @@ type ToastItem = {
 
 // Context API interface for toast operations
 type ToastContextApi = {
-  toast: (t: Omit<ToastItem, 'id'>) => string
+  toast: (t: Omit<ToastItem, "id">) => string
   dismiss: (id: string) => void
 }
 
@@ -31,7 +31,7 @@ const ToastContext = createContext<ToastContextApi | undefined>(undefined)
 // Hook to access toast functions from any component
 export const useToast = () => {
   const ctx = useContext(ToastContext)
-  if (!ctx) throw new Error('useToast must be used within ToastProvider')
+  if (!ctx) throw new Error("useToast must be used within ToastProvider")
   return ctx
 }
 
@@ -45,12 +45,12 @@ const ICONS: Record<ToastType, React.ElementType> = {
 
 const COLORS: Record<ToastType, string> = {
   error:
-    'bg-red-50 border-red-200 text-red-800 dark:border-transparent dark:bg-red-800 dark:text-red-50',
+    "bg-red-50 border-red-200 text-red-800 dark:border-transparent dark:bg-red-800 dark:text-red-50",
   success:
-    'bg-green-50 border-green-200 text-green-800 dark:border-transparent dark:bg-green-800 dark:text-green-50',
-  info: 'bg-gray-50 border-gray-200 text-gray-900 dark:border-transparent dark:bg-gray-800 dark:text-gray-50',
+    "bg-green-50 border-green-200 text-green-800 dark:border-transparent dark:bg-green-800 dark:text-green-50",
+  info: "bg-gray-50 border-gray-200 text-gray-900 dark:border-transparent dark:bg-gray-800 dark:text-gray-50",
   warning:
-    'bg-yellow-50 border-yellow-200 text-yellow-800 dark:border-transparent dark:bg-yellow-800 dark:text-yellow-50',
+    "bg-yellow-50 border-yellow-200 text-yellow-800 dark:border-transparent dark:bg-yellow-800 dark:text-yellow-50",
 }
 
 // Main provider component that manages toast state and rendering
@@ -59,7 +59,7 @@ export const ToastProvider: React.FC<{ children?: React.ReactNode }> = ({ childr
   const { theme } = useTheme()
 
   // Create new toast with auto-dismiss functionality
-  const toast = useCallback((t: Omit<ToastItem, 'id'>) => {
+  const toast = useCallback((t: Omit<ToastItem, "id">) => {
     const id = crypto?.randomUUID?.() ?? String(Date.now())
     const item: ToastItem = { id, ...t, duration: t.duration ?? 4000 }
     setToasts((s) => [item, ...s]) // Newest toasts appear on top
@@ -82,8 +82,8 @@ export const ToastProvider: React.FC<{ children?: React.ReactNode }> = ({ childr
     () =>
       // eslint-disable-next-line tailwindcss/no-custom-classname
       clsx(
-        'pointer-events-none fixed right-4 top-4 z-50 flex w-[90%] max-w-full flex-col gap-3 md:w-[360px]',
-        theme === 'dark' && 'dark'
+        "pointer-events-none fixed right-4 top-4 z-50 flex w-[90%] max-w-full flex-col gap-3 md:w-[360px]",
+        theme === "dark" && "dark"
       ),
     [theme]
   )
@@ -123,8 +123,8 @@ const ToastCard: React.FC<{ toast: ToastItem; onClose: () => void }> = ({ toast,
       exit="exit"
       variants={toastVariants}
       className={clsx(
-        'pointer-events-auto w-full rounded-md border p-3 shadow-lg',
-        'relative flex items-start gap-3',
+        "pointer-events-auto w-full rounded-md border p-3 shadow-lg",
+        "relative flex items-start gap-3",
         color
       )}
       role="region"

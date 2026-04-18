@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+
+  "lineWidth": 100,
+  "indentWidth": 2,
+
+  "quotes": "single",
+  "semi": false,
+
+  "trailingComma": "es5",
+
+  "endOfLine": "lf",
+
+  "sortTailwindcss": {
+    "config": "./tailwind.config.js",
+    "functions": ["clsx", "cn"]
+  },
+
+  "ignorePatterns": [
+    "node_modules/**",
+    "dist/**",
+    "build/**",
+    ".coverage/**",
+    ".eslintcache",
+    "pnpm-lock.yaml"
+  ]
+}

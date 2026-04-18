@@ -1,13 +1,13 @@
 // Guard that checks whether the database exists and redirects or allows routes accordingly.
 
-import { type ReactNode } from 'react'
-import { Navigate, useLocation, matchRoutes, type RouteObject } from 'react-router-dom'
+import { type ReactNode } from "react"
+import { Navigate, useLocation, matchRoutes, type RouteObject } from "react-router-dom"
 
-import LoadingPage from '@pages/LoadingPage'
-import NotFoundPage from '@pages/NotFoundPage'
-import { useI18n } from '@contexts/I18nContext'
-import { useDatabase } from '@contexts/DatabaseContext'
-import { useAuth } from '@contexts/AuthContext'
+import LoadingPage from "@pages/LoadingPage"
+import NotFoundPage from "@pages/NotFoundPage"
+import { useI18n } from "@contexts/I18nContext"
+import { useDatabase } from "@contexts/DatabaseContext"
+import { useAuth } from "@contexts/AuthContext"
 
 interface RouteHandle {
   requiresAuth?: boolean
@@ -36,7 +36,7 @@ export const DatabaseGuard = ({ children, routes }: Props) => {
   if (!checked) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
-        <LoadingPage message={t('loading.checkingDatabase') ?? undefined} />
+        <LoadingPage message={t("loading.checkingDatabase") ?? undefined} />
       </div>
     )
   }
@@ -57,22 +57,22 @@ export const DatabaseGuard = ({ children, routes }: Props) => {
   const handle = matchedRoute.handle ?? {}
 
   // Root path behavior: if user hits '/', decide destination based on DB+auth
-  if (location.pathname === '/') {
+  if (location.pathname === "/") {
     if (!dbExists) return <Navigate to="/setup" replace />
-    return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />
+    return <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
   }
 
   // If DB does not exist -> only allow public routes (e.g., /setup)
   if (!dbExists) {
-    if (location.pathname === '/setup') {
+    if (location.pathname === "/setup") {
       return <>{children}</>
     }
     return <Navigate to="/setup" replace />
   }
 
   // If DB exists but user navigated to /setup -> redirect away
-  if (dbExists && location.pathname === '/setup') {
-    return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />
+  if (dbExists && location.pathname === "/setup") {
+    return <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
   }
 
   // If route requires auth and user is not authenticated -> redirect to login
@@ -82,7 +82,7 @@ export const DatabaseGuard = ({ children, routes }: Props) => {
   }
 
   // If route is /login but user is already authenticated -> dashboard
-  if (location.pathname === '/login' && isAuthenticated) {
+  if (location.pathname === "/login" && isAuthenticated) {
     return <Navigate to="/dashboard" replace />
   }
 

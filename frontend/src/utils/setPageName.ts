@@ -3,7 +3,7 @@ export const setPageName = (pageName: string) => {
   const newPageName = `${pageName} - Folderlan`
 
   // Try to find existing title tag
-  const titleTag = document.querySelector('title')
+  const titleTag = document.querySelector("title")
 
   // Update existing meta tag if found
   if (titleTag instanceof HTMLTitleElement) {
@@ -12,7 +12,7 @@ export const setPageName = (pageName: string) => {
   }
 
   // Create new title tag if one doesn't exist
-  const newTitleTag = document.createElement('title')
+  const newTitleTag = document.createElement("title")
   newTitleTag.innerText = newPageName
   document.head.appendChild(newTitleTag)
 }

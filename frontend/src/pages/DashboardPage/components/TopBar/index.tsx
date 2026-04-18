@@ -1,7 +1,7 @@
-import { type FC } from 'react'
+import { type FC } from "react"
 
-import { FaUserCircle } from 'react-icons/fa'
-import { IoLogOut } from 'react-icons/io5'
+import { FaUserCircle } from "react-icons/fa"
+import { IoLogOut } from "react-icons/io5"
 
 export const TopBar: FC = () => {
   return (

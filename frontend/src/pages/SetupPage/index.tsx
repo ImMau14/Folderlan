@@ -1,21 +1,21 @@
 // SetupPage - Component that handles initial database creation, owner registration, and login.
 // The SetupPage, where the user can set up the application
 
-import { useEffect, useState, useCallback, type FC } from 'react'
-import { AnimatePresence, type Transition } from 'framer-motion'
+import { useEffect, useState, useCallback, type FC } from "react"
+import { AnimatePresence, type Transition } from "framer-motion"
 
-import { setPageName } from '@utils/setPageName'
-import ApiClient from '@utils/ApiClient'
+import { setPageName } from "@utils/setPageName"
+import ApiClient from "@utils/ApiClient"
 
-import AnimatedBackground from '@components/AnimatedBackground'
-import GlobalControlsOverlay from '@components/GlobalControlsOverlay'
+import AnimatedBackground from "@components/AnimatedBackground"
+import GlobalControlsOverlay from "@components/GlobalControlsOverlay"
 
-import { useI18n } from '@contexts/I18nContext'
-import { useToast } from '@contexts/ToastContext'
-import { useAuth } from '@contexts/AuthContext'
+import { useI18n } from "@contexts/I18nContext"
+import { useToast } from "@contexts/ToastContext"
+import { useAuth } from "@contexts/AuthContext"
 
-import SetupWelcome from './components/SetupWelcome'
-import SetupForm from './components/SetupForm'
+import SetupWelcome from "./components/SetupWelcome"
+import SetupForm from "./components/SetupForm"
 
 // OperationResult describes a simple boolean result with an optional message.
 type OperationResult = { ok: boolean; message?: string }
@@ -41,31 +41,31 @@ export const SetupPage: FC = () => {
         // Validate result; treat falsy or explicit ok:false as failure.
         if (!initDbRes || !initDbRes.success) {
           const rawMessage = initDbRes?.error?.message ?? undefined
-          const fallbackMessage = t('setup.toast.unexpectedErrorDescription')
+          const fallbackMessage = t("setup.toast.unexpectedErrorDescription")
           const msg = rawMessage ?? fallbackMessage
           toast({
-            type: 'error',
-            title: t('setup.toast.databaseCreateErrorTitle'),
-            description: t('setup.toast.databaseCreateErrorDescription', { message: msg }),
+            type: "error",
+            title: t("setup.toast.databaseCreateErrorTitle"),
+            description: t("setup.toast.databaseCreateErrorDescription", { message: msg }),
             duration: 4000,
           })
-          console.warn('initDb failed:', initDbRes)
+          console.warn("initDb failed:", initDbRes)
           return { ok: false, message: msg }
         }
 
         // Show single success toast after DB is created.
         toast({
-          type: 'success',
-          title: t('setup.toast.databaseCreatedTitle'),
-          description: t('setup.toast.databaseCreatedDescription'),
+          type: "success",
+          title: t("setup.toast.databaseCreatedTitle"),
+          description: t("setup.toast.databaseCreatedDescription"),
           duration: 2000,
         })
       } catch (err) {
-        console.error('initDb threw:', err)
-        const msg = t('setup.toast.databaseNetworkErrorDescription')
+        console.error("initDb threw:", err)
+        const msg = t("setup.toast.databaseNetworkErrorDescription")
         toast({
-          type: 'error',
-          title: t('setup.toast.databaseNetworkErrorTitle'),
+          type: "error",
+          title: t("setup.toast.databaseNetworkErrorTitle"),
           description: msg,
           duration: 4000,
         })
@@ -77,30 +77,30 @@ export const SetupPage: FC = () => {
         const registerRes = await client.ownerRegister(username, password)
 
         if (!registerRes || !registerRes.success) {
-          const msg = registerRes?.error?.message ?? t('setup.toast.unexpectedErrorDescription')
+          const msg = registerRes?.error?.message ?? t("setup.toast.unexpectedErrorDescription")
           toast({
-            type: 'error',
-            title: t('setup.toast.registrationFailedTitle'),
-            description: t('setup.toast.registrationFailedDescription', { message: msg }),
+            type: "error",
+            title: t("setup.toast.registrationFailedTitle"),
+            description: t("setup.toast.registrationFailedDescription", { message: msg }),
             duration: 4000,
           })
-          console.warn('ownerRegister failed:', registerRes)
+          console.warn("ownerRegister failed:", registerRes)
           return { ok: false, message: msg }
         }
 
         // Show single success toast after owner is registered.
         toast({
-          type: 'success',
-          title: t('setup.toast.ownerRegisteredTitle'),
-          description: t('setup.toast.ownerRegisteredDescription', { username }),
+          type: "success",
+          title: t("setup.toast.ownerRegisteredTitle"),
+          description: t("setup.toast.ownerRegisteredDescription", { username }),
           duration: 2000,
         })
       } catch (err) {
-        console.error('ownerRegister threw:', err)
-        const msg = t('setup.toast.registrationNetworkErrorDescription')
+        console.error("ownerRegister threw:", err)
+        const msg = t("setup.toast.registrationNetworkErrorDescription")
         toast({
-          type: 'error',
-          title: t('setup.toast.registrationNetworkErrorTitle'),
+          type: "error",
+          title: t("setup.toast.registrationNetworkErrorTitle"),
           description: msg,
           duration: 4000,
         })
@@ -112,23 +112,23 @@ export const SetupPage: FC = () => {
         const loginRes = await client.login(username, password)
 
         if (!loginRes || !loginRes.success) {
-          const msg = loginRes?.error?.message ?? t('setup.toast.unexpectedErrorDescription')
+          const msg = loginRes?.error?.message ?? t("setup.toast.unexpectedErrorDescription")
           toast({
-            type: 'error',
-            title: t('setup.toast.loginFailedTitle'),
-            description: t('setup.toast.loginFailedDescription', { message: msg }),
+            type: "error",
+            title: t("setup.toast.loginFailedTitle"),
+            description: t("setup.toast.loginFailedDescription", { message: msg }),
             duration: 4000,
           })
-          console.warn('login failed:', loginRes)
+          console.warn("login failed:", loginRes)
           return { ok: false, message: msg }
         }
 
         const token = loginRes?.data?.token
         if (!token) {
-          const msg = t('setup.toast.loginNoTokenDescription')
+          const msg = t("setup.toast.loginNoTokenDescription")
           toast({
-            type: 'error',
-            title: t('setup.toast.loginNoTokenTitle'),
+            type: "error",
+            title: t("setup.toast.loginNoTokenTitle"),
             description: msg,
             duration: 4000,
           })
@@ -139,19 +139,19 @@ export const SetupPage: FC = () => {
 
         // Show single success toast after login success.
         toast({
-          type: 'success',
-          title: t('setup.toast.loginSuccessTitle'),
-          description: t('setup.toast.loginSuccessDescription'),
+          type: "success",
+          title: t("setup.toast.loginSuccessTitle"),
+          description: t("setup.toast.loginSuccessDescription"),
           duration: 2000,
         })
 
         return { ok: true }
       } catch (err) {
-        console.error('login threw:', err)
-        const msg = t('setup.toast.loginErrorDescription')
+        console.error("login threw:", err)
+        const msg = t("setup.toast.loginErrorDescription")
         toast({
-          type: 'error',
-          title: t('setup.toast.loginErrorTitle'),
+          type: "error",
+          title: t("setup.toast.loginErrorTitle"),
           description: msg,
           duration: 4000,
         })
@@ -171,7 +171,7 @@ export const SetupPage: FC = () => {
   )
 
   useEffect(() => {
-    setPageName(onForm ? t('setup.formTitle') : t('setup.welcomeTitle'))
+    setPageName(onForm ? t("setup.formTitle") : t("setup.welcomeTitle"))
   }, [onForm, t])
 
   const cardTransition: Transition = { duration: 0.35, ease: [0.16, 1, 0.3, 1] }

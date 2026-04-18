@@ -1,9 +1,9 @@
 // Configuration loader for environment variables with fallback values.
 
-import { z } from 'zod'
+import { z } from "zod"
 
 const EnvConfigSchema = z.object({
-  API_URL: z.union([z.string().url(), z.literal('localhost')]).readonly(),
+  API_URL: z.union([z.string().url(), z.literal("localhost")]).readonly(),
 })
 
 type EnvConfig = z.infer<typeof EnvConfigSchema>
@@ -17,9 +17,9 @@ function loadEnv(): EnvConfig {
       return window.location.origin
     }
 
-    if (url === 'localhost') {
+    if (url === "localhost") {
       const api_path = new URL(window.location.origin)
-      api_path.port = '8080'
+      api_path.port = "8080"
       return api_path.href
     }
 

@@ -1,11 +1,11 @@
 // DropZone component allows users to drag-and-drop or select files for upload.
 
-import { useRef, useState, type DragEvent, type ChangeEvent, type FC, useMemo } from 'react'
-import { FaCloudUploadAlt } from 'react-icons/fa'
+import { useRef, useState, type DragEvent, type ChangeEvent, type FC, useMemo } from "react"
+import { FaCloudUploadAlt } from "react-icons/fa"
 
-import clsx from 'clsx'
+import clsx from "clsx"
 
-import FloatingContainer from '../../FloatingContainer'
+import FloatingContainer from "../../FloatingContainer"
 
 interface DropZoneProps {
   onFilesChange?: (files: File[]) => void
@@ -30,7 +30,7 @@ const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, initialFiles = [] 
       if (!exists) merged.push(f)
     }
     setFiles(merged)
-    console.log('DropZone files:', merged)
+    console.log("DropZone files:", merged)
     onFilesChange?.(merged)
   }
 
@@ -39,7 +39,7 @@ const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, initialFiles = [] 
     e.preventDefault()
     e.stopPropagation()
     setDragActive(true)
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "copy"
   }
 
   // Handle drag over event.
@@ -47,7 +47,7 @@ const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, initialFiles = [] 
     e.preventDefault()
     e.stopPropagation()
     setDragActive(true)
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "copy"
   }
 
   // Handle drag leave event.
@@ -68,7 +68,7 @@ const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, initialFiles = [] 
   // Handle file input change event.
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length) addFiles(e.target.files)
-    e.currentTarget.value = ''
+    e.currentTarget.value = ""
   }
 
   // Triggers hidden file input click.
@@ -85,8 +85,8 @@ const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, initialFiles = [] 
         className={useMemo(
           () =>
             clsx(
-              'flex h-full w-full flex-col items-center justify-center rounded-2xl border-4 border-dashed p-6',
-              dragActive ? 'border-ui-primary bg-ui-primary/5' : 'border-ui-border bg-green-700/5'
+              "flex h-full w-full flex-col items-center justify-center rounded-2xl border-4 border-dashed p-6",
+              dragActive ? "border-ui-primary bg-ui-primary/5" : "border-ui-border bg-green-700/5"
             ),
           [dragActive]
         )}

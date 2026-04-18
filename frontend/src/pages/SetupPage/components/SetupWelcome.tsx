@@ -1,13 +1,13 @@
 // SetupWelcome - Presentational welcome screen for initial setup.
 // Small component that shows app logo and start button.
 
-import { type FC } from 'react'
-import { FaArrowRightToBracket } from 'react-icons/fa6'
-import { motion, type Transition } from 'framer-motion'
+import { type FC } from "react"
+import { FaArrowRightToBracket } from "react-icons/fa6"
+import { motion, type Transition } from "framer-motion"
 
-import { FolderlanSvg } from '@components/FolderlanSvg'
-import { Button } from '@components/Button'
-import { useI18n } from '@contexts/I18nContext'
+import { FolderlanSvg } from "@components/FolderlanSvg"
+import { Button } from "@components/Button"
+import { useI18n } from "@contexts/I18nContext"
 
 type Props = {
   onStart: () => void
@@ -29,10 +29,10 @@ const SetupWelcome: FC<Props> = ({ onStart, cardTransition }) => {
         <FolderlanSvg className="h-24 text-gray-900 dark:text-slate-100" />
         <div className="flex flex-col items-center gap-2">
           <h1 className="text-center font-heading text-3xl font-semibold text-gray-900 dark:text-slate-50">
-            {t('setup.welcomeTitle')}
+            {t("setup.welcomeTitle")}
           </h1>
           <p className="text-center font-body text-gray-600 dark:text-slate-300">
-            {t('setup.welcomeDescription')}
+            {t("setup.welcomeDescription")}
           </p>
         </div>
       </header>
@@ -43,7 +43,7 @@ const SetupWelcome: FC<Props> = ({ onStart, cardTransition }) => {
         onClick={onStart}
       >
         <FaArrowRightToBracket />
-        {t('setup.startButton')}
+        {t("setup.startButton")}
       </Button>
     </motion.main>
   )

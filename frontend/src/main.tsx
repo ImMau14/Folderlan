@@ -1,19 +1,19 @@
-import React, { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
+import React, { StrictMode } from "react"
+import { createRoot } from "react-dom/client"
+import { BrowserRouter } from "react-router-dom"
 
-import { ToastProvider } from '@contexts/ToastContext'
-import { DatabaseProvider } from '@contexts/DatabaseContext'
-import { ThemeProvider } from '@contexts/ThemeContext'
-import { I18nProvider } from '@contexts/I18nContext'
-import { AuthProvider } from '@contexts/AuthContext'
+import { ToastProvider } from "@contexts/ToastContext"
+import { DatabaseProvider } from "@contexts/DatabaseContext"
+import { ThemeProvider } from "@contexts/ThemeContext"
+import { I18nProvider } from "@contexts/I18nContext"
+import { AuthProvider } from "@contexts/AuthContext"
 
-import { App } from '@/App.tsx'
+import { App } from "@/App.tsx"
 
-import '@styles/global.css'
-import '@styles/fonts.css'
+import "@styles/global.css"
+import "@styles/fonts.css"
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <I18nProvider>
       <ThemeProvider>

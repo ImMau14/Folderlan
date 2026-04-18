@@ -1,6 +1,6 @@
 // Custom SVG component for folder icon with dynamic styling and accessibility support
 
-import { type SVGProps, forwardRef } from 'react'
+import { type SVGProps, forwardRef } from "react"
 
 // Props interface for the FolderlanSvg component
 export type FolderlanSvgProps = SVGProps<SVGSVGElement> & {
@@ -10,7 +10,7 @@ export type FolderlanSvgProps = SVGProps<SVGSVGElement> & {
 
 // Forward ref component for folder icon SVG with customizable properties
 export const FolderlanSvg = forwardRef<SVGSVGElement, FolderlanSvgProps>(
-  ({ title, fill = 'currentColor', className, ...rest }, ref) => {
+  ({ title, fill = "currentColor", className, ...rest }, ref) => {
     // Generate unique title ID for accessibility if title is provided
     const titleId = title ? `xvg-title-${Math.random().toString(36).slice(2, 9)}` : undefined
 
@@ -19,7 +19,7 @@ export const FolderlanSvg = forwardRef<SVGSVGElement, FolderlanSvgProps>(
         ref={ref}
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 141.78522 149.99771"
-        role={title ? 'img' : undefined}
+        role={title ? "img" : undefined}
         aria-labelledby={title ? titleId : undefined}
         aria-hidden={title ? undefined : true}
         className={className}

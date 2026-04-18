@@ -1,7 +1,7 @@
 // Simple reusable loading component that shows a spinner and message.
 
-import { useI18n } from '@contexts/I18nContext'
-import clsx from 'clsx'
+import { useI18n } from "@contexts/I18nContext"
+import clsx from "clsx"
 
 export interface LoadingPageProps {
   message?: string
@@ -10,14 +10,14 @@ export interface LoadingPageProps {
 
 export const LoadingPage = ({ message, className }: LoadingPageProps) => {
   const { t } = useI18n()
-  const resolvedMessage = message ?? t('loading.default')
+  const resolvedMessage = message ?? t("loading.default")
   return (
     <div
       role="status"
       aria-live="polite"
       className={clsx(
-        'h-full w-full bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100',
-        className ?? ''
+        "h-full w-full bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100",
+        className ?? ""
       )}
     >
       <div className="flex h-dvh items-center justify-center gap-2">

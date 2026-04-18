@@ -8,12 +8,12 @@ import {
   useCallback,
   useState,
   type ReactNode,
-} from 'react'
+} from "react"
 
 // Key used to store the auth token in localStorage
-const TOKEN_KEY = 'auth_token'
+const TOKEN_KEY = "auth_token"
 // Key used to store the token creation timestamp in localStorage
-const TOKEN_TS_KEY = 'auth_token_ts'
+const TOKEN_TS_KEY = "auth_token_ts"
 // Token Time-To-Live in milliseconds (1 hour)
 const TOKEN_TTL_MS = 60 * 60 * 1000 // 1h
 
@@ -39,7 +39,7 @@ function readToken(): string | null {
     return localStorage.getItem(TOKEN_KEY)
   } catch (err) {
     // Fail quietly but log to help debugging in restricted environments
-    console.error('readToken error:', err)
+    console.error("readToken error:", err)
     return null
   }
 }
@@ -52,7 +52,7 @@ function readTimestamp(): number | null {
     const parsed = parseInt(ts, 10)
     return Number.isNaN(parsed) ? null : parsed
   } catch (err) {
-    console.error('readTimestamp error:', err)
+    console.error("readTimestamp error:", err)
     return null
   }
 }
@@ -66,7 +66,7 @@ function isTokenValid(): boolean {
     if (Number.isNaN(age)) return false
     return age < TOKEN_TTL_MS
   } catch (err) {
-    console.error('isTokenValid error:', err)
+    console.error("isTokenValid error:", err)
     return false
   }
 }
@@ -77,7 +77,7 @@ function persistToken(token: string) {
     localStorage.setItem(TOKEN_KEY, token)
     localStorage.setItem(TOKEN_TS_KEY, Date.now().toString())
   } catch (err) {
-    console.error('persistToken error:', err)
+    console.error("persistToken error:", err)
   }
 }
 
@@ -87,7 +87,7 @@ function clearStorage() {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(TOKEN_TS_KEY)
   } catch (err) {
-    console.error('clearStorage error:', err)
+    console.error("clearStorage error:", err)
   }
 }
 
@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(null)
       }
     } catch (err) {
-      console.error('AuthProvider init error:', err)
+      console.error("AuthProvider init error:", err)
       clearStorage()
       setToken(null)
     }
@@ -160,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext)
   if (!ctx) {
-    throw new Error('useAuth must be used inside AuthProvider')
+    throw new Error("useAuth must be used inside AuthProvider")
   }
   return ctx
 }

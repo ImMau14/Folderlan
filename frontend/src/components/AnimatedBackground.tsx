@@ -1,7 +1,7 @@
 // Animated background component with video loading and graceful fallback states.
 
-import { useEffect, useRef, useState, useCallback, type ReactNode, type FC } from 'react'
-import bgVideo from '@assets/bg.webm'
+import { useEffect, useRef, useState, useCallback, type ReactNode, type FC } from "react"
+import bgVideo from "@assets/bg.webm"
 
 type AnimatedBackgroundProps = {
   children?: ReactNode
@@ -11,7 +11,7 @@ type AnimatedBackgroundProps = {
 
 export const AnimatedBackground: FC<AnimatedBackgroundProps> = ({
   children,
-  className = '',
+  className = "",
   loadTimeoutMs = 5000,
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -39,12 +39,12 @@ export const AnimatedBackground: FC<AnimatedBackgroundProps> = ({
 
     const handleReady = () => markReady()
 
-    v.addEventListener('canplaythrough', handleReady)
-    v.addEventListener('loadeddata', handleReady)
-    v.addEventListener('playing', handleReady)
+    v.addEventListener("canplaythrough", handleReady)
+    v.addEventListener("loadeddata", handleReady)
+    v.addEventListener("playing", handleReady)
 
     v.play().catch(() => {
-      console.warn('Blocked autoplay')
+      console.warn("Blocked autoplay")
     })
 
     timeoutRef.current = window.setTimeout(() => {
@@ -52,9 +52,9 @@ export const AnimatedBackground: FC<AnimatedBackgroundProps> = ({
     }, loadTimeoutMs)
 
     return () => {
-      v.removeEventListener('canplaythrough', handleReady)
-      v.removeEventListener('loadeddata', handleReady)
-      v.removeEventListener('playing', handleReady)
+      v.removeEventListener("canplaythrough", handleReady)
+      v.removeEventListener("loadeddata", handleReady)
+      v.removeEventListener("playing", handleReady)
 
       if (timeoutRef.current !== null) {
         window.clearTimeout(timeoutRef.current)
@@ -69,7 +69,7 @@ export const AnimatedBackground: FC<AnimatedBackgroundProps> = ({
         <div className="absolute inset-0 bg-gray-300 dark:bg-slate-950" />
 
         <div
-          className={`absolute inset-0 transition-all duration-700 ease-out ${isReady ? 'opacity-100' : 'scale-110 opacity-0 blur-sm'} `}
+          className={`absolute inset-0 transition-all duration-700 ease-out ${isReady ? "opacity-100" : "scale-110 opacity-0 blur-sm"} `}
         >
           <video
             ref={videoRef}
@@ -80,7 +80,7 @@ export const AnimatedBackground: FC<AnimatedBackgroundProps> = ({
             playsInline
             preload="auto"
             aria-hidden="true"
-            className={`pointer-events-none h-full w-full select-none object-cover object-top transition-opacity duration-1000 ease-out ${isReady ? 'opacity-50' : 'opacity-0'}`}
+            className={`pointer-events-none h-full w-full select-none object-cover object-top transition-opacity duration-1000 ease-out ${isReady ? "opacity-50" : "opacity-0"}`}
           />
         </div>
       </div>
