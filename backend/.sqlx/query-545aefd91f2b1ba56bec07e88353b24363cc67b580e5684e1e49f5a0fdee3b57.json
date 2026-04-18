@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT \n            id, username, password_hash, role, is_deleted, is_active \n        FROM Users \n        WHERE username = ?\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "username",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "password_hash",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "role",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "is_deleted",
+        "ordinal": 4,
+        "type_info": "Integer"
+      },
+      {
+        "name": "is_active",
+        "ordinal": 5,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "545aefd91f2b1ba56bec07e88353b24363cc67b580e5684e1e49f5a0fdee3b57"
+}

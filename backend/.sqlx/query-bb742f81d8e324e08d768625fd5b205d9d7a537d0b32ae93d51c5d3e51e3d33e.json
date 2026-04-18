@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT id, username\n        FROM Users\n        WHERE role = 'owner' AND is_deleted = 0\n        LIMIT 1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "username",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "bb742f81d8e324e08d768625fd5b205d9d7a537d0b32ae93d51c5d3e51e3d33e"
+}

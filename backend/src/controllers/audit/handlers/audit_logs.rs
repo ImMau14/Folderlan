@@ -1,10 +1,8 @@
 // Handles audit log retrieval with filtering and pagination.
-use crate::{
-    middleware::{jwt_middleware::jwt_validator_adapter, role_middleware::RoleAuth},
-    models::responses::ApiResponse,
-};
+
+use crate::models::responses::ApiResponse;
+
 use actix_web::{Responder, web};
-use actix_web_httpauth::middleware::HttpAuthentication;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, QueryBuilder, SqlitePool};
 
@@ -100,14 +98,4 @@ pub async fn list_audit_logs(
             .message(format!("Database error: {}", e))
             .internal(),
     }
-}
-
-// Configures the audit log API endpoints.
-pub fn audit_config(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/audit")
-            .wrap(RoleAuth::new(&["owner"]))
-            .wrap(HttpAuthentication::bearer(jwt_validator_adapter))
-            .route("", web::get().to(list_audit_logs)),
-    );
 }

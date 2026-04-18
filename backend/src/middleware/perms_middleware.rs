@@ -1,4 +1,5 @@
 // Middleware for permission-based authorization.
+
 use crate::{middleware::jwt_middleware::AuthUser, models::responses::ApiResponse};
 use actix_service::Service;
 use actix_web::{
@@ -9,18 +10,28 @@ use actix_web::{
     web::Data,
 };
 use futures_util::future::{LocalBoxFuture, Ready, ready};
-use sqlx::{Row, SqlitePool};
+use sqlx::{FromRow, SqlitePool};
 use std::{
     rc::Rc,
     task::{Context, Poll},
 };
 
 // User permissions structure
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct UserPermissions {
     pub can_upload: bool,
     pub can_delete_own_files: bool,
     pub has_upload_limits: bool,
+    pub upload_limit: i64,
+}
+
+// Structure for fetching permissions from database
+#[derive(Debug, FromRow)]
+struct UserPermsRow {
+    can_upload: Option<i64>,
+    can_delete_own_files: Option<i64>,
+    has_upload_limits: Option<i64>,
+    upload_limit: Option<i64>,
 }
 
 // Permission-based authentication middleware
@@ -100,7 +111,8 @@ where
                 let user_perms = UserPermissions {
                     can_upload: true,
                     can_delete_own_files: true,
-                    has_upload_limits: false, // Owner has no upload limits
+                    has_upload_limits: false,
+                    upload_limit: 0, // Owner has no upload limit
                 };
                 req.extensions_mut().insert(user_perms);
                 return svc.call(req).await;
@@ -116,23 +128,22 @@ where
                 }
             };
 
-            // Build dynamic SQL query based on required permissions
-            let base_columns = ["can_upload", "can_delete_own_files", "has_upload_limits"];
-            let mut all_columns_to_fetch: Vec<String> = required_perms.clone();
-            all_columns_to_fetch.extend(base_columns.iter().map(|s| s.to_string()));
-            all_columns_to_fetch.sort();
-            all_columns_to_fetch.dedup();
-
-            let query_string = format!(
-                "SELECT {} FROM Users WHERE id = ? AND is_active = 1 AND is_deleted = 0",
-                all_columns_to_fetch.join(", ")
-            );
-
-            // Execute permission query
-            let row = match sqlx::query(&query_string)
-                .bind(auth.id)
-                .fetch_one(&pool)
-                .await
+            // Execute permission query using type-safe SQLx macro
+            let row = match sqlx::query_as!(
+                UserPermsRow,
+                r#"
+                SELECT 
+                    can_upload,
+                    can_delete_own_files,
+                    has_upload_limits,
+                    upload_limit
+                FROM Users 
+                WHERE id = ? AND is_active = 1 AND is_deleted = 0
+                "#,
+                auth.id
+            )
+            .fetch_one(&pool)
+            .await
             {
                 Ok(r) => r,
                 Err(sqlx::Error::RowNotFound) => {
@@ -148,10 +159,27 @@ where
                 }
             };
 
-            // Validate each required permission
+            // Unwrap Option values with default 0
+            let can_upload = row.can_upload.unwrap_or(0) != 0;
+            let can_delete_own_files = row.can_delete_own_files.unwrap_or(0) != 0;
+            let has_upload_limits = row.has_upload_limits.unwrap_or(0) != 0;
+            let upload_limit = row.upload_limit.unwrap_or(0);
+
+            // Validate each required permission (only boolean permissions are checked)
             for perm_name in &required_perms {
-                let has_perm: bool =
-                    row.try_get::<i64, _>(perm_name.as_str()).unwrap_or(0_i64) != 0;
+                let has_perm = match perm_name.as_str() {
+                    "can_upload" => can_upload,
+                    "can_delete_own_files" => can_delete_own_files,
+                    "has_upload_limits" => has_upload_limits,
+                    // upload_limit is not a boolean permission; treat as unknown
+                    _ => {
+                        let msg = format!("Unknown permission requested: {}", perm_name);
+                        let resp = ApiResponse::<()>::builder()
+                            .message(msg.clone())
+                            .forbidden();
+                        return Err(InternalError::from_response(msg, resp).into());
+                    }
+                };
                 if !has_perm {
                     let msg = "Access denied: insufficient permissions";
                     let resp = ApiResponse::<()>::builder().message(msg).forbidden();
@@ -161,12 +189,10 @@ where
 
             // Store user permissions in request extensions
             let user_perms = UserPermissions {
-                can_upload: row.try_get::<i64, _>("can_upload").unwrap_or(0_i64) != 0,
-                can_delete_own_files: row
-                    .try_get::<i64, _>("can_delete_own_files")
-                    .unwrap_or(0_i64)
-                    != 0,
-                has_upload_limits: row.try_get::<i64, _>("has_upload_limits").unwrap_or(0_i64) != 0,
+                can_upload,
+                can_delete_own_files,
+                has_upload_limits,
+                upload_limit,
             };
             req.extensions_mut().insert(user_perms);
 

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE Files SET is_deleted = 1 WHERE internal_path = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "a7526c7d036f9ab4501f0cbf71d528a47081668a50d6458614d9f5008f989d42"
+}
