@@ -26,7 +26,7 @@ pub async fn spawn_test_server(
     let owner_user_id = Some(1);
     let _ = start_watcher(
         uploads_path.clone(),
-        "tmp",
+        None,
         Some(pool.clone()),
         owner_user_id,
     )
