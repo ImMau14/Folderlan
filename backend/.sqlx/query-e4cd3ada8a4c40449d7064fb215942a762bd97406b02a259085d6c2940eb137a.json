@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT\n          f.internal_path,\n          f.name,\n          f.uploaded_by,\n          f.is_public as \"is_public!: bool\",\n          u.role AS requester_role,\n          u.can_delete_own_files as \"requester_can_delete_own_files: bool\",\n          (SELECT fp.access_level FROM FilePermissions fp WHERE fp.file_id = f.id AND fp.user_id = ?) AS access_level\n        FROM Files f\n        LEFT JOIN Users u ON u.id = ?\n        WHERE f.id = ? AND f.is_deleted = 0\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "internal_path",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "uploaded_by",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "is_public!: bool",
+        "ordinal": 3,
+        "type_info": "Bool"
+      },
+      {
+        "name": "requester_role",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "requester_can_delete_own_files: bool",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "access_level",
+        "ordinal": 6,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "e4cd3ada8a4c40449d7064fb215942a762bd97406b02a259085d6c2940eb137a"
+}

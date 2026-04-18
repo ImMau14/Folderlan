@@ -79,8 +79,10 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
         },
     };
 
+    let upload_limit_i64 = user.upload_limit as i64;
+
     // Execute database insertion with user data
-    match sqlx::query(
+    match sqlx::query!(
         "
         INSERT INTO Users (
             username, 
@@ -92,14 +94,14 @@ pub async fn register_user(pool: &SqlitePool, user: RegisterPayload) -> HttpResp
             upload_limit
         ) VALUES (?, ?, ?, ?, ?, ?, ?)
         ",
+        user.username,
+        user.password_hash,
+        user.role,
+        user.can_upload,
+        user.can_delete_own_files,
+        user.has_upload_limits,
+        upload_limit_i64, // Convert u64 to i64 for SQLite compatibility
     )
-    .bind(&user.username)
-    .bind(&user.password_hash)
-    .bind(&user.role)
-    .bind(user.can_upload)
-    .bind(user.can_delete_own_files)
-    .bind(user.has_upload_limits)
-    .bind(user.upload_limit as i64) // Convert u64 to i64 for SQLite compatibility
     .execute(pool)
     .await
     {

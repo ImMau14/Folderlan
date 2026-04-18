@@ -14,8 +14,11 @@ pub struct RegisterFilePayload {
 
 // Inserts file metadata into the database and returns appropriate HTTP responses
 pub async fn register_file(pool: &SqlitePool, file: RegisterFilePayload) -> HttpResponse {
+    let size_bytes_i64 = file.size_bytes as i64;
+    let uploaded_by_i64 = file.uploaded_by as i64;
+
     // Execute SQL insert query with file parameters
-    match sqlx::query(
+    match sqlx::query!(
         "
             INSERT INTO Files (
                 name,
@@ -25,12 +28,12 @@ pub async fn register_file(pool: &SqlitePool, file: RegisterFilePayload) -> Http
                 uploaded_by
             ) VALUES (?, ?, ?, ?, ?)
         ",
+        file.name,
+        file.internal_path,
+        size_bytes_i64, // Convert u64 to i64 for SQLite compatibility
+        file.mime_type,
+        uploaded_by_i64, // Convert u64 to i64 for SQLite compatibility
     )
-    .bind(&file.name)
-    .bind(&file.internal_path)
-    .bind(file.size_bytes as i64) // Convert u64 to i64 for SQLite compatibility
-    .bind(&file.mime_type)
-    .bind(file.uploaded_by as i64) // Convert u64 to i64 for SQLite compatibility
     .execute(pool)
     .await
     {
