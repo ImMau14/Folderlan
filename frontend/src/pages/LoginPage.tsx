@@ -174,7 +174,7 @@ export const LoginPage: FC = () => {
 
         {/* Right side with login form */}
         <AnimatedBackground className="p-8">
-          <div className="relative flex w-full max-w-md flex-col gap-8 rounded-2xl border border-slate-200/80 bg-white/85 p-8 shadow-2xl shadow-slate-900/20 backdrop-blur-lg dark:border-slate-700/60 dark:bg-slate-900/75 dark:shadow-slate-950/60">
+          <div className="relative flex w-full max-w-md flex-col gap-8 rounded-2xl border border-slate-200/80 bg-white/85 p-8 shadow-2xl shadow-slate-900/20 dark:border-slate-700/60 dark:bg-slate-900/75 dark:shadow-slate-950/60">
             <header className="flex items-center gap-4 text-slate-900 dark:text-slate-100">
               <FaUserCircle className="text-3xl" />
               <h2 className="font-heading text-2xl">{t("login.formTitle")}</h2>
