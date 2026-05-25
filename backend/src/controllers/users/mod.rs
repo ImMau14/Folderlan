@@ -37,7 +37,7 @@ pub fn users_config(cfg: &mut web::ServiceConfig) {
                     .route(web::post().to(update_user_perms)),
             )
             .service(
-                web::resource("{id}/accessible")
+                web::resource("/{id}/accessible")
                     .wrap(HttpAuthentication::bearer(jwt_validator_adapter))
                     .route(web::get().to(get_accessible_files)),
             ),
