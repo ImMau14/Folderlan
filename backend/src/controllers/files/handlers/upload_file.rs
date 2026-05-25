@@ -79,6 +79,7 @@ pub async fn upload_file(
     let mut mime_type = None;
     let mut file_size = 0u64;
     let mut final_relative_path = None;
+    let mut full_path_for_cleanup = None;
 
     while let Ok(Some(mut field)) = payload.try_next().await {
         if let Some(content_disposition) = field.content_disposition()
@@ -101,6 +102,13 @@ pub async fn upload_file(
 
             // Resolve a unique filename in the base directory.
             let (relative_path, full_path) = resolve_unique_filename(&base, &safe_name).await;
+
+            // Mark the path as handled immediately to prevent the file watcher from
+            // registering it before this endpoint finishes its own database insertion.
+            crate::watcher::mark_handled_internal_path(&relative_path);
+
+            // Store full path for potential cleanup on failure
+            full_path_for_cleanup = Some(full_path.clone());
 
             // Open file for writing.
             let mut file = match tokio::fs::File::create(&full_path).await {
@@ -178,12 +186,36 @@ pub async fn upload_file(
         uploaded_by: user_id,
     };
 
-    let register_result = register_file(pool.get_ref(), payload).await;
+    // Retry registration up to 3 times on transient database errors (e.g. locked)
+    let mut attempts = 0;
+    
 
-    crate::watcher::mark_handled_internal_path(&relative_path);
-
-    register_result
+    loop {
+        attempts += 1;
+        let response = register_file(pool.get_ref(), payload.clone()).await;
+        if response.status().is_success() || response.status().is_client_error() {
+            // Success or non-retryable client error (4xx) – don't retry
+            break response;
+        }
+        // Server error (5xx) – retry if attempts remain
+        if attempts < 3 {
+            tracing::warn!(
+                "File registration attempt {} failed with status {}, retrying...",
+                attempts,
+                response.status().as_u16()
+            );
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            continue;
+        } else {
+            // All retries exhausted, clean up the written file
+            if let Some(fp) = full_path_for_cleanup {
+                let _ = tokio::fs::remove_file(&fp).await;
+            }
+            break response;
+        }
+    }
 }
+
 /// Returns (relative_path, full_path) where relative_path is the filename (since we store flat).
 async fn resolve_unique_filename(base: &Path, desired_name: &str) -> (String, PathBuf) {
     let path = Path::new(desired_name);

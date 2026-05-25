@@ -78,7 +78,8 @@ async fn main() -> std::io::Result<()> {
     {
         tracing::warn!("Could not set journal_mode=WAL: {}", e);
     }
-    if let Err(e) = sqlx::query("PRAGMA busy_timeout = 5000;")
+    // Use a longer busy timeout to prevent "database is locked" errors under concurrent writes
+    if let Err(e) = sqlx::query("PRAGMA busy_timeout = 30000;")
         .execute(&pool)
         .await
     {
