@@ -176,7 +176,7 @@ export const UploadPage: FC = () => {
   return (
     <div className="grid h-full w-full grid-cols-2 gap-4 p-4 pt-0">
       <div className="space-y-4">
-        <DropZone onFilesChange={addFiles} />
+        <DropZone onFilesChange={addFiles} files={files.map(item => item.file)} />
 
         <div className="rounded-3xl border border-ui-border bg-ui-base p-6 shadow-ui-0">
           <h2 className="font-heading text-2xl tracking-wide text-ui-text">Resumen</h2>

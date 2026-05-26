@@ -10,11 +10,10 @@ import formatBytes from "@utils/formatBytes"
 interface DropZoneProps {
   onFilesChange?: (files: File[]) => void
   accept?: string
-  initialFiles?: File[]
+  files: File[]
 }
 
-const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, initialFiles = [] }) => {
-  const [files, setFiles] = useState<File[]>(initialFiles)
+const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, files = [] }) => {
   const [dragActive, setDragActive] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
 
@@ -23,17 +22,7 @@ const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, initialFiles = [] 
 
   const addFiles = (incoming: FileList | File[]) => {
     const arr = Array.from(incoming)
-    const merged = [...files]
-
-    for (const file of arr) {
-      const exists = merged.some(
-        (m) => m.name === file.name && m.size === file.size && m.lastModified === file.lastModified
-      )
-      if (!exists) merged.push(file)
-    }
-
-    setFiles(merged)
-    onFilesChange?.(merged)
+    onFilesChange?.(arr)
   }
 
   const handleDragEnter = (e: DragEvent) => {

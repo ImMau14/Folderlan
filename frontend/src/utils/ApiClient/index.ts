@@ -123,8 +123,16 @@ export class ApiClient {
     options?: ApiRequestOptions
   ): Promise<ApiResult<T>> {
     try {
+      const headers = { ...(config.headers ?? {}) } as Record<string, string | undefined>
+
+      if (config.data instanceof FormData) {
+        headers["Content-Type"] = undefined
+        headers["content-type"] = undefined
+      }
+
       const finalConfig: AxiosRequestConfig = {
         ...config,
+        headers,
         cancelToken: options?.cancelToken,
         // Cast to AxiosProgressEvent to match axios expectations
         onUploadProgress: options?.onUploadProgress as
@@ -425,7 +433,6 @@ export class ApiClient {
         method: "POST",
         url: "/api/files/upload",
         data: form,
-        headers: { "Content-Type": "multipart/form-data" },
       },
       UploadFileSchema,
       options
