@@ -8,7 +8,7 @@ import { ThemeProvider } from "@contexts/ThemeContext"
 import { I18nProvider } from "@contexts/I18nContext"
 import { AuthProvider } from "@contexts/AuthContext"
 
-import { App } from "@/App.tsx"
+import { App } from "@/App"
 
 import "@styles/global.css"
 import "@styles/fonts.css"
