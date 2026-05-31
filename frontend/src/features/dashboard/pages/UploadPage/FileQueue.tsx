@@ -1,10 +1,14 @@
+/**
+ * Cola de archivos para subir, con controles globales y lista de elementos.
+ */
+
 import { type FC } from "react"
 import { GiFiles } from "react-icons/gi"
 import { FaPlay, FaStop } from "react-icons/fa6"
 
-import FloatingContainer from "../../../FloatingContainer"
-import FileContainer from "./components/FileContainer"
-import type { UploadQueueStatus } from "./components/FileContainer"
+import FloatingContainer from "../../components/FloatingContainer"
+import FileContainer from "./FileContainer"
+import type { UploadQueueStatus } from "./FileContainer"
 
 export interface UploadQueueItem {
   key: string
@@ -37,7 +41,7 @@ export const FileQueue: FC<FileQueueProps> = ({
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h1 className="font-heading text-3xl tracking-wide text-ui-text">File Queue</h1>
+              <h1 className="font-heading text-3xl tracking-wide text-ui-text">Cola de archivos</h1>
               <p className="text-sm text-ui-text-muted">
                 {files.length} archivo{files.length === 1 ? "" : "s"} en cola
               </p>
@@ -52,7 +56,7 @@ export const FileQueue: FC<FileQueueProps> = ({
           {files.length === 0 ? (
             <>
               <GiFiles className="mb-4 text-9xl text-green-800/80" />
-              <h2 className="font-heading text-3xl tracking-wide text-ui-text">Empty Queue</h2>
+              <h2 className="font-heading text-3xl tracking-wide text-ui-text">Cola vacía</h2>
               <p className="px-8 pb-20 text-center font-body text-ui-text">
                 Los archivos seleccionados aparecerán aquí para iniciar la subida.
               </p>
@@ -78,7 +82,7 @@ export const FileQueue: FC<FileQueueProps> = ({
           <div className="absolute right-0 top-0 flex justify-center gap-2">
             <button
               onClick={onStartAll}
-              className="ease rounded-xl border-2 border-ui-border-muted/50 bg-ui-front p-2 shadow-ui-2 duration-150 hover:scale-110"
+              className="border-ui-border-muted/50 rounded-xl border-2 bg-ui-front p-2 shadow-ui transition-transform duration-150 hover:scale-110"
               aria-label="Iniciar todas las subidas"
               title="Iniciar todo"
             >
@@ -88,7 +92,7 @@ export const FileQueue: FC<FileQueueProps> = ({
 
             <button
               onClick={onPauseAll}
-              className="ease rounded-xl border-2 border-ui-border-muted/50 bg-ui-front p-2 shadow-ui-2 duration-150 hover:scale-110"
+              className="border-ui-border-muted/50 rounded-xl border-2 bg-ui-front p-2 shadow-ui transition-transform duration-150 hover:scale-110"
               aria-label="Pausar todas las subidas"
               title="Pausar todo"
             >

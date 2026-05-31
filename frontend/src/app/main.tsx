@@ -1,6 +1,10 @@
+/**
+ * Application entry point. Sets up global providers.
+ * BrowserRouter is no longer needed; the router is provided inside App.
+ */
+
 import React, { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
-import { BrowserRouter } from "react-router-dom"
 
 import { ToastProvider } from "@toast/context/ToastContext"
 import { DatabaseProvider } from "@database/context/DatabaseContext"
@@ -20,9 +24,7 @@ createRoot(document.getElementById("root")!).render(
         <AuthProvider>
           <ToastProvider>
             <DatabaseProvider>
-              <BrowserRouter>
-                <App />
-              </BrowserRouter>
+              <App />
             </DatabaseProvider>
           </ToastProvider>
         </AuthProvider>

@@ -1,3 +1,8 @@
+/**
+ * Página de subida de archivos con diseño responsive.
+ * En móvil apila las secciones; en escritorio las muestra lado a lado.
+ */
+
 import { useCallback, useMemo, useRef, useState, type FC } from "react"
 import type { CancelTokenSource } from "axios"
 
@@ -6,8 +11,8 @@ import { useToast } from "@toast/context/ToastContext"
 import ApiClient from "@shared/utils/ApiClient"
 import formatBytes from "@shared/utils/formatBytes"
 
-import DropZone from "./components/DropZone"
-import FileQueue, { type UploadQueueItem } from "./components/FileQueue"
+import DropZone from "./DropZone"
+import FileQueue, { type UploadQueueItem } from "./FileQueue"
 
 const getFileKey = (file: File) => `${file.name}-${file.size}-${file.lastModified}`
 
@@ -33,14 +38,12 @@ export const UploadPage: FC = () => {
   const addFiles = useCallback((incomingFiles: File[]) => {
     setFiles((currentFiles) => {
       const nextFiles = [...currentFiles]
-
       for (const file of incomingFiles) {
         const key = getFileKey(file)
         if (!nextFiles.some((item) => item.key === key)) {
           nextFiles.push(createQueueItem(file))
         }
       }
-
       return nextFiles
     })
   }, [])
@@ -57,7 +60,6 @@ export const UploadPage: FC = () => {
       source.cancel("Upload cancelled by user")
       delete cancelTokenMap.current[key]
     }
-
     setFiles((currentFiles) => currentFiles.filter((item) => item.key !== key))
   }, [])
 
@@ -68,7 +70,6 @@ export const UploadPage: FC = () => {
         source.cancel("Upload paused by user")
         delete cancelTokenMap.current[key]
       }
-
       updateFile(key, { status: "paused" })
     },
     [updateFile]
@@ -86,14 +87,12 @@ export const UploadPage: FC = () => {
           description: "Debes iniciar sesión para subir archivos.",
           duration: 4000,
         })
-
         updateFile(key, { status: "idle" })
         return
       }
 
       const source = apiClient.createCancelToken()
       cancelTokenMap.current[key] = source
-
       updateFile(key, { status: "uploading", progress: 0, error: undefined })
 
       const result = await apiClient.uploadFile(item.file, {
@@ -132,8 +131,7 @@ export const UploadPage: FC = () => {
       toast({
         type: "error",
         title: "Error de subida",
-        description:
-          result.error?.message ?? `No se pudo subir ${item.file.name}.`,
+        description: result.error?.message ?? `No se pudo subir ${item.file.name}.`,
         duration: 5000,
       })
     },
@@ -146,7 +144,6 @@ export const UploadPage: FC = () => {
         pauseUpload(key)
         return
       }
-
       uploadOneFile(key)
     },
     [pauseUpload, uploadOneFile]
@@ -168,19 +165,16 @@ export const UploadPage: FC = () => {
     })
   }, [files, pauseUpload])
 
-  const totalSize = useMemo(
-    () => files.reduce((sum, item) => sum + item.file.size, 0),
-    [files]
-  )
+  const totalSize = useMemo(() => files.reduce((sum, item) => sum + item.file.size, 0), [files])
 
   return (
-    <div className="grid h-full w-full grid-cols-2 gap-4 p-4 pt-0">
-      <div className="space-y-4">
-        <DropZone onFilesChange={addFiles} files={files.map(item => item.file)} />
+    <div className="grid grid-cols-1 gap-6 p-4 lg:grid-cols-2 lg:pt-0">
+      {/* Columna izquierda: zona de arrastre y resumen */}
+      <div className="flex flex-col gap-6">
+        <DropZone onFilesChange={addFiles} files={files.map((item) => item.file)} />
 
-        <div className="rounded-3xl border border-ui-border bg-ui-base p-6 shadow-ui-0">
+        <div className="rounded-3xl border border-ui-border bg-ui-base p-6 shadow-ui">
           <h2 className="font-heading text-2xl tracking-wide text-ui-text">Resumen</h2>
-
           <div className="mt-4 space-y-2 text-sm text-ui-text-muted">
             <p>Total de archivos: {files.length}</p>
             <p>Tamaño total: {formatBytes(totalSize)}</p>
@@ -188,6 +182,7 @@ export const UploadPage: FC = () => {
         </div>
       </div>
 
+      {/* Columna derecha: cola de archivos */}
       <FileQueue
         files={files}
         onRemoveFile={removeFile}

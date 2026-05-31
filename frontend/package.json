@@ -17,6 +17,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/montserrat": "^5.2.8",
+    "@headlessui/react": "^2.2.10",
     "axios": "^1.15.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",

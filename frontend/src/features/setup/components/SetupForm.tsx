@@ -1,14 +1,18 @@
-// SetupForm - Presentational form with internal validation and UX logic.
-// Handles client-side validation, input state, and submission flow.
+/**
+ * SetupForm - Presentational form with internal validation and UX logic.
+ * Handles client-side validation, input state, and submission flow.
+ * Entrance animation: CSS class "animate-fade-in-up" + "opacity-0".
+ * Exit animation: Framer Motion slides up slightly while fading out on the wrapper.
+ */
 
 import { useRef, useState, type FC, type FormEvent, type ChangeEvent } from "react"
 import { FaRegUser, FaUserCircle } from "react-icons/fa"
-import { motion, type Transition } from "framer-motion"
+import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 
 import { FaGear } from "react-icons/fa6"
 
-import { Input } from "@shared/components/Input"
+import { LabeledInput } from "@shared/components/LabeledInput"
 import { Button } from "@shared/components/Button"
 
 import { useI18n } from "@i18n/context/I18nContext"
@@ -16,11 +20,10 @@ import { useToast } from "@toast/context/ToastContext"
 import { useDatabase } from "@database/context/DatabaseContext"
 
 type Props = {
-  cardTransition: Transition
   onRegister: (username: string, password: string) => Promise<{ ok: boolean; message?: string }>
 }
 
-const SetupForm: FC<Props> = ({ cardTransition, onRegister }) => {
+const SetupForm: FC<Props> = ({ onRegister }) => {
   // I18n dict object
   const { t } = useI18n()
 
@@ -139,94 +142,92 @@ const SetupForm: FC<Props> = ({ cardTransition, onRegister }) => {
   }
 
   return (
-    <motion.main
-      className="absolute flex w-[90%] flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white/85 p-8 shadow-2xl shadow-slate-900/20 backdrop-blur-md md:w-96 dark:border-slate-700/60 dark:bg-slate-900/75 dark:shadow-slate-900/50"
-      initial={{ opacity: 0, x: 12 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -12 }}
-      transition={cardTransition}
+    <motion.div
+      // The motion wrapper ONLY handles exit. No initial/animate, so it renders with opacity: 1 by default,
+      // allowing the inner div's CSS animation to run unhindered.
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.25, ease: "easeInOut" }}
+      className="flex w-full items-center justify-center"
     >
-      <header className="flex flex-col gap-2">
-        <div className="flex items-center gap-4">
-          <FaUserCircle className="text-3xl text-gray-900 dark:text-slate-100" />
-          <h2 className="font-heading text-2xl text-gray-900 dark:text-slate-50">
-            {t("setup.formTitle")}
-          </h2>
-        </div>
+      {/* Inner container handles entrance via CSS.
+          animate-fade-in-up: defined in tailwind.config.js, runs fade-in-up 0.5s ease forwards.
+          opacity-0: sets base opacity to 0, overridden by the animation. */}
+      <div className="flex w-[90%] animate-fade-in-up flex-col gap-6 rounded-3xl border border-ui-border bg-ui-base p-10 shadow-ui md:w-auto">
+        <header className="flex flex-col gap-2">
+          <div className="flex items-center gap-4">
+            <FaUserCircle className="text-3xl text-ui-text opacity-90" />
+            <h2 className="font-heading text-2xl font-bold text-ui-text">{t("setup.formTitle")}</h2>
+          </div>
 
-        <div className="text-sm text-gray-500 dark:text-slate-300">{t("setup.formSubtitle")}</div>
-      </header>
+          <div className="font-body text-sm text-ui-text-muted">{t("setup.formSubtitle")}</div>
+        </header>
 
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-        <Input
-          title={t("setup.usernameLabel")}
-          id="username"
-          placeholder={t("setup.usernamePlaceholder")}
-          type="text"
-          required
-          value={username}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
-          disabled={disabled}
-          autoComplete="off"
-          spellCheck="false"
-          autoCorrect="off"
-          autoCapitalize="off"
-          autoFocus
-        />
+        <form className="flex flex-col gap-4 md:w-96" onSubmit={handleSubmit}>
+          <LabeledInput
+            title={t("setup.usernameLabel")}
+            id="username"
+            placeholder={t("setup.usernamePlaceholder")}
+            type="text"
+            required
+            value={username}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
+            disabled={disabled}
+            autoComplete="off"
+            spellCheck="false"
+            autoCorrect="off"
+            autoCapitalize="off"
+            autoFocus
+          />
 
-        <Input
-          title={t("setup.passwordLabel")}
-          id="password"
-          placeholder={t("setup.passwordPlaceholder")}
-          type="password"
-          required
-          ref={passwordInputRef}
-          value={password}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => onChangePassword(e.target.value)}
-          disabled={disabled}
-        />
+          <LabeledInput
+            title={t("setup.passwordLabel")}
+            id="password"
+            placeholder={t("setup.passwordPlaceholder")}
+            type="password"
+            required
+            ref={passwordInputRef}
+            value={password}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => onChangePassword(e.target.value)}
+            disabled={disabled}
+          />
 
-        <Input
-          title={t("setup.confirmPasswordLabel")}
-          id="confirm-password"
-          placeholder={t("setup.confirmPasswordPlaceholder")}
-          type="password"
-          required
-          ref={confirmPasswordInputRef}
-          value={confirmPassword}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => onChangeConfirmPassword(e.target.value)}
-          disabled={disabled}
-          className={
-            !passwordMatchs ? "border-red-400 hover:border-red-500 focus:ring-red-500" : ""
-          }
-        />
+          <LabeledInput
+            title={t("setup.confirmPasswordLabel")}
+            id="confirm-password"
+            placeholder={t("setup.confirmPasswordPlaceholder")}
+            type="password"
+            required
+            ref={confirmPasswordInputRef}
+            value={confirmPassword}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => onChangeConfirmPassword(e.target.value)}
+            disabled={disabled}
+            className={
+              !passwordMatchs ? "border-red-400 hover:border-red-500 focus:ring-red-500" : ""
+            }
+          />
 
-        <Button
-          color="green"
-          className="mt-4 flex flex-row items-center justify-center gap-2"
-          type="submit"
-          disabled={disabled}
-        >
-          <motion.div layout className="flex items-center gap-2">
-            <div>
-              {disabled ? (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0 }}
-                  transition={{ type: "spring", stiffness: 900, damping: 25 }}
-                >
-                  <FaGear className="animate-spin" />
-                </motion.div>
-              ) : (
-                <FaRegUser />
-              )}
-            </div>
-            <p>{t("setup.registerButton")}</p>
-          </motion.div>
-        </Button>
-      </form>
-    </motion.main>
+          <Button type="submit" disabled={disabled} className="mt-4">
+            <motion.div layout className="flex items-center gap-2">
+              <div>
+                {disabled ? (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    transition={{ type: "spring", stiffness: 900, damping: 25 }}
+                  >
+                    <FaGear className="animate-spin" />
+                  </motion.div>
+                ) : (
+                  <FaRegUser />
+                )}
+              </div>
+              <p>{t("setup.registerButton")}</p>
+            </motion.div>
+          </Button>
+        </form>
+      </div>
+    </motion.div>
   )
 }
 

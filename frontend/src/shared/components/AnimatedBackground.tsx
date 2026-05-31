@@ -62,14 +62,14 @@ export const AnimatedBackground: FC<AnimatedBackgroundProps> = ({
       }
     }
   }, [loadTimeoutMs, markReady])
-
   return (
     <section className={`relative h-full w-full overflow-hidden ${className}`}>
+      {/* Fondo (video + color base) */}
       <div className="pointer-events-none absolute inset-0 z-[-10] overflow-hidden">
-        <div className="absolute inset-0 bg-gray-300 dark:bg-slate-950" />
+        <div className="absolute inset-0 bg-ui-back" />
 
         <div
-          className={`absolute inset-0 transition-all duration-700 ease-out ${isReady ? "opacity-100" : "scale-110 opacity-0 blur-sm"} `}
+          className={`absolute inset-0 transition-all duration-700 ease-out ${isReady ? "opacity-100" : "scale-110 opacity-0 blur-sm"}`}
         >
           <video
             ref={videoRef}
@@ -85,6 +85,16 @@ export const AnimatedBackground: FC<AnimatedBackgroundProps> = ({
         </div>
       </div>
 
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-[1]"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 60% at 50% 50%, transparent 40%, rgba(0,0,0,0.25) 100%)",
+        }}
+      />
+
+      {/* Contenido centrado */}
       <div className="relative z-10 flex h-full w-full flex-col items-center justify-center">
         {children}
       </div>

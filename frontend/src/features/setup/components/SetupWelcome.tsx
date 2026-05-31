@@ -1,9 +1,13 @@
-// SetupWelcome - Presentational welcome screen for initial setup.
-// Small component that shows app logo and start button.
+/**
+ * SetupWelcome - Presentational welcome screen for initial setup.
+ * Small component that shows app logo and start button.
+ * Entrance animation: CSS class "animate-fade-in-up" + "opacity-0".
+ * Exit: Framer Motion opacity fade-out.
+ */
 
 import { type FC } from "react"
 import { FaArrowRightToBracket } from "react-icons/fa6"
-import { motion, type Transition } from "framer-motion"
+import { motion } from "framer-motion"
 
 import { FolderlanSvg } from "@shared/components/FolderlanSvg"
 import { Button } from "@shared/components/Button"
@@ -11,41 +15,37 @@ import { useI18n } from "@i18n/context/I18nContext"
 
 type Props = {
   onStart: () => void
-  cardTransition: Transition
 }
 
-const SetupWelcome: FC<Props> = ({ onStart, cardTransition }) => {
+const SetupWelcome: FC<Props> = ({ onStart }) => {
   const { t } = useI18n()
 
   return (
-    <motion.main
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, x: 12 }}
-      transition={cardTransition}
-      className="absolute flex w-[90%] flex-col items-center gap-6 rounded-2xl border border-slate-200/80 bg-white/80 p-10 shadow-2xl shadow-slate-900/20 backdrop-blur-md md:w-[600px] dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-900/50"
+    <motion.div
+      // Exit animation: fades out over 0.25s.
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25, ease: "easeInOut" }}
+      className="flex w-full items-center justify-center"
     >
-      <header className="flex flex-col items-center gap-6">
-        <FolderlanSvg className="h-24 text-gray-900 dark:text-slate-100" />
-        <div className="flex flex-col items-center gap-2">
-          <h1 className="text-center font-heading text-3xl font-semibold text-gray-900 dark:text-slate-50">
-            {t("setup.welcomeTitle")}
-          </h1>
-          <p className="text-center font-body text-gray-600 dark:text-slate-300">
-            {t("setup.welcomeDescription")}
-          </p>
-        </div>
-      </header>
+      <div className="flex w-[90%] animate-fade-in-up flex-col items-center gap-6 rounded-3xl border border-ui-border bg-ui-base p-10 shadow-ui md:w-144">
+        <header className="flex flex-col items-center gap-6">
+          <FolderlanSvg className="h-20 text-ui-text" />
+          <div className="flex flex-col items-center gap-2">
+            <h1 className="text-center font-heading text-3xl font-bold text-ui-text">
+              {t("setup.welcomeTitle")}
+            </h1>
+            <p className="text-center font-body text-sm text-ui-text-muted">
+              {t("setup.welcomeDescription")}
+            </p>
+          </div>
+        </header>
 
-      <Button
-        color="green"
-        className="flex w-full flex-row items-center justify-center gap-2"
-        onClick={onStart}
-      >
-        <FaArrowRightToBracket />
-        {t("setup.startButton")}
-      </Button>
-    </motion.main>
+        <Button color="primary" onClick={onStart}>
+          <FaArrowRightToBracket />
+          {t("setup.startButton")}
+        </Button>
+      </div>
+    </motion.div>
   )
 }
 

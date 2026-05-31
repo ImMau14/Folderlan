@@ -10,7 +10,7 @@ export const FloatingContainer: FC<FloatingContainerProps> = ({ className, child
   const classes = useMemo(
     () =>
       clsx(
-        "flex flex-col items-center gap-4 rounded-3xl bg-ui-base p-8 shadow-ui-0",
+        "flex flex-col items-center gap-4 rounded-3xl bg-ui-base p-8 shadow-ui",
         className ?? ""
       ),
     [className]

@@ -1,5 +1,7 @@
-// Login page component with authentication form and background layout
-// Handles user login, form validation, and navigation to dashboard
+/**
+ * Login page component with authentication form and background layout.
+ * Handles user login, form validation, role retrieval, and navigation to dashboard.
+ */
 
 import { useRef, useState, useCallback, useEffect, type FC, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
@@ -9,7 +11,7 @@ import { FaUserCircle, FaGithub, FaLock, FaUnlock } from "react-icons/fa"
 import { FaGear } from "react-icons/fa6"
 
 import { Button } from "@shared/components/Button"
-import { Input } from "@shared/components/Input"
+import { LabeledInput } from "@shared/components/LabeledInput"
 import GlobalControlsOverlay from "@shared/components/GlobalControlsOverlay"
 import { FolderlanSvg } from "@shared/components/FolderlanSvg"
 
@@ -19,9 +21,8 @@ import ApiClient from "@shared/utils/ApiClient"
 import { useToast } from "@toast/context/ToastContext"
 import { AnimatedBackground } from "@shared/components/AnimatedBackground"
 import { useI18n } from "@i18n/context/I18nContext"
-import { useAuth } from "@auth/context/AuthContext"
+import { useAuth, type User } from "@auth/context/AuthContext"
 
-// Result type for login operation
 interface LoginSuccess {
   ok: true
   token: string
@@ -34,28 +35,26 @@ interface LoginFailure {
 
 type LoginResult = LoginSuccess | LoginFailure
 
+const isUserRole = (value: unknown): value is User["role"] =>
+  value === "owner" || value === "visitor"
+
 export const LoginPage: FC = () => {
   const { t } = useI18n()
   const { login } = useAuth()
+  const navigate = useNavigate()
+  const { toast } = useToast()
 
-  // Set theme color on component mount
   useEffect(() => {
     setPageName(t("login.formTitle"))
   }, [t])
 
-  const navigate = useNavigate()
-  const { toast } = useToast()
-
-  // Form element references
   const userInputRef = useRef<HTMLInputElement | null>(null)
   const passwordInputRef = useRef<HTMLInputElement | null>(null)
 
-  // Authentication state management
   const inFlightRef = useRef<boolean>(false)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false)
 
-  // Authentication API call handler
   const loginRequest = useCallback(
     async (username: string, password: string): Promise<LoginResult> => {
       try {
@@ -63,10 +62,8 @@ export const LoginPage: FC = () => {
         const loginRes = await client.login(username, password)
 
         if (!loginRes.success) {
-          // Extract error message from various response fields
           const errorMessage =
             typeof loginRes?.error?.message === "string" ? loginRes.error.message : undefined
-
           return {
             ok: false,
             message:
@@ -77,29 +74,55 @@ export const LoginPage: FC = () => {
           }
         }
 
-        // Handle successful login with token
         const token = loginRes?.data?.token
-
         if (token) {
-          login(token)
           return { ok: true, token }
         }
 
         return { ok: false, message: "unknown error" }
       } catch (err) {
         console.error("loginRequest error:", err)
-        const msg = t("login.toast.networkErrorDescription")
-        return { ok: false, message: msg }
+        return { ok: false, message: t("login.toast.networkErrorDescription") }
       }
     },
-    [t, login]
+    [t]
   )
 
-  // Form submission handler
+  /**
+   * Fetch the user's role from the backend.
+   * The API returns users in data.data.items, with role "owner" or "visitor".
+   * Throws if the role cannot be determined, to avoid silent fallbacks.
+   */
+  const fetchUserRole = useCallback(
+    async (username: string, client: ApiClient): Promise<User["role"]> => {
+      const usersRes = await client.getUsers({ name: username, limit: 1 })
+      if (!usersRes.success) {
+        console.error("getUsers failed. Full error:", usersRes.error)
+        if (Array.isArray(usersRes.error.details)) {
+          console.table(usersRes.error.details)
+        }
+        const detail = usersRes.error?.message ?? "Unknown error"
+        throw new Error(`Failed to fetch user list: ${detail}`)
+      }
+
+      const items = usersRes.data?.data?.items
+      if (!items || items.length === 0) {
+        throw new Error(`User "${username}" not found in user list`)
+      }
+
+      const apiRole = items[0].role
+      if (!isUserRole(apiRole)) {
+        throw new Error(`Invalid role received from API: "${apiRole}"`)
+      }
+
+      return apiRole
+    },
+    []
+  )
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    // Prevent duplicate submissions
     if (inFlightRef.current) {
       console.debug("submit ignored: request in flight")
       return
@@ -116,6 +139,10 @@ export const LoginPage: FC = () => {
 
       if (res.ok) {
         setIsLoggedIn(true)
+        const client = new ApiClient()
+        client.setToken(res.token)
+        const role = await fetchUserRole(username, client)
+        login(res.token, { username, role })
 
         toast({
           type: "success",
@@ -133,10 +160,19 @@ export const LoginPage: FC = () => {
         description:
           res.message ??
           t("login.toast.errorDescription", { message: t("login.toast.networkErrorDescription") }),
-        duration: 1000 * 2.5,
+        duration: 2500,
       })
-
       console.warn("Login failed:", res.message ?? "invalid credentials / server error")
+    } catch (err) {
+      // Error fetching role
+      const message = err instanceof Error ? err.message : String(err)
+      toast({
+        type: "error",
+        title: t("login.toast.errorTitle"),
+        description: message,
+        duration: 5000,
+      })
+      console.error("Login post-processing error:", err)
     } finally {
       inFlightRef.current = false
       setIsLoading(false)
@@ -147,15 +183,13 @@ export const LoginPage: FC = () => {
     <div className="relative h-full w-full">
       <div className="h-full w-full transition-colors md:grid md:grid-cols-2 md:grid-rows-1">
         {/* Left sidebar with Folderlan information */}
-        <aside className="hidden flex-col justify-center gap-8 border-b-2 border-white/40 bg-white p-10 shadow-xl shadow-slate-900/10 backdrop-blur md:flex md:border-r-2 dark:border-white/10 dark:bg-slate-950 dark:shadow-slate-950/50">
-          <header className="flex flex-col items-start gap-8">
-            <FolderlanSvg className="text-slate-900 md:h-28 dark:text-slate-100" />
-            <h1 className="font-heading text-3xl text-slate-900 dark:text-slate-100">
-              {t("login.sidebarTitle")}
-            </h1>
+        <aside className="hidden flex-col justify-center gap-8 border-ui-border bg-ui-base p-10 shadow-xl md:flex md:border-r">
+          <header className="flex flex-col items-start gap-8 text-ui-text">
+            <FolderlanSvg className="md:h-28" />
+            <h1 className="font-heading text-3xl font-bold">{t("login.sidebarTitle")}</h1>
           </header>
 
-          <p className="prose prose-slate font-body text-slate-800 dark:text-slate-200">
+          <p className="prose prose-slate font-body text-ui-text-muted">
             {t("login.sidebarDescription")}
           </p>
 
@@ -163,7 +197,7 @@ export const LoginPage: FC = () => {
             <div className="flex items-center gap-4">
               <a
                 href="https://github.com/ImMau14/Folderlan"
-                className="flex items-center gap-4 text-slate-700 transition hover:text-brand-600 dark:text-slate-200 dark:hover:text-brand-300"
+                className="flex items-center gap-4 text-ui-text transition hover:text-ui-primary active:text-ui-primary-hover"
               >
                 <FaGithub className="text-4xl" />
                 <p className="font-body text-sm">{t("login.sidebarVersion")}</p>
@@ -174,17 +208,17 @@ export const LoginPage: FC = () => {
 
         {/* Right side with login form */}
         <AnimatedBackground className="p-8">
-          <div className="relative flex w-full max-w-md flex-col gap-8 rounded-2xl border border-slate-200/80 bg-white/85 p-8 shadow-2xl shadow-slate-900/20 dark:border-slate-700/60 dark:bg-slate-900/75 dark:shadow-slate-950/60">
+          <div className="relative flex w-full max-w-md flex-col gap-8 rounded-3xl border border-ui-border bg-ui-base p-10 shadow-ui">
             <header className="flex items-center gap-4 text-slate-900 dark:text-slate-100">
-              <FaUserCircle className="text-3xl" />
-              <h2 className="font-heading text-2xl">{t("login.formTitle")}</h2>
+              <FaUserCircle className="text-3xl opacity-90" />
+              <h2 className="font-heading text-2xl font-bold">{t("login.formTitle")}</h2>
             </header>
 
             <form
               className="flex flex-col items-stretch justify-center gap-6"
               onSubmit={handleSubmit}
             >
-              <Input
+              <LabeledInput
                 title={t("login.usernameLabel")}
                 id="username"
                 placeholder={t("login.usernamePlaceholder")}
@@ -194,7 +228,7 @@ export const LoginPage: FC = () => {
                 disabled={isLoading}
               />
 
-              <Input
+              <LabeledInput
                 title={t("login.passwordLabel")}
                 id="password"
                 placeholder={t("login.passwordPlaceholder")}
@@ -205,7 +239,7 @@ export const LoginPage: FC = () => {
                 type="password"
               />
 
-              <Button color="green" type="submit" disabled={isLoading} aria-busy={isLoading}>
+              <Button color="primary" type="submit" disabled={isLoading} aria-busy={isLoading}>
                 <motion.div layout className={`flex items-center gap-2`}>
                   <div>
                     {isLoading ? (
@@ -231,7 +265,7 @@ export const LoginPage: FC = () => {
             <div className="flex items-center justify-center">
               <a
                 href="/owner-recover"
-                className="text-center font-body text-sm text-brand-700 transition hover:text-brand-500 dark:text-brand-200 dark:hover:text-brand-300"
+                className="text-center font-body text-sm text-ui-primary transition hover:text-ui-primary-hover active:text-ui-primary-active"
               >
                 {t("login.forgotOwner")}
               </a>

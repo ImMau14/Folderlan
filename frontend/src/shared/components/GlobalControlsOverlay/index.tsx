@@ -12,7 +12,7 @@ interface GlobalControlsOverlayProps {
 export const GlobalControlsOverlay: FC<GlobalControlsOverlayProps> = ({ className }) => {
   return (
     <div className={clsx("fixed right-4 top-4 z-[60] md:right-6 md:top-6", className)}>
-      <div className="flex items-center gap-2 rounded-full border border-white/50 bg-white/85 px-2.5 py-2 shadow-lg shadow-slate-900/15 backdrop-blur-md transition dark:border-white/10 dark:bg-slate-900/70">
+      <div className="bg-ui-base/90 glass-smoked flex items-center gap-2 rounded-full border border-ui-border-muted px-2.5 py-2 transition">
         <LanguageSwitcher variant="mobile" />
         <ThemeToggle variant="icon" />
       </div>

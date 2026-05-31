@@ -2,11 +2,7 @@
   "compilerOptions": {
     "target": "es2022",
     "module": "esnext",
-    "lib": [
-      "es2022",
-      "dom",
-      "dom.iterable"
-    ],
+    "lib": ["es2022", "dom", "dom.iterable"],
     "jsx": "react-jsx",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
@@ -16,68 +12,27 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "paths": {
-      "@app/*": [
-        "./src/app/*"
-      ],
-      "@shared/*": [
-        "./src/shared/*"
-      ],
-      "@auth/*": [
-        "./src/features/auth/*"
-      ],
-      "@dashboard/*": [
-        "./src/features/dashboard/*"
-      ],
-      "@setup/*": [
-        "./src/features/setup/*"
-      ],
-      "@i18n/*": [
-        "./src/features/i18n/*"
-      ],
-      "@theme/*": [
-        "./src/features/theme/*"
-      ],
-      "@database/*": [
-        "./src/features/database/*"
-      ],
-      "@toast/*": [
-        "./src/features/toast/*"
-      ],
-      "@app": [
-        "./src/app"
-      ],
-      "@shared": [
-        "./src/shared"
-      ],
-      "@auth": [
-        "./src/features/auth"
-      ],
-      "@dashboard": [
-        "./src/features/dashboard"
-      ],
-      "@setup": [
-        "./src/features/setup"
-      ],
-      "@i18n": [
-        "./src/features/i18n"
-      ],
-      "@theme": [
-        "./src/features/theme"
-      ],
-      "@database": [
-        "./src/features/database"
-      ],
-      "@toast": [
-        "./src/features/toast"
-      ]
+      "@app/*": ["./src/app/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@auth/*": ["./src/features/auth/*"],
+      "@dashboard/*": ["./src/features/dashboard/*"],
+      "@setup/*": ["./src/features/setup/*"],
+      "@i18n/*": ["./src/features/i18n/*"],
+      "@theme/*": ["./src/features/theme/*"],
+      "@database/*": ["./src/features/database/*"],
+      "@toast/*": ["./src/features/toast/*"],
+      "@app": ["./src/app"],
+      "@shared": ["./src/shared"],
+      "@auth": ["./src/features/auth"],
+      "@dashboard": ["./src/features/dashboard"],
+      "@setup": ["./src/features/setup"],
+      "@i18n": ["./src/features/i18n"],
+      "@theme": ["./src/features/theme"],
+      "@database": ["./src/features/database"],
+      "@toast": ["./src/features/toast"]
     },
-    "types": [
-      "vite/client",
-      "node"
-    ],
+    "types": ["vite/client", "node"],
     "preserveConstEnums": true
   },
-  "include": [
-    "src/**/*"
-  ]
+  "include": ["src/**/*"]
 }

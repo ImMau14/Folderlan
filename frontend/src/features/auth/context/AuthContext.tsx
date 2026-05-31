@@ -1,4 +1,7 @@
-// Provides a React Context for authentication state and token management.
+/**
+ * Provides authentication state and token management via React Context.
+ * Stores token, user data (including username and role) in localStorage and enforces TTL.
+ */
 
 import {
   createContext,
@@ -10,157 +13,140 @@ import {
   type ReactNode,
 } from "react"
 
-// Key used to store the auth token in localStorage
 const TOKEN_KEY = "auth_token"
-// Key used to store the token creation timestamp in localStorage
 const TOKEN_TS_KEY = "auth_token_ts"
-// Token Time-To-Live in milliseconds (1 hour)
-const TOKEN_TTL_MS = 60 * 60 * 1000 // 1h
+const USER_KEY = "auth_user"
+const TOKEN_TTL_MS = 60 * 60 * 1000 // 1 hour
 
-// Shape of the context value exposed to consumers
+/**
+ * Represents the authenticated user.
+ * Roles match the backend: 'owner' or 'visitor'.
+ */
+export interface User {
+  username: string
+  role: "owner" | "visitor"
+}
+
 interface AuthContextValue {
   token: string | null
-  // True when there is a token AND it has not expired according to TTL
+  user: User | null
   isAuthenticated: boolean
-  // Save token and mark user as authenticated
-  login: (token: string) => void
-  // Clear token and mark user as unauthenticated
+  login: (token: string, user: User) => void
   logout: () => void
-  // Re-validate token TTL and logout if expired
   refresh: () => void
 }
 
-// Create context with nullable default to force provider usage check
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-// Read token string from localStorage. Returns null on failure or if not present.
+/* ---------- localStorage helpers ---------- */
+
 function readToken(): string | null {
   try {
     return localStorage.getItem(TOKEN_KEY)
-  } catch (err) {
-    // Fail quietly but log to help debugging in restricted environments
-    console.error("readToken error:", err)
+  } catch {
     return null
   }
 }
-
-// Read timestamp (ms since epoch) from localStorage. Returns null on failure/invalid value.
+function readUser(): User | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY)
+    return raw ? (JSON.parse(raw) as User) : null
+  } catch {
+    return null
+  }
+}
 function readTimestamp(): number | null {
   try {
     const ts = localStorage.getItem(TOKEN_TS_KEY)
     if (!ts) return null
     const parsed = parseInt(ts, 10)
     return Number.isNaN(parsed) ? null : parsed
-  } catch (err) {
-    console.error("readTimestamp error:", err)
+  } catch {
     return null
   }
 }
-
-// Return true if token timestamp exists and age is less than TTL
 function isTokenValid(): boolean {
-  try {
-    const ts = readTimestamp()
-    if (!ts) return false
-    const age = Date.now() - ts
-    if (Number.isNaN(age)) return false
-    return age < TOKEN_TTL_MS
-  } catch (err) {
-    console.error("isTokenValid error:", err)
-    return false
-  }
+  const ts = readTimestamp()
+  if (!ts) return false
+  return Date.now() - ts < TOKEN_TTL_MS
 }
-
-// Persist token and current timestamp to localStorage
-function persistToken(token: string) {
+function persistSession(token: string, user: User) {
   try {
     localStorage.setItem(TOKEN_KEY, token)
     localStorage.setItem(TOKEN_TS_KEY, Date.now().toString())
-  } catch (err) {
-    console.error("persistToken error:", err)
+    localStorage.setItem(USER_KEY, JSON.stringify(user))
+  } catch (e) {
+    console.error("persistSession error:", e)
   }
 }
-
-// Remove token and timestamp from localStorage
 function clearStorage() {
   try {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(TOKEN_TS_KEY)
-  } catch (err) {
-    console.error("clearStorage error:", err)
+    localStorage.removeItem(USER_KEY)
+  } catch (e) {
+    console.error("clearStorage error:", e)
   }
 }
 
-// AuthProvider wraps the app and provides authentication state and actions.
-// It initializes state from localStorage and enforces TTL on mount.
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Local token state is the single source of truth for React components.
   const [token, setToken] = useState<string | null>(null)
+  const [user, setUser] = useState<User | null>(null)
 
-  // Initial load: read token and validate TTL. If expired, clear storage.
   useEffect(() => {
     try {
       if (isTokenValid()) {
         setToken(readToken())
+        setUser(readUser())
       } else {
         clearStorage()
-        setToken(null)
       }
-    } catch (err) {
-      console.error("AuthProvider init error:", err)
+    } catch {
       clearStorage()
-      setToken(null)
     }
-
-    // Intentionally run only once on mount
   }, [])
 
-  // Save a new token and update state
-  const login = (newToken: string) => {
-    persistToken(newToken)
+  const login = useCallback((newToken: string, newUser: User) => {
+    persistSession(newToken, newUser)
     setToken(newToken)
-  }
+    setUser(newUser)
+  }, [])
 
-  // Remove token and update state
-  const logout = () => {
+  const logout = useCallback(() => {
     clearStorage()
     setToken(null)
-  }
+    setUser(null)
+  }, [])
 
-  // Re-validate token TTL. If expired, perform logout.
-  // Call this when you want to explicitly check token freshness.
   const refresh = useCallback(() => {
     if (!isTokenValid()) {
       logout()
     } else {
-      // If still valid, refresh timestamp to extend TTL (optional behavior).
-      // If you prefer not to reset TTL on refresh, comment out the next two lines.
-      const current = readToken()
-      if (current) persistToken(current)
+      const currentToken = readToken()
+      const currentUser = readUser()
+      if (currentToken && currentUser) {
+        persistSession(currentToken, currentUser)
+      }
     }
-  }, [])
+  }, [logout])
 
-  // Memoize context value so consumers only re-render when token changes or refresh.
-  // isAuthenticated is true only when token exists AND timestamp is valid.
-  const value = useMemo<AuthContextValue>(() => {
-    const valid = Boolean(token) && isTokenValid()
-    return {
+  const value = useMemo<AuthContextValue>(
+    () => ({
       token,
-      isAuthenticated: valid,
+      user,
+      isAuthenticated: Boolean(token) && isTokenValid(),
       login,
       logout,
       refresh,
-    }
-  }, [token, refresh])
+    }),
+    [token, user, login, logout, refresh]
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-// Custom hook to consume AuthContext. Throws if used outside provider to avoid silent failures.
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext)
-  if (!ctx) {
-    throw new Error("useAuth must be used inside AuthProvider")
-  }
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider")
   return ctx
 }

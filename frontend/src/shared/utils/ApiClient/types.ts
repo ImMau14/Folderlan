@@ -1,12 +1,14 @@
-// Type definitions and Zod schemas for the API client.
-// Provides runtime validation and compile-time type safety for all API responses.
+/**
+ * Type definitions and Zod schemas for the API client.
+ * Provides runtime validation and compile-time type safety for all API responses.
+ * Adapted to backend responses with integer booleans (0/1) and "items" array.
+ */
 
 import { z } from "zod"
 import type { CancelToken } from "axios"
 
 // ==================== CORE SCHEMAS ====================
 
-// Canonical response wrapper that the backend always returns
 export const ApiResponseSchema = <T extends z.ZodType>(dataSchema: T) =>
   z.object({
     success: z.boolean(),
@@ -16,12 +18,10 @@ export const ApiResponseSchema = <T extends z.ZodType>(dataSchema: T) =>
     exists: z.boolean().nullable().optional(),
   })
 
-// Base type for all API responses
 export type ApiResponse<T = unknown> = z.infer<ReturnType<typeof ApiResponseSchema<z.ZodType<T>>>>
 
 // ==================== DOMAIN SCHEMAS ====================
 
-// Database
 export const DbCheckSchema = ApiResponseSchema(
   z.object({
     exists: z.boolean().optional(),
@@ -30,7 +30,6 @@ export const DbCheckSchema = ApiResponseSchema(
 
 export const DbInitSchema = ApiResponseSchema(z.object({}))
 
-// Authentication
 export const LoginSchema = ApiResponseSchema(
   z.object({
     token: z.string(),
@@ -39,7 +38,6 @@ export const LoginSchema = ApiResponseSchema(
 
 export const SimpleMessageSchema = ApiResponseSchema(z.object({}))
 
-// Audit
 export const AuditEntrySchema = z.object({
   id: z.number(),
   timestamp: z.string(),
@@ -59,7 +57,6 @@ export const AuditListSchema = ApiResponseSchema(
   })
 )
 
-// Files
 export const FileItemSchema = z.object({
   id: z.number(),
   name: z.string(),
@@ -89,7 +86,6 @@ export const DeleteFileSchema = ApiResponseSchema(
   })
 )
 
-// File Permissions
 export const FilePermissionSchema = z.object({
   user_id: z.number(),
   username: z.string(),
@@ -101,15 +97,15 @@ export const FilePermissionSchema = z.object({
 export const FilePermsListSchema = ApiResponseSchema(z.array(FilePermissionSchema))
 export const GrantPermissionSchema = ApiResponseSchema(FilePermissionSchema)
 
-// Users
+// Users – adjusted to accept 0/1 for boolean fields
 export const UserSchema = z.object({
   id: z.number(),
   username: z.string(),
   role: z.string(),
-  is_active: z.boolean(),
-  can_upload: z.boolean(),
-  can_delete_own_files: z.boolean(),
-  has_upload_limits: z.boolean(),
+  is_active: z.union([z.boolean(), z.number()]).transform((v) => Boolean(v)),
+  can_upload: z.union([z.boolean(), z.number()]).transform((v) => Boolean(v)),
+  can_delete_own_files: z.union([z.boolean(), z.number()]).transform((v) => Boolean(v)),
+  has_upload_limits: z.union([z.boolean(), z.number()]).transform((v) => Boolean(v)),
   upload_limit: z.number(),
   created_at: z.string().optional(),
   last_login_at: z.string().optional(),
@@ -117,14 +113,13 @@ export const UserSchema = z.object({
 
 export const UsersListSchema = ApiResponseSchema(
   z.object({
-    data: z.array(UserSchema),
+    items: z.array(UserSchema),
     total: z.number().optional(),
     limit: z.number().optional(),
     offset: z.number().optional(),
   })
 )
 
-// Accessible Files
 export const AccessibleFileSchema = z.object({
   id: z.number(),
   name: z.string(),
@@ -186,15 +181,11 @@ export type BlobResult = {
   headers: Record<string, string>
 }
 
-// ==================== REQUEST OPTIONS ====================
-
 export interface ApiRequestOptions {
   cancelToken?: CancelToken
   onUploadProgress?: (progressEvent: ProgressEvent) => void
   onDownloadProgress?: (progressEvent: ProgressEvent) => void
 }
-
-// ==================== ERROR CLASS ====================
 
 export class ApiError extends Error {
   constructor(
@@ -206,8 +197,6 @@ export class ApiError extends Error {
     this.name = "ApiError"
   }
 }
-
-// ==================== CLIENT OPTIONS ====================
 
 export interface ApiClientOptions {
   timeoutMs?: number

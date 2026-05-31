@@ -12,7 +12,7 @@
   "endOfLine": "lf",
 
   "sortTailwindcss": {
-    "config": "./tailwind.config.js",
+    "config": "./tailwind.config.ts",
     "functions": ["clsx", "cn"]
   },
 

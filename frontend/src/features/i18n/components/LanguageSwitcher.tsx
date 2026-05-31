@@ -96,7 +96,7 @@ export const LanguageSwitcher: FC<LanguageSwitcherProps> = ({ className, variant
   }, [closeMenu, isOpen])
 
   const buttonClasses = clsx(
-    "group relative flex items-center justify-center rounded-full border border-white/40 bg-white/70 text-slate-600 shadow-md backdrop-blur transition hover:border-brand-200 hover:text-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-brand-500 dark:hover:text-brand-300",
+    "group btn-glass relative flex items-center justify-center rounded-full text-ui-text",
     variant === "mobile" ? "h-10 w-10" : "h-11 w-11",
     className
   )
@@ -111,11 +111,11 @@ export const LanguageSwitcher: FC<LanguageSwitcherProps> = ({ className, variant
         aria-expanded={isOpen}
         className={buttonClasses}
       >
-        <Languages className="h-5 w-5" />
+        <Languages className="h-5 w-5 text-ui-text" />
         <span className="sr-only">{`${t("language.label")}: ${currentOption?.label ?? locale.toUpperCase()}`}</span>
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 rounded-full border border-transparent transition group-hover:border-brand-200/70 dark:group-hover:border-brand-500/70"
+          className="pointer-events-none absolute inset-0 rounded-full border border-transparent transition group-hover:border-ui-primary dark:group-hover:border-ui-primary"
         />
       </button>
       <AnimatePresence>
@@ -127,7 +127,9 @@ export const LanguageSwitcher: FC<LanguageSwitcherProps> = ({ className, variant
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.18 }}
-            className="absolute right-0 z-50 mt-3 w-48 overflow-hidden rounded-2xl border border-white/40 bg-white/90 p-2 text-sm font-medium text-slate-600 shadow-xl shadow-slate-900/10 backdrop-blur-lg dark:border-white/10 dark:bg-slate-900/85 dark:text-slate-200"
+            // Antes: clases con bg-white/90, etc.
+            // Ahora: vidrio normal (puedes usar "glass-smoked" si prefieres más oscuro)
+            className="glass absolute right-0 z-50 mt-3 w-48 overflow-hidden rounded-2xl p-2 text-sm font-medium"
           >
             {options.map((option) => {
               const isActive = option.code === locale
@@ -139,10 +141,9 @@ export const LanguageSwitcher: FC<LanguageSwitcherProps> = ({ className, variant
                     aria-selected={isActive}
                     onClick={() => handleSelect(option.code)}
                     className={clsx(
-                      "flex w-full items-center justify-between rounded-xl px-3 py-2 transition hover:bg-brand-100/70 hover:text-brand-700 dark:hover:bg-brand-500/20 dark:hover:text-brand-200",
-                      isActive
-                        ? "bg-brand-100/80 text-brand-700 dark:bg-brand-500/30 dark:text-brand-200"
-                        : undefined
+                      // Uso de la paleta "ui" en lugar de colores fijos
+                      "hover:bg-ui-highlight/30 flex w-full items-center justify-between rounded-xl px-3 py-2 transition hover:text-ui-primary",
+                      isActive ? "bg-ui-highlight/40 text-ui-primary" : "text-ui-text"
                     )}
                   >
                     <span>{option.label}</span>

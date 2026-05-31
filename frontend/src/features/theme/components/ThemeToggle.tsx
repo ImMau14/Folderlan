@@ -8,7 +8,7 @@ import { useI18n } from "@i18n/context/I18nContext"
 
 import clsx from "clsx"
 
-type ThemeToggleVariant = "default" | "icon"
+type ThemeToggleVariant = "default" | "icon" | "mobile"
 
 interface ThemeToggleProps {
   variant?: ThemeToggleVariant
@@ -20,12 +20,13 @@ export const ThemeToggle: FC<ThemeToggleProps> = ({ variant = "default", classNa
   const { t } = useI18n()
   const isDark = theme === "dark"
 
-  const buttonClasses =
-    variant === "icon"
-      ? "flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-white/70 text-slate-600 shadow-md backdrop-blur transition hover:border-brand-200 hover:text-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-brand-500 dark:hover:text-brand-300"
-      : "flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm backdrop-blur transition hover:border-brand-300 hover:text-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-brand-500"
+  const buttonClasses = clsx(
+    "group btn-glass relative flex items-center justify-center rounded-full text-ui-text",
+    variant === "mobile" ? "h-10 w-10" : "h-11 w-11",
+    className
+  )
 
-  const iconClass = variant === "icon" ? "h-5 w-5" : "h-4 w-4"
+  const iconClass = "h-5 w-5 text-ui-text"
 
   return (
     <button
@@ -36,6 +37,11 @@ export const ThemeToggle: FC<ThemeToggleProps> = ({ variant = "default", classNa
     >
       {isDark ? <Moon className={iconClass} /> : <Sun className={iconClass} />}
       {variant === "default" && <span>{isDark ? t("theme.dark") : t("theme.light")}</span>}
+
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-full border border-transparent transition group-hover:border-ui-primary dark:group-hover:border-ui-primary"
+      />
     </button>
   )
 }

@@ -1,8 +1,10 @@
-// SetupPage - Component that handles initial database creation, owner registration, and login.
-// The SetupPage, where the user can set up the application
+/**
+ * SetupPage - Component that handles initial database creation, owner registration, and login.
+ * After successful setup, the owner is logged in as admin.
+ */
 
 import { useEffect, useState, useCallback, type FC } from "react"
-import { AnimatePresence, type Transition } from "framer-motion"
+import { AnimatePresence } from "framer-motion"
 
 import { setPageName } from "@shared/utils/setPageName"
 import ApiClient from "@shared/utils/ApiClient"
@@ -17,19 +19,15 @@ import { useAuth } from "@auth/context/AuthContext"
 import SetupWelcome from "./components/SetupWelcome"
 import SetupForm from "./components/SetupForm"
 
-// OperationResult describes a simple boolean result with an optional message.
 type OperationResult = { ok: boolean; message?: string }
 
 export const SetupPage: FC = () => {
-  // Local view state: whether to show the form or the welcome screen.
   const [onForm, setOnForm] = useState(false)
   const { login } = useAuth()
-
   const { toast } = useToast()
   const { t } = useI18n()
 
-  // RegisterOwnerRequest performs three sequential operations:
-  // 1) Initialize database, 2) Register owner, 3) Log in and save token.
+  // Orchestrates the 3-step registration flow: DB init → owner creation → login.
   const registerOwnerRequest = useCallback(
     async (username: string, password: string): Promise<OperationResult> => {
       const client = new ApiClient()
@@ -37,23 +35,17 @@ export const SetupPage: FC = () => {
       // 1) Initialize Database
       try {
         const initDbRes = await client.initDb()
-
-        // Validate result; treat falsy or explicit ok:false as failure.
         if (!initDbRes || !initDbRes.success) {
           const rawMessage = initDbRes?.error?.message ?? undefined
-          const fallbackMessage = t("setup.toast.unexpectedErrorDescription")
-          const msg = rawMessage ?? fallbackMessage
+          const msg = rawMessage ?? t("setup.toast.unexpectedErrorDescription")
           toast({
             type: "error",
             title: t("setup.toast.databaseCreateErrorTitle"),
             description: t("setup.toast.databaseCreateErrorDescription", { message: msg }),
             duration: 4000,
           })
-          console.warn("initDb failed:", initDbRes)
           return { ok: false, message: msg }
         }
-
-        // Show single success toast after DB is created.
         toast({
           type: "success",
           title: t("setup.toast.databaseCreatedTitle"),
@@ -75,7 +67,6 @@ export const SetupPage: FC = () => {
       // 2) Register Owner
       try {
         const registerRes = await client.ownerRegister(username, password)
-
         if (!registerRes || !registerRes.success) {
           const msg = registerRes?.error?.message ?? t("setup.toast.unexpectedErrorDescription")
           toast({
@@ -84,11 +75,8 @@ export const SetupPage: FC = () => {
             description: t("setup.toast.registrationFailedDescription", { message: msg }),
             duration: 4000,
           })
-          console.warn("ownerRegister failed:", registerRes)
           return { ok: false, message: msg }
         }
-
-        // Show single success toast after owner is registered.
         toast({
           type: "success",
           title: t("setup.toast.ownerRegisteredTitle"),
@@ -110,7 +98,6 @@ export const SetupPage: FC = () => {
       // 3) Login
       try {
         const loginRes = await client.login(username, password)
-
         if (!loginRes || !loginRes.success) {
           const msg = loginRes?.error?.message ?? t("setup.toast.unexpectedErrorDescription")
           toast({
@@ -119,7 +106,6 @@ export const SetupPage: FC = () => {
             description: t("setup.toast.loginFailedDescription", { message: msg }),
             duration: 4000,
           })
-          console.warn("login failed:", loginRes)
           return { ok: false, message: msg }
         }
 
@@ -135,9 +121,9 @@ export const SetupPage: FC = () => {
           return { ok: false, message: msg }
         }
 
-        login(token)
+        // Owner is always admin
+        login(token, { username, role: "owner" })
 
-        // Show single success toast after login success.
         toast({
           type: "success",
           title: t("setup.toast.loginSuccessTitle"),
@@ -161,8 +147,6 @@ export const SetupPage: FC = () => {
     [t, toast, login]
   )
 
-  // Exposed submit handler used by the child form.
-  // This keeps SetupPage solely responsible for sending/processing.
   const onRegister = useCallback(
     async (username: string, password: string) => {
       return await registerOwnerRequest(username, password)
@@ -170,27 +154,21 @@ export const SetupPage: FC = () => {
     [registerOwnerRequest]
   )
 
+  // Update the page title based on the current view.
   useEffect(() => {
     setPageName(onForm ? t("setup.formTitle") : t("setup.welcomeTitle"))
   }, [onForm, t])
 
-  const cardTransition: Transition = { duration: 0.35, ease: [0.16, 1, 0.3, 1] }
-
   return (
     <AnimatedBackground className="flex h-dvh w-full flex-col items-center justify-center">
-      <div className="relative flex h-full w-full items-center justify-center">
-        <AnimatePresence>
+      <div className="flex h-full w-full items-center justify-center">
+        <AnimatePresence mode="wait" initial={false}>
           {!onForm ? (
-            <SetupWelcome
-              key="welcome"
-              onStart={() => setOnForm(true)}
-              cardTransition={cardTransition}
-            />
+            <SetupWelcome key="welcome" onStart={() => setOnForm(true)} />
           ) : (
-            <SetupForm key="form" cardTransition={cardTransition} onRegister={onRegister} />
+            <SetupForm key="form" onRegister={onRegister} />
           )}
         </AnimatePresence>
-
         <GlobalControlsOverlay />
       </div>
     </AnimatedBackground>

@@ -1,24 +1,35 @@
-// Provides a React Context for managing database existence state and checking operations.
+/**
+ * Provides a React Context for managing database existence state.
+ * This provider blocks rendering of children until the initial database check completes,
+ * ensuring downstream consumers (router, guards) work with resolved state.
+ */
 
 import React, { createContext, useContext, useEffect, useState, type FC, useCallback } from "react"
 import { ApiClient } from "@shared/utils/ApiClient"
-
 import { useToast } from "@toast/context/ToastContext"
 import { useI18n } from "@i18n/context/I18nContext"
+import LoadingPage from "@shared/pages/LoadingPage"
 
-// Shape of the context value exposed to consumers
 type DbContextType = {
+  /** Whether the backend database has been initialised */
   dbExists: boolean
+  /** Whether the initial check has completed */
   checked: boolean
+  /** Whether a manual refresh is in progress */
   isRefreshing: boolean
+  /** Triggers a fresh check of the database status */
   refresh: () => Promise<void>
+  /** Allows manual override of the database existence flag (e.g. after setup) */
   setDbExists: (v: boolean) => void
 }
 
-// Create context with undefined default to force provider usage check
 const DatabaseContext = createContext<DbContextType | undefined>(undefined)
 
-// DatabaseProvider checks database existence on mount and provides refresh capability
+/**
+ * DatabaseProvider checks the backend database status on mount.
+ * Children are not rendered until the check finishes, avoiding UI flickering
+ * and making guards synchronous.
+ */
 export const DatabaseProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
   const [dbExists, setDbExists] = useState(false)
   const [checked, setChecked] = useState(false)
@@ -27,13 +38,12 @@ export const DatabaseProvider: FC<{ children: React.ReactNode }> = ({ children }
   const { toast } = useToast()
   const { t } = useI18n()
 
-  // Check database existence on initial mount
+  // Initial database check on mount
   useEffect(() => {
     let mounted = true
     const run = async () => {
       try {
         if (!mounted) return
-
         const apiClient = new ApiClient()
         const res = await apiClient.checkDb()
 
@@ -42,7 +52,11 @@ export const DatabaseProvider: FC<{ children: React.ReactNode }> = ({ children }
           throw new Error(t("databaseContext.checkingError"))
         }
 
-        setDbExists(res?.data?.exists ?? false)
+        if (mounted) {
+          // exists may be at the root level (wrapper) or inside the nested data object
+          const exists = res.data?.data?.exists ?? res.data?.exists ?? false
+          setDbExists(exists)
+        }
       } catch (e) {
         if (!mounted) return
         setDbExists(false)
@@ -50,7 +64,7 @@ export const DatabaseProvider: FC<{ children: React.ReactNode }> = ({ children }
         toast({
           type: "error",
           title: t("global.error"),
-          description: e instanceof Error ? e?.message : "-",
+          description: e instanceof Error ? e.message : "-",
           duration: 3000,
         })
       } finally {
@@ -63,7 +77,7 @@ export const DatabaseProvider: FC<{ children: React.ReactNode }> = ({ children }
     }
   }, [toast, t])
 
-  // Refresh database existence status with loading state
+  // Manual refresh with loading state
   const refresh = useCallback(async () => {
     setIsRefreshing(true)
     try {
@@ -75,12 +89,13 @@ export const DatabaseProvider: FC<{ children: React.ReactNode }> = ({ children }
         throw new Error(t("databaseContext.refreshError"))
       }
 
-      setDbExists(res?.data?.exists ?? false)
+      const exists = res.data?.data?.exists ?? res.data?.exists ?? false
+      setDbExists(exists)
     } catch (e) {
       toast({
         type: "error",
         title: t("global.error"),
-        description: e instanceof Error ? e?.message : "-",
+        description: e instanceof Error ? e.message : "-",
         duration: 3000,
       })
     } finally {
@@ -96,10 +111,18 @@ export const DatabaseProvider: FC<{ children: React.ReactNode }> = ({ children }
     setDbExists,
   }
 
+  // Block children until the initial check is complete
+  if (!checked) {
+    return <LoadingPage message={t("loading.checkingDatabase")} />
+  }
+
   return <DatabaseContext.Provider value={value}>{children}</DatabaseContext.Provider>
 }
 
-// Custom hook to consume DatabaseContext. Throws if used outside provider
+/**
+ * Custom hook to consume DatabaseContext.
+ * Throws if used outside of a DatabaseProvider.
+ */
 export const useDatabase = () => {
   const ctx = useContext(DatabaseContext)
   if (!ctx) throw new Error("useDatabase must be used inside DatabaseProvider")
