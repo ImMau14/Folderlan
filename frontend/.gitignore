@@ -26,3 +26,5 @@ bun.lock
 *.sln
 *.sw?
 *.db
+
+.tsconfig.tsbuildinfo
