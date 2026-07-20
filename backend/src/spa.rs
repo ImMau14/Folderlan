@@ -1,6 +1,8 @@
 // SPA handler for serving embedded static files in Actix-Web applications
 use actix_web::{HttpRequest, HttpResponse, Result, web};
+#[cfg(has_dist)]
 use mime_guess::from_path;
+#[cfg(has_dist)]
 use percent_encoding::percent_decode_str;
 
 #[cfg(not(has_dist))]
