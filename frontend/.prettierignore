@@ -1,6 +1,0 @@
-node_modules
-dist
-build
-.coverage
-.eslintcache
-pnpm-lock.yaml

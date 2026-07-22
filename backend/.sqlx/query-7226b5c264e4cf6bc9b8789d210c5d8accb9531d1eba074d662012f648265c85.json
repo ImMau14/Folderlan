@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT EXISTS(\n            SELECT 1\n            FROM Users\n            WHERE role = 'owner' AND is_deleted = 0\n        ) as \"exists!: i64\"\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "exists!: i64",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "7226b5c264e4cf6bc9b8789d210c5d8accb9531d1eba074d662012f648265c85"
+}

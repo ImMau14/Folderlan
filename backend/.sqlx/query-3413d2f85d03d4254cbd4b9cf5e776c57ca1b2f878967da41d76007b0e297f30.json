@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT\n            fp.user_id as \"user_id!\",\n            u.username as \"username: _\",\n            fp.access_level as \"access_level!\",\n            fp.granted_at as \"granted_at: _\",\n            fp.granted_by as \"granted_by: _\"\n        FROM FilePermissions fp\n        LEFT JOIN Users u ON u.id = fp.user_id\n        WHERE fp.file_id = ? AND fp.user_id = ?\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_id!",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "username: _",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "access_level!",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "granted_at: _",
+        "ordinal": 3,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "granted_by: _",
+        "ordinal": 4,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "3413d2f85d03d4254cbd4b9cf5e776c57ca1b2f878967da41d76007b0e297f30"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        INSERT INTO FilePermissions (file_id, user_id, access_level, granted_by, granted_at)\n        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)\n        ON CONFLICT(file_id, user_id) DO UPDATE SET\n            access_level = excluded.access_level,\n            granted_by = excluded.granted_by,\n            granted_at = CURRENT_TIMESTAMP\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "374dc5624dc6a8d096cefdf818bda58352622aefde47eea8e654aee30f350b12"
+}

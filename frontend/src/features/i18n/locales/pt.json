@@ -1,0 +1,166 @@
+{
+  "global": {
+    "appName": "Folderlan",
+    "tagline": "Compartilhamento de arquivos self-hosted",
+    "logoLabel": "Logotipo da Folderlan",
+    "error": "Erro"
+  },
+  "header": {
+    "title": "Folderlan",
+    "subtitle": "Central de controle"
+  },
+  "language": {
+    "label": "Idioma",
+    "english": "Inglês",
+    "spanish": "Espanhol",
+    "italian": "Italiano",
+    "portuguese": "Português"
+  },
+  "theme": {
+    "dark": "Modo escuro",
+    "light": "Modo claro",
+    "ariaDark": "Mudar para modo claro",
+    "ariaLight": "Mudar para modo escuro"
+  },
+  "loading": {
+    "checkingDatabase": "Verificando banco de dados...",
+    "default": "Carregando..."
+  },
+  "databaseContext": {
+    "checkingError": "Erro ao verificar a base de dados",
+    "refreshError": "Erro de atualização"
+  },
+  "menu": {
+    "title": "Menu",
+    "upload": "Enviar",
+    "download": "Baixar",
+    "config": "Config",
+    "users": "Usuários"
+  },
+  "topbar": {
+    "account": "Conta",
+    "unknown": "Desconhecido",
+    "darkMode": "Modo escuro",
+    "loggingOut": "Saindo...",
+    "logOut": "Sair",
+    "pageTitles": {
+      "upload": "Enviar arquivos",
+      "download": "Baixar arquivos",
+      "config": "Configurações",
+      "users": "Gerenciamento de usuários",
+      "dashboard": "Painel"
+    }
+  },
+  "upload": {
+    "dropZone": {
+      "title": "Enviar arquivos",
+      "description": "Arraste seus arquivos aqui ou selecione manualmente",
+      "selectFiles": "Selecionar arquivos",
+      "filesReady": "{{count}} arquivo(s) pronto(s)",
+      "totalSize": "{{size}} no total"
+    },
+    "queue": {
+      "title": "Fila de arquivos",
+      "filesInQueue": "{{count}} arquivo(s) na fila",
+      "completed": "{{count}} concluídos",
+      "emptyTitle": "Fila vazia",
+      "emptyDescription": "Os arquivos selecionados aparecerão aqui para iniciar o envio.",
+      "startAll": "Iniciar todos os envios",
+      "pauseAll": "Pausar todos os envios",
+      "startAllLabel": "Iniciar tudo",
+      "pauseAllLabel": "Pausar tudo"
+    },
+    "file": {
+      "error": "Erro",
+      "completed": "Concluído",
+      "pauseUpload": "Pausar envio",
+      "restartNotAvailable": "Reinício não disponível",
+      "retryUpload": "Repetir envio",
+      "startResume": "Iniciar / retomar envio",
+      "pause": "Pausar",
+      "start": "Iniciar",
+      "remove": "Remover arquivo"
+    },
+    "summary": {
+      "title": "Resumo",
+      "totalFiles": "Total de arquivos: {{count}}",
+      "totalSize": "Tamanho total: {{size}}"
+    },
+    "toast": {
+      "authRequired": "Autenticação necessária",
+      "authRequiredDesc": "Você precisa fazer login para enviar arquivos.",
+      "fileUploaded": "Arquivo enviado",
+      "fileUploadedDesc": "O arquivo \"{{name}}\" foi enviado com sucesso.",
+      "uploadError": "Erro no envio",
+      "uploadErrorDesc": "Não foi possível enviar {{name}}."
+    }
+  },
+  "setup": {
+    "welcomeTitle": "Bem-vindo ao Folderlan, sinta-se em casa!",
+    "welcomeDescription": "Para começar, pressione o botão abaixo para criar sua conta de proprietário e começar a compartilhar arquivos entre todos os seus dispositivos.",
+    "startButton": "Iniciar configuração",
+    "formTitle": "Registrar proprietário",
+    "formSubtitle": "Crie uma conta de proprietário para começar.",
+    "usernameLabel": "Nome de usuário",
+    "usernamePlaceholder": "ImMau14",
+    "passwordLabel": "Senha",
+    "passwordPlaceholder": "••••••••",
+    "confirmPasswordLabel": "Confirmar senha",
+    "confirmPasswordPlaceholder": "••••••••",
+    "registerButton": "Registrar proprietário",
+    "toast": {
+      "databaseCreateErrorTitle": "Falha ao criar o banco de dados",
+      "databaseCreateErrorDescription": "{{message}}",
+      "databaseNetworkErrorTitle": "Erro ao criar o banco de dados",
+      "databaseNetworkErrorDescription": "Erro de rede ao criar o banco de dados.",
+      "databaseCreatedTitle": "Banco de dados criado",
+      "databaseCreatedDescription": "Banco de dados inicializado com sucesso.",
+      "registrationFailedTitle": "Registro falhou",
+      "registrationFailedDescription": "{{message}}",
+      "registrationNetworkErrorTitle": "Erro de registro",
+      "registrationNetworkErrorDescription": "Erro de rede durante o registro.",
+      "ownerRegisteredTitle": "Proprietário registrado",
+      "ownerRegisteredDescription": "Usuário {{username}} criado com sucesso.",
+      "loginFailedTitle": "Autenticação falhou",
+      "loginFailedDescription": "{{message}}",
+      "loginErrorTitle": "Erro de login",
+      "loginErrorDescription": "Erro de rede ao realizar login.",
+      "loginNoTokenTitle": "Erro de login",
+      "loginNoTokenDescription": "Nenhum token recebido do servidor.",
+      "loginSuccessTitle": "Autenticado",
+      "loginSuccessDescription": "Bem-vindo — você está autenticado.",
+      "missingFieldsTitle": "Campos incompletos",
+      "missingFieldsDescription": "Preencha todos os campos para continuar.",
+      "passwordMismatchTitle": "Senhas não coincidem",
+      "passwordMismatchDescription": "Verifique se as senhas são iguais.",
+      "registrationIncompleteTitle": "Registro incompleto",
+      "registrationIncompleteDescription": "{{message}}",
+      "unexpectedErrorTitle": "Erro inesperado",
+      "unexpectedErrorDescription": "Ocorreu um erro inesperado. Tente novamente mais tarde."
+    }
+  },
+  "login": {
+    "sidebarTitle": "Bem-vindo ao Folderlan!",
+    "sidebarDescription": "Compartilhe arquivos de forma privada, rápida e simples com o Folderlan: um aplicativo nativo com Rust, Actix-web e uma bela interface React.",
+    "sidebarVersion": "ImMau14 · Folderlan 0.1.0-alpha",
+    "formTitle": "Entrar",
+    "usernameLabel": "Nome de usuário",
+    "usernamePlaceholder": "jhon.cena",
+    "passwordLabel": "Senha",
+    "passwordPlaceholder": "••••••••",
+    "submit": "Entrar",
+    "forgotOwner": "Você é o proprietário e esqueceu sua senha?",
+    "toast": {
+      "successTitle": "Login bem-sucedido",
+      "successDescription": "Bem-vindo {{username}}.",
+      "errorTitle": "Falha no login",
+      "errorDescription": "{{message}}",
+      "networkErrorDescription": "Erro de rede. Tente novamente mais tarde."
+    }
+  },
+  "notFound": {
+    "title": "404: Esta página não existe",
+    "description": "A página que você tentou acessar não existe.",
+    "altDescription": "Não sabemos o que você está fazendo aqui, mas pegue este Homero Chino!"
+  }
+}

@@ -78,7 +78,8 @@ async fn main() -> std::io::Result<()> {
     {
         tracing::warn!("Could not set journal_mode=WAL: {}", e);
     }
-    if let Err(e) = sqlx::query("PRAGMA busy_timeout = 5000;")
+    // Use a longer busy timeout to prevent "database is locked" errors under concurrent writes
+    if let Err(e) = sqlx::query("PRAGMA busy_timeout = 30000;")
         .execute(&pool)
         .await
     {
@@ -98,24 +99,13 @@ async fn main() -> std::io::Result<()> {
     // Choose uploads directory
     let uploads_dir = PathBuf::from("./uploads");
 
-    // tmp subdir name (adjust if you use a different tmp folder inside uploads).
-    let tmp_subdir = "tmp";
-
     // Owner user id when watcher registers files created by sharing.
     let owner_user_id: Option<i64> = Some(1);
 
-    match backend::watcher::start_watcher(
-        uploads_dir,
-        tmp_subdir,
-        Some(pool.clone()),
-        owner_user_id,
-    )
-    .await
+    match backend::watcher::start_watcher(uploads_dir, None, Some(pool.clone()), owner_user_id)
+        .await
     {
-        Ok(_handle) => {
-            tracing::info!("Filesystem watcher started");
-            // Optionally keep the handle somewhere if you want graceful shutdown logic.
-        }
+        Ok(_handle) => {}
         Err(e) => {
             tracing::warn!("Failed to start filesystem watcher: {}", e);
         }

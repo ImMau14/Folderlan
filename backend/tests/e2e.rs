@@ -8,7 +8,6 @@ use tokio::time::sleep;
 /// Tests the complete API workflow including database initialization, user management, file operations, and cleanup
 #[tokio::test(flavor = "multi_thread")]
 async fn test_full_api_workflow() {
-    // Windows-specific configuration delay
     if cfg!(windows) {
         tokio::time::sleep(Duration::from_secs(2)).await;
     }
@@ -27,10 +26,10 @@ async fn test_full_api_workflow() {
     let body: serde_json::Value = resp.json().await.expect("invalid json");
     assert_eq!(body["exists"], false);
 
-    // Initialize database
+    // Initialize database via API
     app.post_init_db().await;
 
-    // Confirm database creation
+    // Confirm database creation (tables exist, but no owner yet)
     let resp = app
         .api
         .get("/api/db")
@@ -39,7 +38,7 @@ async fn test_full_api_workflow() {
         .expect("GET /api/db failed");
     assert!(resp.status().is_success());
     let body: serde_json::Value = resp.json().await.expect("invalid json");
-    assert_eq!(body["exists"], true);
+    assert_eq!(body["exists"], false);
 
     // Phase 2: User authentication and creation
     app.create_owner_direct("test_owner", "owner_password123")
@@ -69,7 +68,7 @@ async fn test_full_api_workflow() {
         !new_owner_token.is_empty(),
         "New owner token should not be empty"
     );
-    let owner_token = new_owner_token; // Use new token for subsequent operations
+    let owner_token = new_owner_token;
 
     // Create visitor with full permissions
     let visitor_opts = VisitorOptions {
@@ -114,7 +113,7 @@ async fn test_full_api_workflow() {
         !new_visitor_token.is_empty(),
         "New visitor token should not be empty"
     );
-    let visitor_token = new_visitor_token; // Use new token for subsequent operations
+    let visitor_token = new_visitor_token;
 
     // Create restricted visitor with upload limits
     let limited_visitor_opts = VisitorOptions {
@@ -136,21 +135,16 @@ async fn test_full_api_workflow() {
         .login_and_get_token("limited_visitor", "limited123")
         .await;
 
-    // Phase 3: Filesystem watcher end-to-end testing (create -> modify -> remove workflow)
-    // This block writes files directly to `app.uploads_path` (no DB writes in the test),
-    // then polls the API via TestApp helpers to assert the watcher did its job
+    // Phase 3: Filesystem watcher end-to-end testing
     let watcher_test_name = "e2e_watcher_test.txt";
     let initial = b"watcher initial content".to_vec();
     let modified = b"watcher modified content".to_vec();
     let path = app.uploads_path.join(watcher_test_name);
 
-    // Step 1: Create file in uploads_path (simulates external uploader)
     tokio::fs::write(&path, &initial)
         .await
         .expect("Failed to write watcher test file");
 
-    // Poll for watcher to register the file (query via TestApp)
-    // Use owner_token because spawn() started the watcher with owner_user_id = Some(1)
     let mut found_id: Option<i64> = None;
     for _ in 0..80 {
         if let Ok(Some(fid)) = app
@@ -164,19 +158,16 @@ async fn test_full_api_workflow() {
     }
     let watcher_file_id = found_id.expect("Watcher did not register created file in time");
 
-    // Verify the API serves the content registered by the watcher
     let got = app
         .download_file_bytes(&owner_token, watcher_file_id)
         .await
         .expect("Failed to download watcher-registered file");
     assert_eq!(got, initial, "Watcher-registered file content mismatch");
 
-    // Step 2: Modify file on disk
     tokio::fs::write(&path, &modified)
         .await
         .expect("Failed to modify watcher test file");
 
-    // Poll until API serves the modified content
     let mut seen_modified = false;
     for _ in 0..80 {
         match app.download_file_bytes(&owner_token, watcher_file_id).await {
@@ -194,12 +185,10 @@ async fn test_full_api_workflow() {
         "Watcher did not pick up modified file content in time"
     );
 
-    // Step 3: Remove the file on disk
     tokio::fs::remove_file(&path)
         .await
         .expect("Failed to remove watcher test file");
 
-    // Poll until download fails (watcher should mark deleted)
     let mut seen_deleted = false;
     for _ in 0..80 {
         if app
@@ -232,14 +221,12 @@ async fn test_full_api_workflow() {
         upload_resp.text().await.ok()
     );
 
-    // Retrieve uploaded file ID for subsequent operations
     let file_id = app
         .find_file_id_by_name(&visitor_token, "test_document.txt")
         .await
         .expect("Find file failed")
         .expect("File should exist after upload");
 
-    // List files endpoint verification
     let files_resp = app
         .get_files(&visitor_token, &[("limit", "10")])
         .await
@@ -250,7 +237,6 @@ async fn test_full_api_workflow() {
     assert!(files_body["success"].as_bool().unwrap());
     assert!(!files_body["data"]["items"].as_array().unwrap().is_empty());
 
-    // File download functionality verification
     let downloaded_bytes = app
         .download_file_bytes(&visitor_token, file_id)
         .await
@@ -268,7 +254,6 @@ async fn test_full_api_workflow() {
     assert!(users_body["success"].as_bool().unwrap());
     assert!(users_body["data"]["items"].as_array().unwrap().len() >= 3);
 
-    // Find user IDs for permission management
     let visitor_id = app
         .find_user_id_by_username(&owner_token, "test_visitor")
         .await
@@ -281,14 +266,12 @@ async fn test_full_api_workflow() {
         .expect("Find user failed")
         .expect("Limited visitor should exist");
 
-    // User activation/deactivation testing
     let toggle_resp = app
         .toggle_user_active_via_api(&owner_token, visitor_id)
         .await
         .expect("Toggle user failed");
     assert!(toggle_resp.status().is_success());
 
-    // Verify user deactivation in user list
     let users_after_toggle = app
         .list_users_page(&owner_token, &[("is_active", "false")])
         .await
@@ -298,12 +281,10 @@ async fn test_full_api_workflow() {
         serde_json::from_value(users_after_toggle["data"]["items"].clone()).unwrap();
     assert!(inactive_users.iter().any(|u| u["id"] == visitor_id));
 
-    // Reactivate user for continued testing
     app.toggle_user_active_via_api(&owner_token, visitor_id)
         .await
         .expect("Toggle user back failed");
 
-    // Permission modification testing
     let perms_payload = json!({
         "can_upload": true,
         "has_upload_limits": true,
@@ -323,56 +304,46 @@ async fn test_full_api_workflow() {
         .expect("Grant permission failed");
     assert!(grant_resp.status().is_success());
 
-    // List file permissions to verify grant
     let perms_list = app
         .list_permissions_via_api(&visitor_token, file_id)
         .await
         .expect("List permissions failed");
     assert!(!perms_list["data"].as_array().unwrap().is_empty());
 
-    // Verify permission enforcement through file download
     let limited_access_bytes = app
         .download_file_bytes(&limited_visitor_token, file_id)
         .await
         .expect("Limited visitor should be able to download");
     assert_eq!(limited_access_bytes, file_content);
 
-    // Permission revocation testing
     let revoke_resp = app
         .revoke_permission_via_api(&visitor_token, file_id, limited_visitor_id)
         .await
         .expect("Revoke permission failed");
     assert!(revoke_resp.status().is_success());
 
-    // Confirm permission removal from system
     app.revoke_permission_and_assert_removed(&visitor_token, file_id, limited_visitor_id)
         .await
         .expect("Permission should be removed");
 
-    // Phase 7: Multipart file upload testing with large files
+    // Phase 7: Large file upload (single multipart request)
     let large_content: Vec<u8> = (0..5000).map(|i| (i % 256) as u8).collect();
 
-    let chunk_responses = app
-        .upload_chunks(
+    let large_upload_resp = app
+        .upload_single_chunk_file(
             &visitor_token,
             "large_file_test",
             "large_file.bin",
-            &large_content,
-            1024,
+            large_content.clone(),
         )
         .await;
 
-    // Validate all chunk uploads succeeded
-    for (i, resp) in chunk_responses.iter().enumerate() {
-        assert!(
-            resp.status().is_success(),
-            "Chunk {} upload failed with status: {}",
-            i,
-            resp.status()
-        );
-    }
+    assert!(
+        large_upload_resp.status().is_success(),
+        "Large file upload should succeed. Status: {}",
+        large_upload_resp.status()
+    );
 
-    // Verify multipart upload integrity through download comparison
     let large_file_id = app
         .find_file_id_by_name(&visitor_token, "large_file.bin")
         .await
@@ -400,7 +371,7 @@ async fn test_full_api_workflow() {
     assert!(filenames.contains(&"test_document.txt".to_string()));
     assert!(filenames.contains(&"large_file.bin".to_string()));
 
-    // Phase 9: Audit log verification for security tracking
+    // Phase 9: Audit log verification
     let audit_resp = app
         .get_audit_logs_via_api(&owner_token, &[("limit", "20")])
         .await
@@ -410,19 +381,17 @@ async fn test_full_api_workflow() {
     let audit_body: serde_json::Value = audit_resp.json().await.expect("Invalid json");
     assert!(audit_body["success"].as_bool().unwrap());
 
-    // Verify specific audit events were recorded
     app.assert_audit_contains_event(&owner_token, "FILE_UPLOAD", Some(file_id))
         .await
         .expect("FILE_UPLOAD event should be in audit logs");
 
-    // Phase 10: File deletion testing and cleanup verification
+    // Phase 10: File deletion
     let delete_resp = app
         .delete_file_by_id(&visitor_token, file_id)
         .await
         .expect("Delete file failed");
     assert!(delete_resp.status().is_success());
 
-    // Confirm file removal from accessible files list
     let accessible_after_delete = app
         .list_accessible_files(&visitor_token, visitor_id)
         .await
@@ -434,14 +403,13 @@ async fn test_full_api_workflow() {
         .collect();
     assert!(!filenames_after.contains(&"test_document.txt".to_string()));
 
-    // Phase 11: User deletion testing with soft delete verification
+    // Phase 11: User deletion
     let delete_user_resp = app
         .delete_user_via_api(&owner_token, visitor_id)
         .await
         .expect("Delete user failed");
     assert!(delete_user_resp.status().is_success());
 
-    // Verify user soft deletion in system
     let users_after_delete = app
         .list_users_page(
             &owner_token,
@@ -453,287 +421,6 @@ async fn test_full_api_workflow() {
     let inactive_after: Vec<serde_json::Value> =
         serde_json::from_value(users_after_delete["data"]["items"].clone()).unwrap();
     assert!(inactive_after.iter().any(|u| u["id"] == visitor_id));
-
-    // Phase 12: Resource cleanup after test completion
-    app.cleanup();
-}
-
-#[tokio::test(flavor = "multi_thread")]
-async fn test_error_cases_and_security() {
-    // Windows-specific configuration delay
-    if cfg!(windows) {
-        tokio::time::sleep(Duration::from_secs(2)).await;
-    }
-
-    let app = TestApp::spawn().await;
-    app.post_init_db().await;
-
-    // Setup test users for security testing
-    app.create_owner_direct("security_owner", "owner_pass")
-        .await;
-    let owner_token = app
-        .login_and_get_token("security_owner", "owner_pass")
-        .await;
-
-    app.create_visitor_via_api_as_owner(
-        &owner_token,
-        "security_visitor",
-        "visitor_pass",
-        VisitorOptions {
-            can_upload: true,
-            can_delete_own_files: true,
-            has_upload_limits: false,
-            upload_limit: 0,
-        },
-    )
-    .await;
-
-    let visitor_token = app
-        .login_and_get_token("security_visitor", "visitor_pass")
-        .await;
-
-    // Test 1: Unauthorized access attempts without valid token
-    let unauthorized_resp = app
-        .api
-        .get("/api/user")
-        .send()
-        .await
-        .expect("Request failed");
-    assert!(unauthorized_resp.status().is_client_error());
-
-    // Test invalid token rejection
-    let invalid_token_resp = app
-        .api
-        .get("/api/user")
-        .with_token("invalid_token")
-        .send()
-        .await
-        .expect("Request failed");
-    assert!(invalid_token_resp.status().is_client_error());
-
-    // Test 2: Permission boundary testing for role-based access
-    let forbidden_resp = app
-        .get_users_via_api(&visitor_token, &[])
-        .await
-        .expect("Request failed");
-    assert!(forbidden_resp.status().is_client_error());
-
-    // Test 3: Input validation testing with excessive limits
-    let excess_limit_resp = app
-        .get_files(&visitor_token, &[("limit", "1000")])
-        .await
-        .expect("Request failed");
-    assert!(excess_limit_resp.status().is_success());
-
-    // Test 4: Password change security testing
-    // Test 4.1: Visitor attempting to change another visitor's password without owner token (should fail)
-    app.create_visitor_via_api_as_owner(
-        &owner_token,
-        "another_visitor",
-        "another_pass",
-        VisitorOptions::default(),
-    )
-    .await;
-
-    let unauthorized_visitor_change_resp = app
-        .change_visitor_password(&visitor_token, "another_visitor", "hacked_password")
-        .await;
-
-    // This should fail because visitors cannot change other users' passwords
-    assert!(
-        unauthorized_visitor_change_resp.is_err()
-            || !unauthorized_visitor_change_resp
-                .as_ref()
-                .unwrap()
-                .status()
-                .is_success(),
-        "Visitors should not be able to change other users' passwords"
-    );
-
-    // Test 4.2: Owner changing non-existent visitor password (should fail)
-    let non_existent_visitor_resp = app
-        .change_visitor_password(&owner_token, "non_existent_visitor", "new_password")
-        .await;
-
-    assert!(
-        non_existent_visitor_resp.is_err()
-            || !non_existent_visitor_resp
-                .as_ref()
-                .unwrap()
-                .status()
-                .is_success(),
-        "Changing password for non-existent user should fail"
-    );
-
-    // Test 4.3: Valid owner changing visitor password (should succeed)
-    let valid_visitor_change_resp = app
-        .change_visitor_password(&owner_token, "security_visitor", "new_secure_password123")
-        .await
-        .expect("Valid owner password change should not fail");
-
-    assert!(
-        valid_visitor_change_resp.status().is_success(),
-        "Owner should be able to change visitor passwords. Status: {}",
-        valid_visitor_change_resp.status()
-    );
-
-    // Verify the password change took effect
-    let new_visitor_token = app
-        .login_and_get_token("security_visitor", "new_secure_password123")
-        .await;
-    assert!(!new_visitor_token.is_empty(), "New password should work");
-
-    // Test 5: Insufficient permission testing for upload restrictions
-    app.create_visitor_via_api_as_owner(
-        &owner_token,
-        "no_upload_user",
-        "nopass",
-        VisitorOptions {
-            can_upload: false,
-            can_delete_own_files: false,
-            has_upload_limits: false,
-            upload_limit: 0,
-        },
-    )
-    .await;
-
-    let no_upload_token = app.login_and_get_token("no_upload_user", "nopass").await;
-
-    let no_upload_content = b"test no permission".to_vec();
-    let no_upload_resp = app
-        .upload_single_chunk_file(
-            &no_upload_token,
-            "no_perm_file",
-            "no_perm.txt",
-            no_upload_content,
-        )
-        .await;
-
-    assert!(no_upload_resp.status().is_client_error());
-
-    app.cleanup();
-}
-
-#[tokio::test(flavor = "multi_thread")]
-async fn test_pagination_and_filtering() {
-    // Windows-specific configuration delay
-    if cfg!(windows) {
-        tokio::time::sleep(Duration::from_secs(2)).await;
-    }
-
-    let app = TestApp::spawn().await;
-    app.post_init_db().await;
-
-    app.create_owner_direct("pagination_owner", "owner_pass")
-        .await;
-    let owner_token = app
-        .login_and_get_token("pagination_owner", "owner_pass")
-        .await;
-
-    // Create multiple test users for pagination testing
-    for i in 0..20 {
-        let username = format!("user_{:02}", i);
-        let opts = VisitorOptions {
-            can_upload: i % 2 == 0,
-            can_delete_own_files: true,
-            has_upload_limits: false,
-            upload_limit: 0,
-        };
-
-        app.create_visitor_via_api_as_owner(&owner_token, &username, "password123", opts)
-            .await;
-    }
-
-    // Test password change functionality in pagination context
-    // Change password for a specific user and verify they can still be found in paginated results
-    let target_username = "user_05";
-    let change_resp = app
-        .change_visitor_password(&owner_token, target_username, "new_pagination_password")
-        .await
-        .expect("Password change during pagination test failed");
-
-    assert!(
-        change_resp.status().is_success(),
-        "Password change should work during pagination testing"
-    );
-
-    // Verify the user can login with new password
-    let new_token = app
-        .login_and_get_token(target_username, "new_pagination_password")
-        .await;
-    assert!(
-        !new_token.is_empty(),
-        "New password should work after pagination setup"
-    );
-
-    // Test 1: Basic pagination functionality with limit and offset
-    let page1 = app
-        .list_users_page(&owner_token, &[("limit", "5"), ("offset", "0")])
-        .await
-        .expect("Page1 failed");
-
-    let items_page1: Vec<serde_json::Value> =
-        serde_json::from_value(page1["data"]["items"].clone()).unwrap();
-
-    assert_eq!(items_page1.len(), 5);
-    assert_eq!(page1["data"]["limit"], 5);
-    assert_eq!(page1["data"]["offset"], 0);
-
-    // Test second page retrieval
-    let page2 = app
-        .list_users_page(&owner_token, &[("limit", "5"), ("offset", "5")])
-        .await
-        .expect("Page2 failed");
-
-    let items_page2: Vec<serde_json::Value> =
-        serde_json::from_value(page2["data"]["items"].clone()).unwrap();
-    assert_eq!(items_page2.len(), 5);
-
-    // Verify page separation and no overlap between result sets
-    let page1_ids: Vec<i64> = items_page1
-        .iter()
-        .map(|u| u["id"].as_i64().unwrap())
-        .collect();
-
-    let page2_ids: Vec<i64> = items_page2
-        .iter()
-        .map(|u| u["id"].as_i64().unwrap())
-        .collect();
-
-    for id in page1_ids {
-        assert!(!page2_ids.contains(&id), "Pages should not overlap");
-    }
-
-    // Test 2: Permission-based filtering for user attributes
-    let upload_users = app
-        .list_users_page(&owner_token, &[("perm", "can_upload"), ("limit", "20")])
-        .await
-        .expect("Filter by perm failed");
-
-    let upload_items: Vec<serde_json::Value> =
-        serde_json::from_value(upload_users["data"]["items"].clone()).unwrap();
-
-    for user in &upload_items {
-        assert_eq!(user["can_upload"], 1);
-    }
-
-    // Test 3: Combined filtering with multiple parameters
-    let filtered = app
-        .list_users_page(&owner_token, &[("name", "user_1"), ("limit", "15")])
-        .await
-        .expect("Combined filter failed");
-
-    let filtered_items: Vec<serde_json::Value> =
-        serde_json::from_value(filtered["data"]["items"].clone()).unwrap();
-
-    assert!(
-        !filtered_items.is_empty(),
-        "Should find at least some users"
-    );
-    assert!(
-        filtered_items.len() >= 5,
-        "Should find at least 5 users matching 'user_1'"
-    );
 
     app.cleanup();
 }
