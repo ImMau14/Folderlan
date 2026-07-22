@@ -4,7 +4,7 @@
  */
 
 import { type FC, useState, useEffect } from "react"
-import { useLocation } from "react-router-dom" // Link ya no se importa
+import { useLocation } from "react-router-dom"
 
 import { FolderlanSvg } from "@shared/components/FolderlanSvg"
 import MenuLink from "./components/MenuLink"
@@ -13,11 +13,13 @@ import { TiUploadOutline, TiDownloadOutline, TiUserOutline } from "react-icons/t
 import { FiSettings } from "react-icons/fi"
 import type { IconType } from "react-icons"
 
+import { useI18n } from "@i18n/context/I18nContext"
+
 export type View = "upload" | "download" | "config" | "users"
 
 interface MenuOption {
   name: View
-  label: string
+  labelKey: string
   icon: IconType
   adminOnly?: boolean
 }
@@ -28,15 +30,16 @@ interface MenuProps {
 }
 
 const OPTIONS: MenuOption[] = [
-  { name: "upload", label: "Upload", icon: TiUploadOutline },
-  { name: "download", label: "Download", icon: TiDownloadOutline },
-  { name: "config", label: "Config", icon: FiSettings },
-  { name: "users", label: "Users", icon: TiUserOutline, adminOnly: true },
+  { name: "upload", labelKey: "menu.upload", icon: TiUploadOutline },
+  { name: "download", labelKey: "menu.download", icon: TiDownloadOutline },
+  { name: "config", labelKey: "menu.config", icon: FiSettings },
+  { name: "users", labelKey: "menu.users", icon: TiUserOutline, adminOnly: true },
 ]
 
 export const Menu: FC<MenuProps> = ({ basePath = "/dashboard", isOwner = false }) => {
   const [activeView, setActiveView] = useState<View | null>(null)
   const location = useLocation()
+  const { t } = useI18n()
 
   useEffect(() => {
     const match = OPTIONS.find((opt) => location.pathname.startsWith(`${basePath}/${opt.name}`))
@@ -53,7 +56,9 @@ export const Menu: FC<MenuProps> = ({ basePath = "/dashboard", isOwner = false }
       </header>
 
       <section className="flex flex-col gap-4 px-4">
-        <h1 className="px-4 font-body text-sm font-bold tracking-wide text-ui-text-muted">Menu</h1>
+        <h1 className="px-4 font-body text-sm font-bold tracking-wide text-ui-text-muted">
+          {t("menu.title")}
+        </h1>
         <nav>
           <ul className="stagger-group flex flex-col gap-4">
             {visibleOptions.map((option) => (
@@ -61,7 +66,7 @@ export const Menu: FC<MenuProps> = ({ basePath = "/dashboard", isOwner = false }
                 key={option.name}
                 to={`${basePath}/${option.name}`}
                 icon={option.icon}
-                label={option.label}
+                label={t(option.labelKey)}
                 isActive={activeView === option.name}
               />
             ))}

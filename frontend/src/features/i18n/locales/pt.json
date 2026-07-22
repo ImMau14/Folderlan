@@ -30,6 +30,71 @@
     "checkingError": "Erro ao verificar a base de dados",
     "refreshError": "Erro de atualização"
   },
+  "menu": {
+    "title": "Menu",
+    "upload": "Enviar",
+    "download": "Baixar",
+    "config": "Config",
+    "users": "Usuários"
+  },
+  "topbar": {
+    "account": "Conta",
+    "unknown": "Desconhecido",
+    "darkMode": "Modo escuro",
+    "loggingOut": "Saindo...",
+    "logOut": "Sair",
+    "pageTitles": {
+      "upload": "Enviar arquivos",
+      "download": "Baixar arquivos",
+      "config": "Configurações",
+      "users": "Gerenciamento de usuários",
+      "dashboard": "Painel"
+    }
+  },
+  "upload": {
+    "dropZone": {
+      "title": "Enviar arquivos",
+      "description": "Arraste seus arquivos aqui ou selecione manualmente",
+      "selectFiles": "Selecionar arquivos",
+      "filesReady": "{{count}} arquivo(s) pronto(s)",
+      "totalSize": "{{size}} no total"
+    },
+    "queue": {
+      "title": "Fila de arquivos",
+      "filesInQueue": "{{count}} arquivo(s) na fila",
+      "completed": "{{count}} concluídos",
+      "emptyTitle": "Fila vazia",
+      "emptyDescription": "Os arquivos selecionados aparecerão aqui para iniciar o envio.",
+      "startAll": "Iniciar todos os envios",
+      "pauseAll": "Pausar todos os envios",
+      "startAllLabel": "Iniciar tudo",
+      "pauseAllLabel": "Pausar tudo"
+    },
+    "file": {
+      "error": "Erro",
+      "completed": "Concluído",
+      "pauseUpload": "Pausar envio",
+      "restartNotAvailable": "Reinício não disponível",
+      "retryUpload": "Repetir envio",
+      "startResume": "Iniciar / retomar envio",
+      "pause": "Pausar",
+      "start": "Iniciar",
+      "remove": "Remover arquivo"
+    },
+    "summary": {
+      "title": "Resumo",
+      "totalFiles": "Total de arquivos: {{count}}",
+      "totalSize": "Tamanho total: {{size}}"
+    },
+    "toast": {
+      "authRequired": "Autenticação necessária",
+      "authRequiredDesc": "Você precisa fazer login para enviar arquivos.",
+      "fileUploaded": "Arquivo enviado",
+      "fileUploadedDesc": "O arquivo \"{{name}}\" foi enviado com sucesso.",
+      "uploadError": "Erro no envio",
+      "uploadErrorDesc": "Não foi possível enviar {{name}}."
+    }
+  },
   "setup": {
     "welcomeTitle": "Bem-vindo ao Folderlan, sinta-se em casa!",
     "welcomeDescription": "Para começar, pressione o botão abaixo para criar sua conta de proprietário e começar a compartilhar arquivos entre todos os seus dispositivos.",

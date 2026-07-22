@@ -1,6 +1,6 @@
 /**
- * Página de subida de archivos con diseño responsive.
- * En móvil apila las secciones; en escritorio las muestra lado a lado.
+ * File upload page with responsive design.
+ * On mobile it stacks sections; on desktop it shows them side by side.
  */
 
 import { useCallback, useMemo, useRef, useState, type FC } from "react"
@@ -8,6 +8,7 @@ import type { CancelTokenSource } from "axios"
 
 import { useAuth } from "@auth/context/AuthContext"
 import { useToast } from "@toast/context/ToastContext"
+import { useI18n } from "@i18n/context/I18nContext"
 import ApiClient from "@shared/utils/ApiClient"
 import formatBytes from "@shared/utils/formatBytes"
 
@@ -26,6 +27,7 @@ const createQueueItem = (file: File): UploadQueueItem => ({
 export const UploadPage: FC = () => {
   const { token } = useAuth()
   const { toast } = useToast()
+  const { t } = useI18n()
   const cancelTokenMap = useRef<Record<string, CancelTokenSource | null>>({})
   const [files, setFiles] = useState<UploadQueueItem[]>([])
 
@@ -83,8 +85,8 @@ export const UploadPage: FC = () => {
       if (!token) {
         toast({
           type: "error",
-          title: "Autenticación requerida",
-          description: "Debes iniciar sesión para subir archivos.",
+          title: t("upload.toast.authRequired"),
+          description: t("upload.toast.authRequiredDesc"),
           duration: 4000,
         })
         updateFile(key, { status: "idle" })
@@ -111,8 +113,8 @@ export const UploadPage: FC = () => {
         updateFile(key, { status: "done", progress: 100, error: undefined })
         toast({
           type: "success",
-          title: "Archivo subido",
-          description: `El archivo "${item.file.name}" se subió correctamente.`,
+          title: t("upload.toast.fileUploaded"),
+          description: t("upload.toast.fileUploadedDesc", { name: item.file.name }),
           duration: 3500,
         })
         return
@@ -125,17 +127,17 @@ export const UploadPage: FC = () => {
 
       updateFile(key, {
         status: "error",
-        error: result.error?.message ?? "Error al subir el archivo",
+        error: result.error?.message ?? t("upload.toast.uploadErrorDesc", { name: item.file.name }),
       })
 
       toast({
         type: "error",
-        title: "Error de subida",
-        description: result.error?.message ?? `No se pudo subir ${item.file.name}.`,
+        title: t("upload.toast.uploadError"),
+        description: t("upload.toast.uploadErrorDesc", { name: item.file.name }),
         duration: 5000,
       })
     },
-    [apiClient, files, token, toast, updateFile]
+    [apiClient, files, token, toast, updateFile, t]
   )
 
   const handleToggleFile = useCallback(
@@ -169,20 +171,22 @@ export const UploadPage: FC = () => {
 
   return (
     <div className="grid grid-cols-1 gap-6 p-4 lg:grid-cols-2 lg:pt-0">
-      {/* Columna izquierda: zona de arrastre y resumen */}
+      {/* Left column: drop zone and summary */}
       <div className="flex flex-col gap-6">
         <DropZone onFilesChange={addFiles} files={files.map((item) => item.file)} />
 
         <div className="rounded-3xl border border-ui-border bg-ui-base p-6 shadow-ui">
-          <h2 className="font-heading text-2xl tracking-wide text-ui-text">Resumen</h2>
+          <h2 className="font-heading text-2xl tracking-wide text-ui-text">
+            {t("upload.summary.title")}
+          </h2>
           <div className="mt-4 space-y-2 text-sm text-ui-text-muted">
-            <p>Total de archivos: {files.length}</p>
-            <p>Tamaño total: {formatBytes(totalSize)}</p>
+            <p>{t("upload.summary.totalFiles", { count: files.length })}</p>
+            <p>{t("upload.summary.totalSize", { size: formatBytes(totalSize) })}</p>
           </div>
         </div>
       </div>
 
-      {/* Columna derecha: cola de archivos */}
+      {/* Right column: file queue */}
       <FileQueue
         files={files}
         onRemoveFile={removeFile}

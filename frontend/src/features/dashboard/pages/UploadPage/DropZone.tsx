@@ -1,5 +1,5 @@
 /**
- * Zona de arrastrar y soltar archivos con botón para selección manual.
+ * Drop zone for file uploads with manual selection button.
  */
 
 import { useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FC } from "react"
@@ -8,6 +8,7 @@ import clsx from "clsx"
 
 import FloatingContainer from "../../components/FloatingContainer"
 import formatBytes from "@shared/utils/formatBytes"
+import { useI18n } from "@i18n/context/I18nContext"
 
 interface DropZoneProps {
   onFilesChange?: (files: File[]) => void
@@ -18,6 +19,7 @@ interface DropZoneProps {
 const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, files = [] }) => {
   const [dragActive, setDragActive] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const { t } = useI18n()
 
   const fileCount = files.length
   const totalSize = useMemo(() => files.reduce((sum, file) => sum + file.size, 0), [files])
@@ -80,7 +82,7 @@ const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, files = [] }) => {
             ),
           [dragActive]
         )}
-        aria-label="Soltar archivos aquí o usar el botón para seleccionarlos"
+        aria-label={t("upload.dropZone.description")}
       >
         <input
           ref={inputRef}
@@ -92,10 +94,10 @@ const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, files = [] }) => {
         />
 
         <FaCloudUploadAlt className="mb-4 text-8xl text-green-800/80" />
-        <h1 className="font-heading text-3xl tracking-wide text-ui-text">Subir archivos</h1>
-        <span className="font-body text-ui-text-muted">
-          Arrastra tus archivos aquí o selecciónalos manualmente
-        </span>
+        <h1 className="font-heading text-3xl tracking-wide text-ui-text">
+          {t("upload.dropZone.title")}
+        </h1>
+        <span className="font-body text-ui-text-muted">{t("upload.dropZone.description")}</span>
 
         <button
           type="button"
@@ -105,15 +107,15 @@ const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, files = [] }) => {
           }}
           className="my-4 flex items-center justify-center rounded-full bg-ui-primary px-6 py-2 font-body text-sm font-semibold tracking-wide text-white transition-transform hover:scale-105 active:scale-95"
         >
-          Seleccionar archivos
+          {t("upload.dropZone.selectFiles")}
         </button>
 
         {fileCount > 0 && (
           <div className="mt-4 w-full rounded-2xl bg-ui-front px-4 py-3 text-left text-sm text-ui-text-muted shadow-sm">
             <p className="font-semibold text-ui-text">
-              {fileCount} archivo{fileCount === 1 ? "" : "s"} listo{fileCount === 1 ? "" : "s"}
+              {t("upload.dropZone.filesReady", { count: fileCount })}
             </p>
-            <p>{formatBytes(totalSize)} en total</p>
+            <p>{t("upload.dropZone.totalSize", { size: formatBytes(totalSize) })}</p>
           </div>
         )}
       </div>

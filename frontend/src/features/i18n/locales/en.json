@@ -30,6 +30,71 @@
     "checkingError": "Error checking the database",
     "refreshError": "Refreshing error"
   },
+  "menu": {
+    "title": "Menu",
+    "upload": "Upload",
+    "download": "Download",
+    "config": "Config",
+    "users": "Users"
+  },
+  "topbar": {
+    "account": "Account",
+    "unknown": "Unknown",
+    "darkMode": "Dark mode",
+    "loggingOut": "Logging out...",
+    "logOut": "Log Out",
+    "pageTitles": {
+      "upload": "Upload Files",
+      "download": "Download Files",
+      "config": "Configuration",
+      "users": "User Management",
+      "dashboard": "Dashboard"
+    }
+  },
+  "upload": {
+    "dropZone": {
+      "title": "Upload files",
+      "description": "Drag your files here or select them manually",
+      "selectFiles": "Select files",
+      "filesReady": "{{count}} file(s) ready",
+      "totalSize": "{{size}} total"
+    },
+    "queue": {
+      "title": "File queue",
+      "filesInQueue": "{{count}} file(s) in queue",
+      "completed": "{{count}} completed",
+      "emptyTitle": "Empty queue",
+      "emptyDescription": "Selected files will appear here to start uploading.",
+      "startAll": "Start all uploads",
+      "pauseAll": "Pause all uploads",
+      "startAllLabel": "Start all",
+      "pauseAllLabel": "Pause all"
+    },
+    "file": {
+      "error": "Error",
+      "completed": "Completed",
+      "pauseUpload": "Pause upload",
+      "restartNotAvailable": "Restart not available",
+      "retryUpload": "Retry upload",
+      "startResume": "Start / resume upload",
+      "pause": "Pause",
+      "start": "Start",
+      "remove": "Remove file"
+    },
+    "summary": {
+      "title": "Summary",
+      "totalFiles": "Total files: {{count}}",
+      "totalSize": "Total size: {{size}}"
+    },
+    "toast": {
+      "authRequired": "Authentication required",
+      "authRequiredDesc": "You must log in to upload files.",
+      "fileUploaded": "File uploaded",
+      "fileUploadedDesc": "The file \"{{name}}\" was uploaded successfully.",
+      "uploadError": "Upload error",
+      "uploadErrorDesc": "Could not upload {{name}}."
+    }
+  },
   "setup": {
     "welcomeTitle": "Welcome to Folderlan, feel at home!",
     "welcomeDescription": "To get started, press the button below to create your owner account and begin sharing files between all your devices.",

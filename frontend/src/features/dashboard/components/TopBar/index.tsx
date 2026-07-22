@@ -12,17 +12,19 @@ import { FaGear } from "react-icons/fa6"
 
 import { useAuth } from "@auth/context/AuthContext"
 import { useTheme } from "@theme/context/ThemeContext"
+import { useI18n } from "@i18n/context/I18nContext"
 
-const PAGE_TITLES: Record<string, string> = {
-  upload: "Upload Files",
-  download: "Download Files",
-  config: "Configuration",
-  users: "User Management",
+const PAGE_TITLE_KEYS: Record<string, string> = {
+  upload: "topbar.pageTitles.upload",
+  download: "topbar.pageTitles.download",
+  config: "topbar.pageTitles.config",
+  users: "topbar.pageTitles.users",
 }
 
 export const TopBar: FC = () => {
   const { user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
+  const { t } = useI18n()
   const location = useLocation()
   const isDark = theme === "dark"
 
@@ -66,8 +68,9 @@ export const TopBar: FC = () => {
 
   const pageTitle = useMemo(() => {
     const segment = location.pathname.split("/").pop() || ""
-    return PAGE_TITLES[segment] ?? "Dashboard"
-  }, [location.pathname])
+    const key = PAGE_TITLE_KEYS[segment]
+    return key ? t(key) : t("topbar.pageTitles.dashboard")
+  }, [location.pathname, t])
 
   const initials = user?.username
     ? user.username
@@ -88,7 +91,7 @@ export const TopBar: FC = () => {
           ref={avatarRef}
           onClick={() => setOpenDropdown((prev) => !prev)}
           className="btn-glass flex h-10 w-10 select-none items-center justify-center rounded-full font-body text-sm font-bold text-ui-text shadow-sm transition-transform hover:scale-105 active:scale-95"
-          aria-label="User menu"
+          aria-label={t("topbar.account")}
         >
           {initials}
         </button>
@@ -105,10 +108,10 @@ export const TopBar: FC = () => {
             >
               <div className="flex flex-col px-3 py-2">
                 <span className="text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
-                  Account
+                  {t("topbar.account")}
                 </span>
                 <span className="truncate text-sm font-medium text-ui-text">
-                  {user?.username ?? "Unknown"}
+                  {user?.username ?? t("topbar.unknown")}
                 </span>
                 <span className="text-xs capitalize text-ui-text-muted">
                   {user?.role ?? "visitor"}
@@ -120,7 +123,7 @@ export const TopBar: FC = () => {
               <div className="hover:bg-ui-highlight/30 flex w-full items-center justify-between rounded-xl px-3 py-2 text-ui-text">
                 <div className="flex items-center gap-2.5">
                   <FiMoon className="h-4 w-4 text-ui-text-muted" />
-                  <span>Dark mode</span>
+                  <span>{t("topbar.darkMode")}</span>
                 </div>
                 <button
                   type="button"
@@ -155,12 +158,12 @@ export const TopBar: FC = () => {
                       >
                         <FaGear className="h-4 w-4 animate-spin" />
                       </motion.div>
-                      <span>Logging out...</span>
+                      <span>{t("topbar.loggingOut")}</span>
                     </>
                   ) : (
                     <>
                       <FiLogOut className="h-4 w-4" />
-                      <span>Log Out</span>
+                      <span>{t("topbar.logOut")}</span>
                     </>
                   )}
                 </motion.div>

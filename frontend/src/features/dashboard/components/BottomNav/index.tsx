@@ -10,20 +10,22 @@ import { TiUploadOutline, TiDownloadOutline, TiUserOutline } from "react-icons/t
 import { FiSettings } from "react-icons/fi"
 import type { IconType } from "react-icons"
 
+import { useI18n } from "@i18n/context/I18nContext"
+
 type View = "upload" | "download" | "config" | "users"
 
 interface NavItem {
   name: View
-  label: string
+  labelKey: string
   icon: IconType
   adminOnly?: boolean
 }
 
 const ITEMS: NavItem[] = [
-  { name: "upload", label: "Upload", icon: TiUploadOutline },
-  { name: "download", label: "Download", icon: TiDownloadOutline },
-  { name: "config", label: "Config", icon: FiSettings },
-  { name: "users", label: "Users", icon: TiUserOutline, adminOnly: true },
+  { name: "upload", labelKey: "menu.upload", icon: TiUploadOutline },
+  { name: "download", labelKey: "menu.download", icon: TiDownloadOutline },
+  { name: "config", labelKey: "menu.config", icon: FiSettings },
+  { name: "users", labelKey: "menu.users", icon: TiUserOutline, adminOnly: true },
 ]
 
 interface BottomNavProps {
@@ -34,6 +36,7 @@ export const BottomNav: FC<BottomNavProps> = ({ isOwner = false }) => {
   const [activeView, setActiveView] = useState<View | null>(null)
   const location = useLocation()
   const navigate = useNavigate()
+  const { t } = useI18n()
 
   useEffect(() => {
     const match = ITEMS.find((item) => location.pathname.startsWith(`/dashboard/${item.name}`))
@@ -57,7 +60,7 @@ export const BottomNav: FC<BottomNavProps> = ({ isOwner = false }) => {
                 }`}
               >
                 <Icon className="h-5 w-5" />
-                <span className="font-body text-xs">{item.label}</span>
+                <span className="font-body text-xs">{t(item.labelKey)}</span>
               </button>
             </li>
           )

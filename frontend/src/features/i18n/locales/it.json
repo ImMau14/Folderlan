@@ -30,6 +30,71 @@
     "checkingError": "Errore durante il controllo del database",
     "refreshError": "Errore di aggiornamento"
   },
+  "menu": {
+    "title": "Menu",
+    "upload": "Carica",
+    "download": "Scarica",
+    "config": "Config",
+    "users": "Utenti"
+  },
+  "topbar": {
+    "account": "Account",
+    "unknown": "Sconosciuto",
+    "darkMode": "Modalità scura",
+    "loggingOut": "Disconnessione in corso...",
+    "logOut": "Esci",
+    "pageTitles": {
+      "upload": "Carica file",
+      "download": "Scarica file",
+      "config": "Configurazione",
+      "users": "Gestione utenti",
+      "dashboard": "Pannello"
+    }
+  },
+  "upload": {
+    "dropZone": {
+      "title": "Carica file",
+      "description": "Trascina i tuoi file qui o selezionali manualmente",
+      "selectFiles": "Seleziona file",
+      "filesReady": "{{count}} file pronti",
+      "totalSize": "{{size}} totale"
+    },
+    "queue": {
+      "title": "Coda file",
+      "filesInQueue": "{{count}} file in coda",
+      "completed": "{{count}} completati",
+      "emptyTitle": "Coda vuota",
+      "emptyDescription": "I file selezionati appariranno qui per iniziare il caricamento.",
+      "startAll": "Avvia tutti i caricamenti",
+      "pauseAll": "Pausa tutti i caricamenti",
+      "startAllLabel": "Avvia tutto",
+      "pauseAllLabel": "Pausa tutto"
+    },
+    "file": {
+      "error": "Errore",
+      "completed": "Completato",
+      "pauseUpload": "Pausa caricamento",
+      "restartNotAvailable": "Riavvio non disponibile",
+      "retryUpload": "Riprova caricamento",
+      "startResume": "Avvia / riprendi caricamento",
+      "pause": "Pausa",
+      "start": "Avvia",
+      "remove": "Rimuovi file"
+    },
+    "summary": {
+      "title": "Riepilogo",
+      "totalFiles": "Totale file: {{count}}",
+      "totalSize": "Dimensione totale: {{size}}"
+    },
+    "toast": {
+      "authRequired": "Autenticazione richiesta",
+      "authRequiredDesc": "Devi effettuare l'accesso per caricare file.",
+      "fileUploaded": "File caricato",
+      "fileUploadedDesc": "Il file \"{{name}}\" è stato caricato con successo.",
+      "uploadError": "Errore di caricamento",
+      "uploadErrorDesc": "Impossibile caricare {{name}}."
+    }
+  },
   "setup": {
     "welcomeTitle": "Benvenuto su Folderlan, sentiti a casa!",
     "welcomeDescription": "Per iniziare, premi il pulsante qui sotto per creare il tuo account proprietario e condividere file tra tutti i tuoi dispositivi.",

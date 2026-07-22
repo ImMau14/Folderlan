@@ -1,5 +1,5 @@
 /**
- * Cola de archivos para subir, con controles globales y lista de elementos.
+ * File upload queue with global controls and item list.
  */
 
 import { type FC } from "react"
@@ -9,6 +9,7 @@ import { FaPlay, FaStop } from "react-icons/fa6"
 import FloatingContainer from "../../components/FloatingContainer"
 import FileContainer from "./FileContainer"
 import type { UploadQueueStatus } from "./FileContainer"
+import { useI18n } from "@i18n/context/I18nContext"
 
 export interface UploadQueueItem {
   key: string
@@ -34,6 +35,7 @@ export const FileQueue: FC<FileQueueProps> = ({
   onPauseAll,
 }) => {
   const completedCount = files.filter((file) => file.status === "done").length
+  const { t } = useI18n()
 
   return (
     <FloatingContainer className="animate-fall-on-2 brightness-[99%] filter">
@@ -41,13 +43,15 @@ export const FileQueue: FC<FileQueueProps> = ({
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h1 className="font-heading text-3xl tracking-wide text-ui-text">Cola de archivos</h1>
+              <h1 className="font-heading text-3xl tracking-wide text-ui-text">
+                {t("upload.queue.title")}
+              </h1>
               <p className="text-sm text-ui-text-muted">
-                {files.length} archivo{files.length === 1 ? "" : "s"} en cola
+                {t("upload.queue.filesInQueue", { count: files.length })}
               </p>
             </div>
             <div className="rounded-2xl border border-ui-border bg-ui-front px-3 py-2 text-sm text-ui-text-muted">
-              {completedCount}/{files.length} completados
+              {t("upload.queue.completed", { count: completedCount })}/{files.length}
             </div>
           </div>
         </div>
@@ -56,9 +60,11 @@ export const FileQueue: FC<FileQueueProps> = ({
           {files.length === 0 ? (
             <>
               <GiFiles className="mb-4 text-9xl text-green-800/80" />
-              <h2 className="font-heading text-3xl tracking-wide text-ui-text">Cola vacía</h2>
+              <h2 className="font-heading text-3xl tracking-wide text-ui-text">
+                {t("upload.queue.emptyTitle")}
+              </h2>
               <p className="px-8 pb-20 text-center font-body text-ui-text">
-                Los archivos seleccionados aparecerán aquí para iniciar la subida.
+                {t("upload.queue.emptyDescription")}
               </p>
             </>
           ) : (
@@ -83,21 +89,21 @@ export const FileQueue: FC<FileQueueProps> = ({
             <button
               onClick={onStartAll}
               className="border-ui-border-muted/50 rounded-xl border-2 bg-ui-front p-2 shadow-ui transition-transform duration-150 hover:scale-110"
-              aria-label="Iniciar todas las subidas"
-              title="Iniciar todo"
+              aria-label={t("upload.queue.startAll")}
+              title={t("upload.queue.startAllLabel")}
             >
               <FaPlay className="text-ui-text/80" aria-hidden />
-              <span className="sr-only">Iniciar todo</span>
+              <span className="sr-only">{t("upload.queue.startAllLabel")}</span>
             </button>
 
             <button
               onClick={onPauseAll}
               className="border-ui-border-muted/50 rounded-xl border-2 bg-ui-front p-2 shadow-ui transition-transform duration-150 hover:scale-110"
-              aria-label="Pausar todas las subidas"
-              title="Pausar todo"
+              aria-label={t("upload.queue.pauseAll")}
+              title={t("upload.queue.pauseAllLabel")}
             >
               <FaStop className="text-ui-text/80" aria-hidden />
-              <span className="sr-only">Pausar todo</span>
+              <span className="sr-only">{t("upload.queue.pauseAllLabel")}</span>
             </button>
           </div>
         )}

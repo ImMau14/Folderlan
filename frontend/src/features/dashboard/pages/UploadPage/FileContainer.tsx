@@ -1,5 +1,5 @@
 /**
- * Tarjeta de un archivo en la cola de subida con barra de progreso y acciones.
+ * File card in upload queue with progress bar and actions.
  */
 
 import { type FC } from "react"
@@ -8,6 +8,7 @@ import { FaFile, FaPlay, FaStop } from "react-icons/fa6"
 import { IoClose } from "react-icons/io5"
 
 import formatBytes from "@shared/utils/formatBytes"
+import { useI18n } from "@i18n/context/I18nContext"
 
 export type UploadQueueStatus = "idle" | "uploading" | "paused" | "done" | "error"
 
@@ -31,6 +32,7 @@ export const FileContainer: FC<FileContainerProps> = ({
   const isUploading = status === "uploading"
   const isDone = status === "done"
   const isError = status === "error"
+  const { t } = useI18n()
 
   return (
     <article className="border-ui-border-muted/50 flex w-full flex-col gap-2 rounded-2xl border-2 bg-ui-front p-3 shadow-sm transition-transform duration-100 hover:scale-105 sm:flex-row sm:items-center sm:gap-4">
@@ -45,7 +47,7 @@ export const FileContainer: FC<FileContainerProps> = ({
           <p className="text-xs text-ui-text-muted">{formatBytes(file.size)}</p>
         </div>
         <div className="text-xs text-ui-text-muted">
-          {isError ? "Error" : isDone ? "Completado" : status}
+          {isError ? t("upload.file.error") : isDone ? t("upload.file.completed") : status}
         </div>
       </div>
 
@@ -68,21 +70,21 @@ export const FileContainer: FC<FileContainerProps> = ({
             disabled={isDone}
             aria-label={
               isUploading
-                ? "Pausar subida"
+                ? t("upload.file.pauseUpload")
                 : isDone
-                  ? "Reiniciar no disponible"
+                  ? t("upload.file.restartNotAvailable")
                   : isError
-                    ? "Reintentar subida"
-                    : "Iniciar / reanudar subida"
+                    ? t("upload.file.retryUpload")
+                    : t("upload.file.startResume")
             }
             title={
               isUploading
-                ? "Pausar"
+                ? t("upload.file.pause")
                 : isDone
-                  ? "Completado"
+                  ? t("upload.file.completed")
                   : isError
-                    ? "Reintentar"
-                    : "Iniciar / Reanudar"
+                    ? t("upload.file.retryUpload")
+                    : t("upload.file.startResume")
             }
           >
             {isUploading ? (
@@ -90,12 +92,18 @@ export const FileContainer: FC<FileContainerProps> = ({
             ) : (
               <FaPlay className="text-sm" aria-hidden />
             )}
-            <span className="sr-only">{isUploading ? "Pausar" : "Iniciar"}</span>
+            <span className="sr-only">
+              {isUploading ? t("upload.file.pause") : t("upload.file.start")}
+            </span>
           </button>
 
-          <button onClick={onRemove} aria-label="Eliminar archivo" title="Eliminar">
+          <button
+            onClick={onRemove}
+            aria-label={t("upload.file.remove")}
+            title={t("upload.file.remove")}
+          >
             <IoClose className="text-sm text-red-800" aria-hidden />
-            <span className="sr-only">Eliminar</span>
+            <span className="sr-only">{t("upload.file.remove")}</span>
           </button>
         </div>
       </div>

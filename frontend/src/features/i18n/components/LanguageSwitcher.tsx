@@ -18,7 +18,6 @@ interface LanguageOption {
   label: string
 }
 
-// Mapping between locale codes and translation keys for language labels
 const LANGUAGE_LABEL_KEYS: Record<string, string> = {
   en: "language.english",
   es: "language.spanish",
@@ -32,7 +31,6 @@ export const LanguageSwitcher: FC<LanguageSwitcherProps> = ({ className, variant
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const menuRef = useRef<HTMLUListElement | null>(null)
 
-  // Generate language options from supported locales
   const options = useMemo<LanguageOption[]>(() => {
     return SUPPORTED_LOCALES.map((code) => ({
       code,
@@ -61,7 +59,6 @@ export const LanguageSwitcher: FC<LanguageSwitcherProps> = ({ className, variant
     [closeMenu, setLocale]
   )
 
-  // Close menu when clicking outside or pressing Escape
   useEffect(() => {
     if (!isOpen) {
       return
@@ -127,8 +124,6 @@ export const LanguageSwitcher: FC<LanguageSwitcherProps> = ({ className, variant
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.18 }}
-            // Antes: clases con bg-white/90, etc.
-            // Ahora: vidrio normal (puedes usar "glass-smoked" si prefieres más oscuro)
             className="glass absolute right-0 z-50 mt-3 w-48 overflow-hidden rounded-2xl p-2 text-sm font-medium"
           >
             {options.map((option) => {
@@ -141,7 +136,6 @@ export const LanguageSwitcher: FC<LanguageSwitcherProps> = ({ className, variant
                     aria-selected={isActive}
                     onClick={() => handleSelect(option.code)}
                     className={clsx(
-                      // Uso de la paleta "ui" en lugar de colores fijos
                       "hover:bg-ui-highlight/30 flex w-full items-center justify-between rounded-xl px-3 py-2 transition hover:text-ui-primary",
                       isActive ? "bg-ui-highlight/40 text-ui-primary" : "text-ui-text"
                     )}
