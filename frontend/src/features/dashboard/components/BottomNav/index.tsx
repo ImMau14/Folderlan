@@ -46,8 +46,8 @@ export const BottomNav: FC<BottomNavProps> = ({ isOwner = false }) => {
   const visibleItems = ITEMS.filter((item) => !item.adminOnly || isOwner)
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-ui-border bg-ui-base">
-      <ul className="flex h-16 items-center justify-around">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-ui-border bg-ui-base pb-[env(safe-area-inset-bottom)]">
+      <ul className="flex h-16 items-center justify-around px-2">
         {visibleItems.map((item) => {
           const isActive = activeView === item.name
           const Icon = item.icon
@@ -55,12 +55,13 @@ export const BottomNav: FC<BottomNavProps> = ({ isOwner = false }) => {
             <li key={item.name} className="flex-1">
               <button
                 onClick={() => navigate(`/dashboard/${item.name}`)}
-                className={`flex w-full flex-col items-center justify-center gap-1 py-1 transition-colors ${
+                className={`flex w-full flex-col items-center justify-center gap-1 rounded-xl py-2 transition-all duration-200 ${
                   isActive ? "text-ui-primary" : "text-ui-text-muted hover:text-ui-text"
                 }`}
               >
                 <Icon className="h-5 w-5" />
-                <span className="font-body text-xs">{t(item.labelKey)}</span>
+                <span className="font-body text-[11px] font-semibold">{t(item.labelKey)}</span>
+                {isActive && <span className="h-1 w-1 rounded-full bg-ui-primary" />}
               </button>
             </li>
           )

@@ -1,17 +1,11 @@
-/**
- * File upload page with responsive design.
- * On mobile it stacks sections; on desktop it shows them side by side.
- */
-
 import { useCallback, useMemo, useRef, useState, type FC } from "react"
 import type { CancelTokenSource } from "axios"
 
 import { useAuth } from "@auth/context/AuthContext"
 import { useToast } from "@toast/context/ToastContext"
 import { useI18n } from "@i18n/context/I18nContext"
-import ApiClient from "@shared/utils/ApiClient"
-import formatBytes from "@shared/utils/formatBytes"
 
+import ApiClient from "@shared/utils/ApiClient"
 import DropZone from "./DropZone"
 import FileQueue, { type UploadQueueItem } from "./FileQueue"
 
@@ -28,6 +22,7 @@ export const UploadPage: FC = () => {
   const { token } = useAuth()
   const { toast } = useToast()
   const { t } = useI18n()
+
   const cancelTokenMap = useRef<Record<string, CancelTokenSource | null>>({})
   const [files, setFiles] = useState<UploadQueueItem[]>([])
 
@@ -80,6 +75,7 @@ export const UploadPage: FC = () => {
   const uploadOneFile = useCallback(
     async (key: string) => {
       const item = files.find((file) => file.key === key)
+
       if (!item) return
 
       if (!token) {
@@ -111,6 +107,7 @@ export const UploadPage: FC = () => {
 
       if (result.success) {
         updateFile(key, { status: "done", progress: 100, error: undefined })
+
         toast({
           type: "success",
           title: t("upload.toast.fileUploaded"),
@@ -167,26 +164,10 @@ export const UploadPage: FC = () => {
     })
   }, [files, pauseUpload])
 
-  const totalSize = useMemo(() => files.reduce((sum, item) => sum + item.file.size, 0), [files])
-
   return (
-    <div className="grid grid-cols-1 gap-6 p-4 lg:grid-cols-2 lg:pt-0">
-      {/* Left column: drop zone and summary */}
-      <div className="flex flex-col gap-6">
-        <DropZone onFilesChange={addFiles} files={files.map((item) => item.file)} />
+    <div className="grid grid-cols-1 gap-6 p-6 lg:h-full lg:min-h-0 lg:grid-cols-2 lg:grid-rows-[1fr]">
+      <DropZone onFilesChange={addFiles} files={files.map((item) => item.file)} />
 
-        <div className="rounded-3xl border border-ui-border bg-ui-base p-6 shadow-ui">
-          <h2 className="font-heading text-2xl tracking-wide text-ui-text">
-            {t("upload.summary.title")}
-          </h2>
-          <div className="mt-4 space-y-2 text-sm text-ui-text-muted">
-            <p>{t("upload.summary.totalFiles", { count: files.length })}</p>
-            <p>{t("upload.summary.totalSize", { size: formatBytes(totalSize) })}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Right column: file queue */}
       <FileQueue
         files={files}
         onRemoveFile={removeFile}

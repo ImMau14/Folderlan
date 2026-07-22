@@ -68,7 +68,7 @@ const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, files = [] }) => {
   const openFileDialog = () => inputRef.current?.click()
 
   return (
-    <FloatingContainer className="animate-fall-on-1">
+    <FloatingContainer className="animate-fall-on-1 h-full border border-ui-border">
       <div
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
@@ -77,8 +77,8 @@ const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, files = [] }) => {
         className={useMemo(
           () =>
             clsx(
-              "flex h-full w-full flex-col items-center justify-center rounded-2xl border-4 border-dashed p-6 text-center transition-colors",
-              dragActive ? "bg-ui-primary/5 border-ui-primary" : "border-ui-border bg-green-700/5"
+              "flex h-full w-full flex-col items-center justify-center rounded-2xl border-[3px] border-dashed p-8 text-center transition-all duration-200",
+              dragActive ? "border-ui-primary-hover" : "border-ui-primary"
             ),
           [dragActive]
         )}
@@ -93,11 +93,13 @@ const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, files = [] }) => {
           onChange={handleInputChange}
         />
 
-        <FaCloudUploadAlt className="mb-4 text-8xl text-green-800/80" />
-        <h1 className="font-heading text-3xl tracking-wide text-ui-text">
+        <FaCloudUploadAlt className="mb-3 text-7xl text-ui-primary" />
+        <h2 className="font-heading text-xl font-bold tracking-tight text-ui-text">
           {t("upload.dropZone.title")}
-        </h1>
-        <span className="font-body text-ui-text-muted">{t("upload.dropZone.description")}</span>
+        </h2>
+        <span className="mt-1 font-body text-sm font-medium text-ui-text-muted">
+          {t("upload.dropZone.description")}
+        </span>
 
         <button
           type="button"
@@ -105,17 +107,19 @@ const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, files = [] }) => {
             e.stopPropagation()
             openFileDialog()
           }}
-          className="my-4 flex items-center justify-center rounded-full bg-ui-primary px-6 py-2 font-body text-sm font-semibold tracking-wide text-white transition-transform hover:scale-105 active:scale-95"
+          className="mt-4 flex items-center justify-center rounded-full bg-ui-primary px-6 py-2.5 font-body text-sm font-semibold tracking-wide text-ui-highlight shadow-md transition-all duration-200 hover:scale-105 hover:bg-ui-primary-hover hover:shadow-lg active:scale-95 dark:text-ui-base"
         >
           {t("upload.dropZone.selectFiles")}
         </button>
 
         {fileCount > 0 && (
-          <div className="mt-4 w-full rounded-2xl bg-ui-front px-4 py-3 text-left text-sm text-ui-text-muted shadow-sm">
+          <div className="mt-5 w-full rounded-2xl bg-ui-front px-4 py-3 text-left text-sm shadow-sm">
             <p className="font-semibold text-ui-text">
               {t("upload.dropZone.filesReady", { count: fileCount })}
             </p>
-            <p>{t("upload.dropZone.totalSize", { size: formatBytes(totalSize) })}</p>
+            <p className="mt-0.5 font-medium text-ui-text-muted">
+              {t("upload.dropZone.totalSize", { size: formatBytes(totalSize) })}
+            </p>
           </div>
         )}
       </div>

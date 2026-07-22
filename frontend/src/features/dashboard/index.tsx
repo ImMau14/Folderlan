@@ -1,9 +1,3 @@
-/**
- * Dashboard layout – responsive container with animated sub‑route transitions.
- * Desktop: sidebar + main content. Mobile: top bar + content + bottom nav.
- * This is the default export of the dashboard feature.
- */
-
 import { Outlet, useLocation } from "react-router-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import { useState, useEffect, type FC } from "react"
@@ -40,7 +34,7 @@ export const DashboardLayout: FC = () => {
         transition={{ duration: 0.3 }}
       >
         <Menu basePath="/dashboard" isOwner={isOwner} />
-        <main className="grid grid-rows-[auto_1fr]">
+        <main className="grid max-h-full grid-rows-[auto_1fr] overflow-hidden">
           <TopBar />
           <AnimatePresence mode="wait">
             <motion.div
@@ -49,7 +43,7 @@ export const DashboardLayout: FC = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.15 }}
-              className="h-full w-full overflow-auto"
+              className="h-full w-full overflow-hidden"
             >
               <Outlet />
             </motion.div>
@@ -68,7 +62,7 @@ export const DashboardLayout: FC = () => {
       transition={{ duration: 0.3 }}
     >
       <TopBar />
-      <main className="flex-1 overflow-auto pb-16">
+      <main className="flex-1 overflow-auto pb-20 scrollbar scrollbar-rounded scrollbar-thin scrollbar-thumb-ui-text-muted">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -76,7 +70,7 @@ export const DashboardLayout: FC = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.15 }}
-            className="h-full w-full"
+            className="min-h-full w-full"
           >
             <Outlet />
           </motion.div>

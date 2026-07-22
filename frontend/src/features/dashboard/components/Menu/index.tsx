@@ -50,17 +50,19 @@ export const Menu: FC<MenuProps> = ({ basePath = "/dashboard", isOwner = false }
 
   return (
     <aside className="stagger-group grid grid-rows-[auto_1fr_auto] border-r border-ui-border bg-ui-base">
-      <header className="flex w-full flex-col gap-4 p-8">
+      <header className="flex w-full flex-col gap-3 px-8 pb-6 pt-8">
         <FolderlanSvg className="w-20 text-ui-text opacity-80" />
-        <h1 className="pt-3 font-heading text-3xl font-bold text-ui-text">Folderlan</h1>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight text-ui-text">
+          Folderlan
+        </h1>
       </header>
 
-      <section className="flex flex-col gap-4 px-4">
-        <h1 className="px-4 font-body text-sm font-bold tracking-wide text-ui-text-muted">
+      <section className="flex flex-col gap-3 px-4 pt-2">
+        <h2 className="px-4 font-body text-[11px] font-bold uppercase tracking-widest text-ui-text-muted">
           {t("menu.title")}
-        </h1>
+        </h2>
         <nav>
-          <ul className="stagger-group flex flex-col gap-4">
+          <ul className="stagger-group flex flex-col gap-1.5">
             {visibleOptions.map((option) => (
               <MenuLink
                 key={option.name}
@@ -74,8 +76,10 @@ export const Menu: FC<MenuProps> = ({ basePath = "/dashboard", isOwner = false }
         </nav>
       </section>
 
-      <div className="flex p-8">
-        <span className="font-body text-xs text-ui-text-muted">v1.0.0</span>
+      <div className="flex px-8 pb-6 pt-4">
+        <span className="rounded-full bg-ui-front px-3 py-1 font-body text-[11px] font-semibold text-ui-text-muted shadow-sm">
+          v1.0.0
+        </span>
       </div>
     </aside>
   )

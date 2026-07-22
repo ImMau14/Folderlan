@@ -35,26 +35,26 @@ export const FileContainer: FC<FileContainerProps> = ({
   const { t } = useI18n()
 
   return (
-    <article className="border-ui-border-muted/50 flex w-full flex-col gap-2 rounded-2xl border-2 bg-ui-front p-3 shadow-sm transition-transform duration-100 hover:scale-105 sm:flex-row sm:items-center sm:gap-4">
-      <div className="flex items-center gap-4">
-        <div className="border-ui-border-muted/40 rounded-xl border-2 bg-ui-base p-2">
-          <FaFile className="text-ui-text/80 text-3xl" aria-hidden />
+    <article className="flex flex-col gap-2 rounded-2xl border-2 border-ui-border-muted bg-ui-front p-3 shadow-sm transition-transform duration-100 hover:scale-105 sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="shrink-0 rounded-xl border-2 border-ui-border-muted bg-ui-base p-2">
+          <FaFile className="text-xl text-ui-primary" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate font-body font-semibold tracking-wide text-ui-text">
+          <h3 className="truncate font-body text-sm font-semibold tracking-wide text-ui-text">
             {file.name}
-          </h1>
-          <p className="text-xs text-ui-text-muted">{formatBytes(file.size)}</p>
+          </h3>
+          <p className="text-xs font-medium text-ui-text-muted">{formatBytes(file.size)}</p>
         </div>
-        <div className="text-xs text-ui-text-muted">
+        <div className="hidden shrink-0 text-xs font-medium text-ui-text-muted sm:block">
           {isError ? t("upload.file.error") : isDone ? t("upload.file.completed") : status}
         </div>
       </div>
 
-      <div className="flex w-full items-center gap-2 sm:w-auto sm:flex-1">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-ui-back">
+      <div className="flex items-center gap-2 sm:shrink-0">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-ui-back sm:w-28">
           <motion.div
-            className={isError ? "h-full bg-red-600" : "h-full bg-green-700"}
+            className={isError ? "h-full bg-ui-danger" : "h-full bg-ui-success"}
             initial={{ width: "0%" }}
             animate={{ width: `${percent}%` }}
             transition={{ duration: 0.2, ease: easeOut }}
@@ -63,11 +63,12 @@ export const FileContainer: FC<FileContainerProps> = ({
           />
         </div>
 
-        <div className="text-ui-text/80 flex gap-2">
+        <div className="flex gap-1">
           <button
             onClick={onToggleStartPause}
             aria-pressed={isUploading}
             disabled={isDone}
+            className="rounded-lg p-1.5 text-ui-primary transition-colors hover:bg-ui-base disabled:opacity-40"
             aria-label={
               isUploading
                 ? t("upload.file.pauseUpload")
@@ -99,16 +100,17 @@ export const FileContainer: FC<FileContainerProps> = ({
 
           <button
             onClick={onRemove}
+            className="rounded-lg p-1.5 text-ui-danger transition-colors hover:bg-ui-base"
             aria-label={t("upload.file.remove")}
             title={t("upload.file.remove")}
           >
-            <IoClose className="text-sm text-red-800" aria-hidden />
+            <IoClose className="text-sm" aria-hidden />
             <span className="sr-only">{t("upload.file.remove")}</span>
           </button>
         </div>
       </div>
 
-      {isError && error ? <p className="text-xs text-red-600">{error}</p> : null}
+      {isError && error ? <p className="text-xs text-ui-danger">{error}</p> : null}
     </article>
   )
 }

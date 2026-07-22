@@ -18,13 +18,13 @@ export default function MenuLink({ to, icon: Icon, label, isActive }: MenuLinkPr
     <li>
       <Link
         to={to}
-        className={`flex w-full items-center gap-3 rounded-lg px-4 py-2 font-body text-sm transition-colors ${
+        className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 font-body text-sm font-medium transition-all duration-200 ${
           isActive
-            ? "bg-ui-primary/20 text-ui-primary"
+            ? "bg-ui-primary/15 font-semibold text-ui-primary"
             : "text-ui-text-muted hover:bg-ui-front hover:text-ui-text"
         }`}
       >
-        <Icon className="h-5 w-5" />
+        <Icon className="h-5 w-5 shrink-0" />
         <span>{label}</span>
       </Link>
     </li>

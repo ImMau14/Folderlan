@@ -81,16 +81,18 @@ export const TopBar: FC = () => {
     : "?"
 
   return (
-    <div className="flex items-center justify-between p-4">
+    <div className="flex items-center justify-between px-6 py-5">
       <div className="flex items-center gap-4">
-        <h1 className="font-heading text-2xl font-bold tracking-wide text-ui-text">{pageTitle}</h1>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight text-ui-text">
+          {pageTitle}
+        </h1>
       </div>
 
       <div className="relative flex items-center gap-3">
         <button
           ref={avatarRef}
           onClick={() => setOpenDropdown((prev) => !prev)}
-          className="btn-glass flex h-10 w-10 select-none items-center justify-center rounded-full font-body text-sm font-bold text-ui-text shadow-sm transition-transform hover:scale-105 active:scale-95"
+          className="flex h-10 w-10 select-none items-center justify-center rounded-full bg-ui-primary font-body text-sm font-bold text-white shadow-md transition-all duration-200 hover:scale-105 hover:bg-ui-primary-hover active:scale-95 active:bg-ui-primary-active"
           aria-label={t("topbar.account")}
         >
           {initials}
@@ -104,26 +106,26 @@ export const TopBar: FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.18 }}
-              className="glass absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-2xl p-2 text-sm font-medium"
+              className="glass absolute right-0 top-14 z-50 w-64 overflow-hidden rounded-2xl p-2 text-sm font-medium"
             >
-              <div className="flex flex-col px-3 py-2">
+              <div className="flex flex-col gap-0.5 px-3 py-2.5">
                 <span className="text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
                   {t("topbar.account")}
                 </span>
-                <span className="truncate text-sm font-medium text-ui-text">
+                <span className="truncate text-sm font-semibold text-ui-text">
                   {user?.username ?? t("topbar.unknown")}
                 </span>
-                <span className="text-xs capitalize text-ui-text-muted">
+                <span className="text-xs font-medium capitalize text-ui-text-muted">
                   {user?.role ?? "visitor"}
                 </span>
               </div>
 
-              <div className="bg-ui-border/60 my-1 h-px" />
+              <div className="mx-2 my-1 h-px bg-ui-border" />
 
-              <div className="hover:bg-ui-highlight/30 flex w-full items-center justify-between rounded-xl px-3 py-2 text-ui-text">
+              <div className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-ui-text transition-colors hover:bg-ui-front">
                 <div className="flex items-center gap-2.5">
                   <FiMoon className="h-4 w-4 text-ui-text-muted" />
-                  <span>{t("topbar.darkMode")}</span>
+                  <span className="font-medium">{t("topbar.darkMode")}</span>
                 </div>
                 <button
                   type="button"
@@ -140,12 +142,12 @@ export const TopBar: FC = () => {
                 </button>
               </div>
 
-              <div className="bg-ui-border/60 my-1 h-px" />
+              <div className="mx-2 my-1 h-px bg-ui-border" />
 
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="flex w-full flex-row items-center gap-2.5 rounded-xl px-3 py-2 text-left text-red-600 transition-colors hover:bg-red-50 disabled:opacity-75 dark:text-red-400 dark:hover:bg-red-950/30"
+                className="flex w-full flex-row items-center gap-2.5 rounded-xl px-3 py-2.5 text-left font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-75 dark:text-red-400 dark:hover:bg-red-950/30"
               >
                 <motion.div className="flex w-full flex-row items-center gap-2.5" layout>
                   {isLoggingOut ? (
