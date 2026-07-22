@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '24'
 
 jobs:
   lint:
@@ -34,7 +34,7 @@ jobs:
       - name: Setup Node (no cache here)
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Get pnpm store path (for cache)
         id: pnpm_store
@@ -84,7 +84,7 @@ jobs:
       - name: Setup Node (no cache here)
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Get pnpm store path (for cache)
         id: pnpm_store
@@ -124,7 +124,7 @@ jobs:
       - name: Setup Node (no cache here)
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Get pnpm store path (for cache)
         id: pnpm_store
