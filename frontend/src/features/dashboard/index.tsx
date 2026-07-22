@@ -1,5 +1,5 @@
-import { Outlet, useLocation } from "react-router-dom"
-import { AnimatePresence, motion } from "framer-motion"
+import { Outlet } from "react-router-dom"
+import { motion } from "framer-motion"
 import { useState, useEffect, type FC } from "react"
 
 import { useAuth } from "@auth/context/AuthContext"
@@ -13,7 +13,6 @@ const MOBILE_BREAKPOINT = 768
 export const DashboardLayout: FC = () => {
   const { user } = useAuth()
   const isOwner = user?.role === "owner"
-  const location = useLocation()
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT)
 
@@ -36,18 +35,9 @@ export const DashboardLayout: FC = () => {
         <Menu basePath="/dashboard" isOwner={isOwner} />
         <main className="grid max-h-full grid-rows-[auto_1fr] overflow-hidden">
           <TopBar />
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.15 }}
-              className="h-full w-full overflow-hidden"
-            >
-              <Outlet />
-            </motion.div>
-          </AnimatePresence>
+          <div className="h-full w-full overflow-hidden">
+            <Outlet />
+          </div>
         </main>
       </motion.div>
     )
@@ -63,18 +53,9 @@ export const DashboardLayout: FC = () => {
     >
       <TopBar />
       <main className="flex-1 overflow-auto pb-20 scrollbar scrollbar-rounded scrollbar-thin scrollbar-thumb-ui-text-muted">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.15 }}
-            className="min-h-full w-full"
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
+        <div className="min-h-full w-full">
+          <Outlet />
+        </div>
       </main>
       <BottomNav isOwner={isOwner} />
     </motion.div>

@@ -158,6 +158,73 @@
       "networkErrorDescription": "Error de red. Inténtalo nuevamente más tarde."
     }
   },
+  "download": {
+    "filters": {
+      "search": "Buscar archivos...",
+      "nameLabel": "Nombre del archivo",
+      "namePlaceholder": "Buscar por nombre",
+      "minSize": "Tamaño mínimo (bytes)",
+      "maxSize": "Tamaño máximo (bytes)",
+      "startDate": "Fecha desde",
+      "endDate": "Fecha hasta",
+      "apply": "Aplicar filtros",
+      "clear": "Limpiar filtros",
+      "toggleFilters": "Alternar filtros"
+    },
+    "table": {
+      "fileName": "Nombre del archivo",
+      "size": "Tamaño",
+      "type": "Tipo",
+      "uploader": "Subido por",
+      "date": "Fecha",
+      "actions": "Acciones",
+      "public": "Público",
+      "noFiles": "No se encontraron archivos",
+      "noFilesDesc": "Intenta ajustar tu búsqueda o filtros.",
+      "loading": "Cargando archivos..."
+    },
+    "actions": {
+      "download": "Descargar",
+      "delete": "Eliminar",
+      "permissions": "Permisos"
+    },
+    "pagination": {
+      "showing": "Mostrando {{start}}-{{end}} de {{total}}",
+      "previous": "Anterior",
+      "next": "Siguiente"
+    },
+    "delete": {
+      "title": "Eliminar archivo",
+      "confirm": "¿Estás seguro de que deseas eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
+      "cancel": "Cancelar",
+      "confirmButton": "Eliminar"
+    },
+    "permissions": {
+      "title": "Permisos del archivo",
+      "noPerms": "Sin permisos concedidos",
+      "grantTitle": "Conceder permiso",
+      "selectUser": "Seleccionar usuario",
+      "accessLevelLabel": "Nivel de acceso",
+      "viewer": "Espectador",
+      "collaborator": "Colaborador",
+      "grantButton": "Conceder",
+      "revokeButton": "Revocar",
+      "close": "Cerrar"
+    },
+    "toast": {
+      "downloaded": "Descarga iniciada",
+      "downloadedDesc": "\"{{name}}\" se está descargando.",
+      "deleteSuccess": "Archivo eliminado",
+      "deleteSuccessDesc": "\"{{name}}\" fue eliminado.",
+      "deleteError": "Error al eliminar",
+      "permGranted": "Permiso concedido",
+      "permGrantedDesc": "El usuario recibió acceso de {{level}}.",
+      "permRevoked": "Permiso revocado",
+      "permRevokedDesc": "El acceso del usuario fue revocado.",
+      "permListError": "Error al cargar permisos",
+      "fetchError": "Error al cargar archivos"
+    }
+  },
   "notFound": {
     "title": "404: Esta página no existe",
     "description": "La página a la que intentas acceder no existe.",
