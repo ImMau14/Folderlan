@@ -19,7 +19,7 @@ env:
 
 jobs:
   lint:
-    name: Lint (ESLint)
+    name: Lint (oxlint)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -64,12 +64,12 @@ jobs:
           echo "PNPM STORE PATH: ${{ steps.pnpm_store.outputs.store_path }}"
           ls -la "${{ steps.pnpm_store.outputs.store_path }}" || true
 
-      - name: Run ESLint
+      - name: Run oxlint
         working-directory: frontend
         run: pnpm run lint
 
   format:
-    name: Format check (Prettier)
+    name: Format check (oxfmt)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -104,12 +104,12 @@ jobs:
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
-      - name: Run Prettier check
+      - name: Run oxfmt check
         working-directory: frontend
         run: pnpm run format:check
 
   type-check:
-    name: Type Check (tsc)
+    name: Type Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -144,6 +144,6 @@ jobs:
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
-      - name: Build
+      - name: Run type-check
         working-directory: frontend
         run: pnpm run type-check
