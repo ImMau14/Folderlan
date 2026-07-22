@@ -188,7 +188,6 @@ pub async fn upload_file(
 
     // Retry registration up to 3 times on transient database errors (e.g. locked)
     let mut attempts = 0;
-    
 
     loop {
         attempts += 1;
