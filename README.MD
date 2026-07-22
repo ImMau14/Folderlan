@@ -6,7 +6,7 @@ Folderlan is the perfect solution for transferring documents, photos, videos, an
 
 ---
 
-<img width="1024" height="600" alt="image" src="https://github.com/user-attachments/assets/bc3f9b90-5524-4ad9-b2b9-ee4bf5aae067" />
+<img width="1024" height="600" alt="image" src="https://pbdecn9fvkmyynkh.public.blob.vercel-storage.com/285shots_so.webp" />
 
 ---
 
