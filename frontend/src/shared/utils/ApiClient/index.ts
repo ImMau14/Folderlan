@@ -294,7 +294,8 @@ export class ApiClient {
         const response = error.response
         let message = `HTTP ${response.status}`
 
-        if (response.headers["content-type"]?.includes("application/json")) {
+        const contentType = response.headers["content-type"]
+        if (typeof contentType === "string" && contentType.includes("application/json")) {
           try {
             const blob = response.data as Blob
             const text = await blob.text()
