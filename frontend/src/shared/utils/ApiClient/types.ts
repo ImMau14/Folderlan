@@ -62,10 +62,10 @@ export const FileItemSchema = z.object({
   name: z.string(),
   size_bytes: z.number(),
   internal_path: z.string(),
-  mime_type: z.string(),
-  uploaded_by: z.union([z.string(), z.number()]),
+  mime_type: z.string().nullable().optional(),
+  uploaded_by: z.union([z.string(), z.number()]).nullable().optional(),
   is_public: z.boolean(),
-  uploaded_at: z.string(),
+  uploaded_at: z.string().nullable().optional(),
   total_count: z.number().optional(),
 })
 

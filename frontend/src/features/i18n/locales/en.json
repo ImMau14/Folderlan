@@ -158,6 +158,74 @@
       "networkErrorDescription": "Network error. Please try again later."
     }
   },
+  "download": {
+    "filters": {
+      "search": "Search files...",
+      "nameLabel": "File name",
+      "namePlaceholder": "Search by name",
+      "minSize": "Min size (bytes)",
+      "maxSize": "Max size (bytes)",
+      "startDate": "From date",
+      "endDate": "To date",
+      "apply": "Apply filters",
+      "clear": "Clear filters",
+      "toggleFilters": "Toggle filters"
+    },
+    "table": {
+      "fileName": "File name",
+      "size": "Size",
+      "type": "Type",
+      "uploader": "Uploader",
+      "date": "Date",
+      "actions": "Actions",
+      "public": "Public",
+      "noFiles": "No files found",
+      "noFilesDesc": "Try adjusting your search or filters.",
+      "loading": "Loading files..."
+    },
+    "actions": {
+      "download": "Download",
+      "delete": "Delete",
+      "permissions": "Permissions"
+    },
+    "pagination": {
+      "showing": "Showing {{start}}-{{end}} of {{total}}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "delete": {
+      "title": "Delete file",
+      "confirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirmButton": "Delete"
+    },
+    "permissions": {
+      "title": "File permissions",
+      "noPerms": "No permissions granted",
+      "currentPerms": "Current permissions",
+      "grantTitle": "Grant permission",
+      "selectUser": "Select a user",
+      "accessLevelLabel": "Access level",
+      "viewer": "Viewer",
+      "collaborator": "Collaborator",
+      "grantButton": "Grant",
+      "revokeButton": "Revoke",
+      "close": "Close"
+    },
+    "toast": {
+      "downloaded": "Download started",
+      "downloadedDesc": "\"{{name}}\" is being downloaded.",
+      "deleteSuccess": "File deleted",
+      "deleteSuccessDesc": "\"{{name}}\" was deleted.",
+      "deleteError": "Delete failed",
+      "permGranted": "Permission granted",
+      "permGrantedDesc": "User has been granted {{level}} access.",
+      "permRevoked": "Permission revoked",
+      "permRevokedDesc": "User access has been revoked.",
+      "permListError": "Failed to load permissions",
+      "fetchError": "Failed to load files"
+    }
+  },
   "notFound": {
     "title": "404: This page does not exist",
     "description": "The page you are trying to access does not exist.",

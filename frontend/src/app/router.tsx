@@ -1,3 +1,4 @@
+import { type ReactNode } from "react"
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import { useAuth } from "@auth/context/AuthContext"
 import { useDatabase } from "@database/context/DatabaseContext"
@@ -21,9 +22,22 @@ function RootRedirect() {
   return <Navigate to="/dashboard" replace />
 }
 
+function RequireDb({ children }: { children: ReactNode }) {
+  const { dbExists } = useDatabase()
+  if (!dbExists) return <Navigate to="/setup" replace />
+  return <>{children}</>
+}
+
 export const router = createBrowserRouter([
   { path: "/", element: <RootRedirect /> },
-  { path: "/login", element: <LoginPage /> },
+  {
+    path: "/login",
+    element: (
+      <RequireDb>
+        <LoginPage />
+      </RequireDb>
+    ),
+  },
   {
     path: "/setup",
     element: (
