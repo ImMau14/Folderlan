@@ -25,7 +25,7 @@ export default function Pagination({
   const { t } = useI18n()
 
   return (
-    <div className="flex w-full items-center justify-between">
+    <div className="flex w-full flex-col items-center gap-3 sm:flex-row sm:justify-between">
       <p className="font-body text-sm text-ui-text-muted">
         {t("download.pagination.showing", {
           start: offset + 1,

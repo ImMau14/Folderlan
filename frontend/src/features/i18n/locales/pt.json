@@ -202,6 +202,7 @@
     "permissions": {
       "title": "Permissões do arquivo",
       "noPerms": "Nenhuma permissão concedida",
+      "currentPerms": "Permissões atuais",
       "grantTitle": "Conceder permissão",
       "selectUser": "Selecionar usuário",
       "accessLevelLabel": "Nível de acesso",

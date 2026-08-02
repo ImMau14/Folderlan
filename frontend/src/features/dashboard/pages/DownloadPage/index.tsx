@@ -48,6 +48,8 @@ export default function DownloadPage() {
     end_date: "",
   })
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const filtersRef = useRef(filters)
+  filtersRef.current = filters
 
   const [permModal, setPermModal] = useState<{
     open: boolean
@@ -94,8 +96,7 @@ export default function DownloadPage() {
   )
 
   useEffect(() => {
-    fetchFiles(offset, filters)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchFiles(offset, filtersRef.current)
   }, [offset, fetchKey, fetchFiles])
 
   const handleFilterChange = useCallback((key: keyof FileFilters, value: string) => {
@@ -258,84 +259,86 @@ export default function DownloadPage() {
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1
 
   return (
-    <div className="flex h-full flex-col gap-6 overflow-y-auto p-6 scrollbar scrollbar-thin scrollbar-thumb-ui-border scrollbar-track-transparent">
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
-        style={{ opacity: 0 }}
-      >
-        <SearchBar
-          filters={filters}
-          showFilters={showFilters}
-          onToggleFilters={() => setShowFilters((s) => !s)}
-          onNameSearch={handleNameSearch}
-          onFilterChange={handleFilterChange}
-          onApplyFilters={applyFilters}
-          onClearFilters={clearFilters}
-        />
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: [0.2, 0, 0, 1], delay: 0.12 }}
-        style={{ opacity: 0 }}
-      >
-        <FileTable
-          files={files}
-          loading={loading}
-          onDownload={handleDownload}
-          onOpenPermModal={openPermModal}
-          onOpenDeleteModal={(file) =>
-            setDeleteModal({ open: true, fileId: file.id, fileName: file.name })
-          }
-        />
-      </motion.div>
-
-      {total > PAGE_SIZE && (
+    <div className="flex h-full flex-col overflow-y-auto scrollbar scrollbar-thin scrollbar-thumb-ui-border scrollbar-track-transparent">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 p-4 sm:gap-6 sm:p-6">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.2, 0, 0, 1], delay: 0.2 }}
+          transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
           style={{ opacity: 0 }}
         >
-          <Pagination
-            total={total}
-            offset={offset}
-            pageSize={PAGE_SIZE}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPrevPage={() => setOffset((p) => Math.max(0, p - PAGE_SIZE))}
-            onNextPage={() =>
-              setOffset((p) => Math.min((totalPages - 1) * PAGE_SIZE, p + PAGE_SIZE))
+          <SearchBar
+            filters={filters}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters((s) => !s)}
+            onNameSearch={handleNameSearch}
+            onFilterChange={handleFilterChange}
+            onApplyFilters={applyFilters}
+            onClearFilters={clearFilters}
+          />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.2, 0, 0, 1], delay: 0.12 }}
+          style={{ opacity: 0 }}
+        >
+          <FileTable
+            files={files}
+            loading={loading}
+            onDownload={handleDownload}
+            onOpenPermModal={openPermModal}
+            onOpenDeleteModal={(file) =>
+              setDeleteModal({ open: true, fileId: file.id, fileName: file.name })
             }
           />
         </motion.div>
-      )}
 
-      <DeleteModal
-        open={deleteModal.open}
-        fileName={deleteModal.fileName}
-        deleting={deleting}
-        onConfirm={handleDeleteConfirm}
-        onClose={() => setDeleteModal({ open: false, fileId: null, fileName: "" })}
-      />
+        {total > PAGE_SIZE && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: [0.2, 0, 0, 1], delay: 0.2 }}
+            style={{ opacity: 0 }}
+          >
+            <Pagination
+              total={total}
+              offset={offset}
+              pageSize={PAGE_SIZE}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPrevPage={() => setOffset((p) => Math.max(0, p - PAGE_SIZE))}
+              onNextPage={() =>
+                setOffset((p) => Math.min((totalPages - 1) * PAGE_SIZE, p + PAGE_SIZE))
+              }
+            />
+          </motion.div>
+        )}
 
-      <PermissionModal
-        open={permModal.open}
-        fileName={permModal.fileName}
-        permissions={permissions}
-        users={users}
-        loadingPerms={loadingPerms}
-        grantUserId={grantUserId}
-        grantLevel={grantLevel}
-        onGrantUserIdChange={setGrantUserId}
-        onGrantLevelChange={setGrantLevel}
-        onGrant={handleGrant}
-        onRevoke={handleRevoke}
-        onClose={closePermModal}
-      />
+        <DeleteModal
+          open={deleteModal.open}
+          fileName={deleteModal.fileName}
+          deleting={deleting}
+          onConfirm={handleDeleteConfirm}
+          onClose={() => setDeleteModal({ open: false, fileId: null, fileName: "" })}
+        />
+
+        <PermissionModal
+          open={permModal.open}
+          fileName={permModal.fileName}
+          permissions={permissions}
+          users={users}
+          loadingPerms={loadingPerms}
+          grantUserId={grantUserId}
+          grantLevel={grantLevel}
+          onGrantUserIdChange={setGrantUserId}
+          onGrantLevelChange={setGrantLevel}
+          onGrant={handleGrant}
+          onRevoke={handleRevoke}
+          onClose={closePermModal}
+        />
+      </div>
     </div>
   )
 }

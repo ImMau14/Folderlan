@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion"
-import { FaTimes, FaUserPlus, FaUserMinus } from "react-icons/fa"
+import { FaUserPlus, FaUserMinus, FaLock } from "react-icons/fa6"
+import { IoClose } from "react-icons/io5"
 
 import { useI18n } from "@i18n/context/I18nContext"
 import type { FilePermission, User } from "@shared/utils/ApiClient/types"
@@ -44,39 +45,45 @@ export default function PermissionModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.15 }}
           onClick={onClose}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
         >
           <motion.div
             onClick={(e) => e.stopPropagation()}
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            transition={{ duration: 0.2, ease: [0.2, 0, 0, 1], delay: 0.05 }}
+            exit={{ opacity: 0, scale: 0.92, y: 20 }}
+            transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
+            className="w-full max-w-lg"
           >
-            <FloatingContainer className="max-h-[80vh] w-full max-w-lg border border-ui-border">
-              <div className="flex w-full items-center justify-between">
-                <h3 className="font-heading text-lg font-bold text-ui-text">
-                  {t("download.permissions.title")}
-                </h3>
+            <FloatingContainer className="max-h-[85vh] w-full !items-stretch overflow-hidden !p-5 text-left sm:!p-8">
+              <div className="flex w-full items-center gap-4 border-b border-ui-border pb-5">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-ui-border-muted bg-ui-front">
+                  <FaLock className="text-xl text-ui-info" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-heading text-lg font-bold text-ui-text">
+                    {t("download.permissions.title")}
+                  </h3>
+                  <p className="truncate font-body text-sm text-ui-text-muted" title={fileName}>
+                    {fileName}
+                  </p>
+                </div>
                 <motion.button
                   onClick={onClose}
                   whileTap={{ scale: 0.9 }}
-                  className="rounded-full p-2 text-ui-text-muted transition-colors hover:bg-ui-front"
+                  className="shrink-0 rounded-lg p-1.5 text-ui-text-muted transition-colors hover:bg-ui-front"
                 >
-                  <FaTimes />
+                  <IoClose className="text-xl" />
                 </motion.button>
               </div>
-              <p className="w-full max-w-full truncate text-left font-body text-sm text-ui-text-muted">
-                {fileName}
-              </p>
 
-              <div className="w-full">
-                <h4 className="mb-2 font-body text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
+              <div className="flex w-full flex-col gap-3">
+                <h4 className="font-body text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
                   {t("download.permissions.grantTitle")}
                 </h4>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <select
                     value={grantUserId}
                     onChange={(e) => onGrantUserIdChange(e.target.value)}
@@ -94,7 +101,7 @@ export default function PermissionModal({
                     onChange={(e) =>
                       onGrantLevelChange(e.target.value as "viewer" | "collaborator")
                     }
-                    className="rounded-full border-2 border-ui-border bg-ui-front px-3 py-2 font-body text-sm text-ui-text transition-colors focus:border-ui-primary focus:outline-none focus:ring-2 focus:ring-ui-primary"
+                    className="rounded-full border-2 border-ui-border bg-ui-front px-3 py-2 font-body text-sm text-ui-text transition-colors focus:border-ui-primary focus:outline-none focus:ring-2 focus:ring-ui-primary sm:w-36"
                   >
                     <option value="viewer">{t("download.permissions.viewer")}</option>
                     <option value="collaborator">{t("download.permissions.collaborator")}</option>
@@ -103,7 +110,7 @@ export default function PermissionModal({
                     onClick={onGrant}
                     disabled={!grantUserId}
                     whileTap={grantUserId ? { scale: 0.95 } : undefined}
-                    className="flex items-center gap-2 rounded-full bg-ui-primary px-4 py-2 font-body text-sm font-semibold text-ui-highlight transition-all hover:bg-ui-primary-hover disabled:opacity-50 dark:text-ui-base"
+                    className="flex items-center justify-center gap-2 rounded-full bg-ui-primary px-4 py-2 font-body text-sm font-semibold text-ui-highlight transition-all hover:bg-ui-primary-hover disabled:opacity-50 sm:w-fit dark:text-ui-base"
                   >
                     <FaUserPlus />
                     {t("download.permissions.grantButton")}
@@ -111,35 +118,43 @@ export default function PermissionModal({
                 </div>
               </div>
 
-              <div className="w-full">
-                <h4 className="mb-2 font-body text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
-                  {t("download.permissions.title")}
+              <div className="flex min-h-0 w-full flex-col gap-3">
+                <h4 className="font-body text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
+                  {t("download.permissions.currentPerms")}
                 </h4>
-                <div className="min-h-[100px]">
+                <div className="min-h-[120px] flex-1">
                   {loadingPerms ? (
-                    <div className="flex justify-center py-8">
+                    <div className="flex justify-center py-10">
                       <span className="h-6 w-6 animate-spin rounded-full border-4 border-ui-border border-t-ui-primary" />
                     </div>
                   ) : permissions.length === 0 ? (
-                    <p className="py-4 text-center font-body text-sm text-ui-text-muted">
-                      {t("download.permissions.noPerms")}
-                    </p>
+                    <div className="flex flex-col items-center gap-2 py-10">
+                      <FaLock className="text-2xl text-ui-text-muted" />
+                      <p className="font-body text-sm text-ui-text-muted">
+                        {t("download.permissions.noPerms")}
+                      </p>
+                    </div>
                   ) : (
-                    <div className="max-h-[200px] overflow-y-auto scrollbar scrollbar-thin scrollbar-thumb-ui-border scrollbar-track-transparent">
+                    <div className="-mx-2 flex max-h-[240px] flex-col gap-1.5 overflow-y-auto px-2 scrollbar scrollbar-thin scrollbar-thumb-ui-border scrollbar-track-transparent">
                       {permissions.map((p) => (
                         <div
                           key={p.user_id}
-                          className="flex items-center justify-between rounded-xl border border-ui-border-muted px-3 py-2"
+                          className="flex items-center justify-between rounded-xl border border-ui-border-muted px-3 py-2 transition-colors hover:bg-ui-front"
                         >
-                          <div className="flex flex-col">
-                            <span className="font-body text-sm font-medium text-ui-text">
-                              {p.username ?? `User #${p.user_id}`}
-                            </span>
-                            <span className="font-body text-xs text-ui-text-muted">
-                              {p.access_level === "collaborator"
-                                ? t("download.permissions.collaborator")
-                                : t("download.permissions.viewer")}
-                            </span>
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ui-border bg-ui-front font-body text-xs font-bold text-ui-primary">
+                              {(p.username ?? `User #${p.user_id}`).charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate font-body text-sm font-medium text-ui-text">
+                                {p.username ?? `User #${p.user_id}`}
+                              </p>
+                              <p className="font-body text-xs text-ui-text-muted">
+                                {p.access_level === "collaborator"
+                                  ? t("download.permissions.collaborator")
+                                  : t("download.permissions.viewer")}
+                              </p>
+                            </div>
                           </div>
                           <motion.button
                             onClick={() => onRevoke(p.user_id)}
@@ -156,14 +171,6 @@ export default function PermissionModal({
                   )}
                 </div>
               </div>
-
-              <motion.button
-                onClick={onClose}
-                whileTap={{ scale: 0.95 }}
-                className="mt-2 w-full rounded-full border-2 border-ui-border bg-ui-front px-4 py-2 font-body text-sm font-semibold text-ui-text transition-all hover:border-ui-primary"
-              >
-                {t("download.permissions.close")}
-              </motion.button>
             </FloatingContainer>
           </motion.div>
         </motion.div>
