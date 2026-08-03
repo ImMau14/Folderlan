@@ -336,11 +336,14 @@ Monitors `uploads` folder, detects finished file writes, and registers changes i
         "ip_address": "192.168.0.1",
         "file_id": 77,
         "file_name": "report.pdf",
-        "success": true
+        "success": true,
+        "total_count": 42
       }
     ]
   }
   ```
+
+  `total_count` is the total number of matching rows across all pages (useful for pagination).
 
 ---
 
@@ -580,6 +583,7 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 ### POST `/api/user/{id}/toggle` — Toggle active status
 
 * **Access**: Owner only
+* **Behavior**: Toggles the user's `is_active` flag. A `USER_ACTIVE_UPDATE` audit event is logged automatically via a database trigger.
 * **Response**:
 
   ```json

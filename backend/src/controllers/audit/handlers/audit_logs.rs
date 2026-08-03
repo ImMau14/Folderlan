@@ -19,7 +19,8 @@ pub struct AuditLogQuery {
     pub offset: Option<u32>, // Pagination offset
 }
 
-// Represents a single audit log entry.
+// Represents a single audit log entry. `total_count` is the total number of
+// matching rows across all pages (usable for pagination).
 #[derive(Serialize, FromRow)]
 pub struct AuditLogRow {
     pub id: i64,
@@ -32,6 +33,7 @@ pub struct AuditLogRow {
     pub file_id: Option<i64>,
     pub file_name: Option<String>,
     pub success: bool,
+    pub total_count: i64,
 }
 
 // Retrieves audit logs with optional filtering and pagination.
@@ -53,7 +55,8 @@ pub async fn list_audit_logs(
             a.ip_address,
             a.file_id,
             f.name as file_name,
-            a.success
+            a.success,
+            COUNT(1) OVER () AS total_count
         FROM AuditLog a
         LEFT JOIN Users u ON a.user_id = u.id
         LEFT JOIN Files f ON a.file_id = f.id
