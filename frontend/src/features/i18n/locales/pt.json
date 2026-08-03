@@ -226,6 +226,137 @@
       "fetchError": "Falha ao carregar arquivos"
     }
   },
+  "config": {
+    "subtitle": "Revise as preferências da interface e os registros de atividade do sistema.",
+    "ui": {
+      "title": "Preferências da interface",
+      "subtitle": "Personalize a aparência e o idioma da interface.",
+      "theme": "Tema",
+      "themeLight": "Claro",
+      "themeDark": "Escuro",
+      "language": "Idioma"
+    },
+    "logs": {
+      "adminOnlyTitle": "Acesso somente do proprietário",
+      "adminOnlyDesc": "Os registros de atividade são visíveis apenas para o proprietário do sistema."
+    },
+    "filters": {
+      "title": "Registros de atividade",
+      "eventType": "Tipo de evento",
+      "allEvents": "Todos os eventos",
+      "status": "Status",
+      "allStatus": "Todos",
+      "user": "Usuário",
+      "allUsers": "Todos os usuários",
+      "startDate": "Data inicial",
+      "endDate": "Data final",
+      "apply": "Aplicar filtros",
+      "clear": "Limpar filtros"
+    },
+    "status": {
+      "success": "Sucesso",
+      "failed": "Falha"
+    },
+    "eventTypes": {
+      "FILE_UPLOAD": "Upload de arquivo",
+      "FILE_SOFT_DELETE": "Arquivo excluído",
+      "FILE_RESTORE": "Arquivo restaurado",
+      "PERMISSION_GRANT": "Permissão concedida",
+      "PERMISSION_UPDATE": "Permissão atualizada",
+      "PERMISSION_REVOKE": "Permissão revogada",
+      "USER_PERM_UPDATE": "Permissões de usuário atualizadas",
+      "USER_ACTIVE_UPDATE": "Status de usuário atualizado",
+      "USER_SOFT_DELETE": "Usuário excluído",
+      "USER_RESTORE": "Usuário restaurado"
+    },
+    "table": {
+      "timestamp": "Data",
+      "user": "Usuário",
+      "event": "Evento",
+      "description": "Detalhes",
+      "file": "Arquivo",
+      "ip": "Endereço IP",
+      "status": "Status",
+      "noLogs": "Nenhuma atividade encontrada",
+      "noLogsDesc": "Tente ajustar os filtros.",
+      "loading": "Carregando registros..."
+    },
+    "toast": {
+      "fetchError": "Falha ao carregar registros"
+    }
+  },
+  "users": {
+    "subtitle": "Gerencie usuários, status e permissões de acesso.",
+    "search": {
+      "placeholder": "Pesquisar por nome de usuário"
+    },
+    "filters": {
+      "all": "Todos os status",
+      "active": "Ativos",
+      "inactive": "Inativos"
+    },
+    "role": {
+      "owner": "Proprietário",
+      "visitor": "Visitante"
+    },
+    "status": {
+      "active": "Ativo",
+      "inactive": "Inativo"
+    },
+    "canUpload": "Pode enviar",
+    "canDelete": "Pode excluir arquivos próprios",
+    "hasLimits": "Restringir tamanho do envio",
+    "limitOf": "Limite de {{size}}",
+    "noLimit": "Sem limite",
+    "actions": {
+      "activate": "Ativar",
+      "deactivate": "Desativar",
+      "perms": "Editar permissões",
+      "delete": "Excluir"
+    },
+    "table": {
+      "user": "Usuário",
+      "role": "Função",
+      "status": "Status",
+      "permissions": "Permissões",
+      "created": "Criado",
+      "actions": "Ações",
+      "noUsers": "Nenhum usuário encontrado",
+      "noUsersDesc": "Tente ajustar a pesquisa ou os filtros.",
+      "loading": "Carregando usuários..."
+    },
+    "permsModal": {
+      "title": "Editar permissões",
+      "subtitle": "Ajuste as permissões de {{name}}"
+    },
+    "deleteModal": {
+      "title": "Excluir usuário",
+      "confirm": "Tem certeza que deseja excluir \"{{name}}\"? Esta ação não pode ser desfeita.",
+      "confirmButton": "Excluir"
+    },
+    "cancel": "Cancelar",
+    "save": "Salvar alterações",
+    "uploadLimitLabel": "Limite de envio (bytes)",
+    "uploadLimitPlaceholder": "Sem limite",
+    "toast": {
+      "fetchError": "Falha ao carregar usuários",
+      "toggleSuccess": "Usuário atualizado",
+      "toggleSuccessDesc": "\"{{name}}\" foi atualizado.",
+      "toggleError": "Não foi possível atualizar o usuário",
+      "invalidLimit": "Valor de limite inválido",
+      "permsSuccess": "Permissões salvas",
+      "permsSuccessDesc": "As permissões de \"{{name}}\" foram salvas.",
+      "permsError": "Não foi possível salvar as permissões",
+      "deleteSuccess": "Usuário excluído",
+      "deleteSuccessDesc": "\"{{name}}\" foi excluído.",
+      "deleteError": "Não foi possível excluir o usuário"
+    }
+  },
+  "pagination": {
+    "showing": "Mostrando {{start}}-{{end}} de {{total}}",
+    "previous": "Anterior",
+    "next": "Próximo"
+  },
   "notFound": {
     "title": "404: Esta página não existe",
     "description": "A página que você tentou acessar não existe.",

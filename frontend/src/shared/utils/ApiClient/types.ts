@@ -49,13 +49,12 @@ export const AuditEntrySchema = z.object({
   file_id: z.number().optional(),
   file_name: z.string().optional(),
   success: z.boolean().optional(),
+  total_count: z.number().optional(),
 })
 
-export const AuditListSchema = ApiResponseSchema(
-  z.object({
-    data: z.array(AuditEntrySchema),
-  })
-)
+// Backend returns the audit log rows directly inside the `data` payload:
+// { success, message, data: [AuditLogRow] }
+export const AuditListSchema = ApiResponseSchema(z.array(AuditEntrySchema))
 
 export const FileItemSchema = z.object({
   id: z.number(),

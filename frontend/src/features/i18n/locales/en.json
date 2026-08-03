@@ -226,6 +226,137 @@
       "fetchError": "Failed to load files"
     }
   },
+  "config": {
+    "subtitle": "Review the interface preferences and the system activity logs.",
+    "ui": {
+      "title": "Interface preferences",
+      "subtitle": "Customize the appearance and language of the interface.",
+      "theme": "Theme",
+      "themeLight": "Light",
+      "themeDark": "Dark",
+      "language": "Language"
+    },
+    "logs": {
+      "adminOnlyTitle": "Owner access only",
+      "adminOnlyDesc": "The activity logs are only visible to the system owner."
+    },
+    "filters": {
+      "title": "Activity logs",
+      "eventType": "Event type",
+      "allEvents": "All events",
+      "status": "Status",
+      "allStatus": "All",
+      "user": "User",
+      "allUsers": "All users",
+      "startDate": "From date",
+      "endDate": "To date",
+      "apply": "Apply filters",
+      "clear": "Clear filters"
+    },
+    "status": {
+      "success": "Success",
+      "failed": "Failed"
+    },
+    "eventTypes": {
+      "FILE_UPLOAD": "File upload",
+      "FILE_SOFT_DELETE": "File deleted",
+      "FILE_RESTORE": "File restored",
+      "PERMISSION_GRANT": "Permission granted",
+      "PERMISSION_UPDATE": "Permission updated",
+      "PERMISSION_REVOKE": "Permission revoked",
+      "USER_PERM_UPDATE": "User permissions updated",
+      "USER_ACTIVE_UPDATE": "User status updated",
+      "USER_SOFT_DELETE": "User deleted",
+      "USER_RESTORE": "User restored"
+    },
+    "table": {
+      "timestamp": "Date",
+      "user": "User",
+      "event": "Event",
+      "description": "Details",
+      "file": "File",
+      "ip": "IP address",
+      "status": "Status",
+      "noLogs": "No activity found",
+      "noLogsDesc": "Try adjusting the filters.",
+      "loading": "Loading logs..."
+    },
+    "toast": {
+      "fetchError": "Failed to load logs"
+    }
+  },
+  "users": {
+    "subtitle": "Manage users, their status and access permissions.",
+    "search": {
+      "placeholder": "Search by username"
+    },
+    "filters": {
+      "all": "All statuses",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "role": {
+      "owner": "Owner",
+      "visitor": "Visitor"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "canUpload": "Can upload",
+    "canDelete": "Can delete own files",
+    "hasLimits": "Restrict upload size",
+    "limitOf": "{{size}} limit",
+    "noLimit": "No limit",
+    "actions": {
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "perms": "Edit permissions",
+      "delete": "Delete"
+    },
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "status": "Status",
+      "permissions": "Permissions",
+      "created": "Created",
+      "actions": "Actions",
+      "noUsers": "No users found",
+      "noUsersDesc": "Try adjusting the search or filters.",
+      "loading": "Loading users..."
+    },
+    "permsModal": {
+      "title": "Edit permissions",
+      "subtitle": "Adjust the permissions of {{name}}"
+    },
+    "deleteModal": {
+      "title": "Delete user",
+      "confirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+      "confirmButton": "Delete"
+    },
+    "cancel": "Cancel",
+    "save": "Save changes",
+    "uploadLimitLabel": "Upload limit (bytes)",
+    "uploadLimitPlaceholder": "No limit",
+    "toast": {
+      "fetchError": "Failed to load users",
+      "toggleSuccess": "User updated",
+      "toggleSuccessDesc": "\"{{name}}\" was updated.",
+      "toggleError": "Could not update user",
+      "invalidLimit": "Invalid limit value",
+      "permsSuccess": "Permissions saved",
+      "permsSuccessDesc": "The permissions of \"{{name}}\" were saved.",
+      "permsError": "Could not save permissions",
+      "deleteSuccess": "User deleted",
+      "deleteSuccessDesc": "\"{{name}}\" was deleted.",
+      "deleteError": "Could not delete user"
+    }
+  },
+  "pagination": {
+    "showing": "Showing {{start}}-{{end}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next"
+  },
   "notFound": {
     "title": "404: This page does not exist",
     "description": "The page you are trying to access does not exist.",

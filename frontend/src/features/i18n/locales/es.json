@@ -226,6 +226,137 @@
       "fetchError": "Error al cargar archivos"
     }
   },
+  "config": {
+    "subtitle": "Revisa las preferencias de interfaz y los registros de actividad del sistema.",
+    "ui": {
+      "title": "Preferencias de interfaz",
+      "subtitle": "Personaliza la apariencia y el idioma de la interfaz.",
+      "theme": "Tema",
+      "themeLight": "Claro",
+      "themeDark": "Oscuro",
+      "language": "Idioma"
+    },
+    "logs": {
+      "adminOnlyTitle": "Acceso solo para el propietario",
+      "adminOnlyDesc": "Los registros de actividad solo son visibles para el propietario del sistema."
+    },
+    "filters": {
+      "title": "Registros de actividad",
+      "eventType": "Tipo de evento",
+      "allEvents": "Todos los eventos",
+      "status": "Estado",
+      "allStatus": "Todos",
+      "user": "Usuario",
+      "allUsers": "Todos los usuarios",
+      "startDate": "Fecha desde",
+      "endDate": "Fecha hasta",
+      "apply": "Aplicar filtros",
+      "clear": "Limpiar filtros"
+    },
+    "status": {
+      "success": "Correcto",
+      "failed": "Fallido"
+    },
+    "eventTypes": {
+      "FILE_UPLOAD": "Subida de archivo",
+      "FILE_SOFT_DELETE": "Archivo eliminado",
+      "FILE_RESTORE": "Archivo restaurado",
+      "PERMISSION_GRANT": "Permiso concedido",
+      "PERMISSION_UPDATE": "Permiso actualizado",
+      "PERMISSION_REVOKE": "Permiso revocado",
+      "USER_PERM_UPDATE": "Permisos de usuario actualizados",
+      "USER_ACTIVE_UPDATE": "Estado de usuario actualizado",
+      "USER_SOFT_DELETE": "Usuario eliminado",
+      "USER_RESTORE": "Usuario restaurado"
+    },
+    "table": {
+      "timestamp": "Fecha",
+      "user": "Usuario",
+      "event": "Evento",
+      "description": "Detalles",
+      "file": "Archivo",
+      "ip": "Dirección IP",
+      "status": "Estado",
+      "noLogs": "No se encontró actividad",
+      "noLogsDesc": "Intenta ajustar los filtros.",
+      "loading": "Cargando registros..."
+    },
+    "toast": {
+      "fetchError": "Error al cargar los registros"
+    }
+  },
+  "users": {
+    "subtitle": "Gestiona usuarios, su estado y permisos de acceso.",
+    "search": {
+      "placeholder": "Buscar por nombre de usuario"
+    },
+    "filters": {
+      "all": "Todos los estados",
+      "active": "Activos",
+      "inactive": "Inactivos"
+    },
+    "role": {
+      "owner": "Propietario",
+      "visitor": "Visitante"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo"
+    },
+    "canUpload": "Puede subir",
+    "canDelete": "Puede eliminar sus archivos",
+    "hasLimits": "Restringir tamaño de subida",
+    "limitOf": "Límite de {{size}}",
+    "noLimit": "Sin límite",
+    "actions": {
+      "activate": "Activar",
+      "deactivate": "Desactivar",
+      "perms": "Editar permisos",
+      "delete": "Eliminar"
+    },
+    "table": {
+      "user": "Usuario",
+      "role": "Rol",
+      "status": "Estado",
+      "permissions": "Permisos",
+      "created": "Creado",
+      "actions": "Acciones",
+      "noUsers": "No se encontraron usuarios",
+      "noUsersDesc": "Intenta ajustar la búsqueda o los filtros.",
+      "loading": "Cargando usuarios..."
+    },
+    "permsModal": {
+      "title": "Editar permisos",
+      "subtitle": "Ajusta los permisos de {{name}}"
+    },
+    "deleteModal": {
+      "title": "Eliminar usuario",
+      "confirm": "¿Estás seguro de que deseas eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
+      "confirmButton": "Eliminar"
+    },
+    "cancel": "Cancelar",
+    "save": "Guardar cambios",
+    "uploadLimitLabel": "Límite de subida (bytes)",
+    "uploadLimitPlaceholder": "Sin límite",
+    "toast": {
+      "fetchError": "Error al cargar los usuarios",
+      "toggleSuccess": "Usuario actualizado",
+      "toggleSuccessDesc": "\"{{name}}\" fue actualizado.",
+      "toggleError": "No se pudo actualizar el usuario",
+      "invalidLimit": "Valor de límite inválido",
+      "permsSuccess": "Permisos guardados",
+      "permsSuccessDesc": "Los permisos de \"{{name}}\" fueron guardados.",
+      "permsError": "No se pudieron guardar los permisos",
+      "deleteSuccess": "Usuario eliminado",
+      "deleteSuccessDesc": "\"{{name}}\" fue eliminado.",
+      "deleteError": "No se pudo eliminar el usuario"
+    }
+  },
+  "pagination": {
+    "showing": "Mostrando {{start}}-{{end}} de {{total}}",
+    "previous": "Anterior",
+    "next": "Siguiente"
+  },
   "notFound": {
     "title": "404: Esta página no existe",
     "description": "La página a la que intentas acceder no existe.",
