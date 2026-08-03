@@ -3,10 +3,9 @@ erDiagram
         int id PK
         string username
         string password_hash
-        string role
+        string role "owner | visitor"
         datetime created_at
         datetime last_login_at
-        datetime expiration_date
         boolean is_active
         boolean can_upload
         boolean can_delete_own_files
@@ -33,7 +32,7 @@ erDiagram
         int id PK
         int file_id FK
         int user_id FK
-        string access_level
+        string access_level "viewer | collaborator"
         datetime granted_at
         int granted_by FK
     }
@@ -48,7 +47,7 @@ erDiagram
         int file_id FK
         boolean success
     }
-    
+
     Users ||--o{ Files : uploaded_by
     Users ||--o{ FilePermissions : user_id
     Users ||--o{ FilePermissions : granted_by

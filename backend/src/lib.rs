@@ -30,13 +30,16 @@ pub fn configure_app(cfg: &mut web::ServiceConfig) {
 /// Builds CORS policy with configurable restrictions
 pub fn build_cors(off_cors: bool, address: &str, port: u16) -> Cors {
     if off_cors {
-        Cors::permissive() // Allows all origins when CORS is disabled
+        Cors::permissive()
     } else {
         let origin = format!("http://{address}:{port}");
         Cors::default()
-            .allowed_origin(origin.as_str()) // Restricts to specific origin
-            .allowed_methods(vec!["GET", "POST"]) // Permits only GET and POST methods
-            .allowed_header(actix_web::http::header::CONTENT_TYPE) // Allows content-type header
-            .max_age(3600) // Sets preflight cache timeout
+            .allowed_origin(origin.as_str())
+            .allowed_methods(vec!["GET", "POST", "DELETE", "PATCH", "OPTIONS"])
+            .allowed_headers(vec![
+                actix_web::http::header::CONTENT_TYPE,
+                actix_web::http::header::AUTHORIZATION,
+            ])
+            .max_age(3600)
     }
 }

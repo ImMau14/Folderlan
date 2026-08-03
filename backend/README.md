@@ -367,6 +367,7 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 
   * Server receives the complete file in a single multipart request.
   * Filename is sanitized; if a file with the same name already exists in the upload directory, a counter is added (e.g., `file (1).ext`).
+  * Files are uploaded as **private** by default (`is_public = 0`).
   * User quota is enforced during streaming:
     - If the user has upload limits (`has_upload_limits != 0`), the server calculates used space by summing `size_bytes` of all non-deleted files owned by the user.
     - If the new file would exceed the individual limit or total quota (`used + file_size > upload_limit`), the upload is rejected and any partial file is deleted.
@@ -379,7 +380,7 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
   {
     "success": true,
     "message": "File registered successfully",
-    "data": { ... }   // structure depends on register_file output
+    "data": { ... }
   }
   ```
 
@@ -441,6 +442,37 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
   {
     "success": true,
     "message": "File deleted"
+  }
+  ```
+
+* **Errors**: `403` no permission, `404` not found, `500` server error.
+
+### PATCH `/api/files/{id}/public` — Toggle public visibility
+
+* **Method**: `PATCH`
+
+* **URL param**: `id` (integer)
+
+* **Body**:
+
+  ```json
+  {
+    "is_public": true
+  }
+  ```
+
+* **Permission required**: Collaborator-level (owner, uploader with `can_delete_own_files`, or granted collaborator).
+
+* **Behavior**:
+  * Public files (`is_public = true`) are visible and downloadable by **all** authenticated users without explicit permission grants.
+  * Private files (`is_public = false`) are only visible to the owner, uploader, and users with explicit `FilePermissions` grants.
+
+* **Response (200)**:
+
+  ```json
+  {
+    "success": true,
+    "message": "File is now public"
   }
   ```
 
@@ -524,6 +556,36 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 ---
 
 ## User management
+
+### GET `/api/user/me` — Current user info
+
+* **Access**: Any authenticated user (owner or visitor)
+
+* **Method**: `GET`
+
+* **Headers**: `Authorization: Bearer <token>`
+
+* **Response (200)**:
+
+  ```json
+  {
+    "success": true,
+    "message": "User info retrieved",
+    "data": {
+      "id": 42,
+      "username": "bob",
+      "role": "visitor",
+      "can_upload": true,
+      "can_delete_own_files": false,
+      "has_upload_limits": false,
+      "upload_limit": 0
+    }
+  }
+  ```
+
+* **Purpose**: Allows the frontend to know the current user's permission flags without knowing the user ID.
+
+* **Errors**: `401` unauthorized, `404` user not found or inactive.
 
 ### GET `/api/user` — List users
 
@@ -648,8 +710,8 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
 * **Authorization**: Unless noted, endpoints require `Authorization: Bearer <token>`.
 * **Owner vs Visitor**:
 
-  * Owner = full admin rights.
-  * Visitor = restricted (upload/delete own if permitted).
+  * Owner = full admin rights. Bypasses all permission checks.
+  * Visitor = restricted. Capabilities depend on permission flags set by the owner.
 * **Pagination**: Standard `limit` + `offset`.
 * **Errors**:
 
@@ -658,6 +720,60 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
   * `403` forbidden
   * `404` not found
   * `500` server/db error
+
+---
+
+# Permission model
+
+## Account roles
+
+There are exactly **two** account roles (enforced by DB constraint):
+
+| Role | Description |
+|------|-------------|
+| `owner` | Full admin. Bypasses all permission checks. Can manage users, view audit logs, manage all files. |
+| `visitor` | Regular user. Capabilities are governed by permission flags and per-file grants. |
+
+## Visitor permission flags
+
+These flags are set per-visitor by the owner via `POST /api/user/{id}/perms`:
+
+| Flag | Effect |
+|------|--------|
+| `can_upload` | If true, visitor can upload files via `POST /api/files/upload`. |
+| `can_delete_own_files` | If true, visitor can delete their own files and manage permissions on them (grant/revoke to other visitors). Also grants the visitor full control over their own uploaded files. |
+| `has_upload_limits` | If true, the `upload_limit` field is enforced during uploads. |
+| `upload_limit` | Maximum total bytes the visitor can upload. Only enforced when `has_upload_limits` is true. |
+
+## Per-file access levels
+
+The `FilePermissions` table grants per-file access to specific visitors. Access levels are hierarchical:
+
+| Level | Value | Capabilities |
+|-------|-------|-------------|
+| `viewer` | 1 | Can download the file. Cannot delete or manage permissions. |
+| `collaborator` | 2 | Can download, delete the file, and grant/revoke/list permissions for that file. |
+
+### Who can do what on a file
+
+| Actor | View/Download | Delete | Manage permissions |
+|-------|:---:|:---:|:---:|
+| Owner (role) | Always | Always | Always |
+| Uploader (visitor who uploaded) | Always | Only if `can_delete_own_files = true` | Only if `can_delete_own_files = true` |
+| Granted `collaborator` | Yes | Yes | Yes |
+| Granted `viewer` | Yes | No | No |
+| Any authenticated user on a `is_public` file | Yes (viewer level) | No | No |
+
+## File visibility
+
+Files have a visibility setting:
+
+| Visibility | Behavior |
+|------------|----------|
+| `is_public = false` (private, default) | Only visible to owner, uploader, and users with explicit `FilePermissions` grants. |
+| `is_public = true` (public) | Visible and downloadable by **all** authenticated users. No grants needed. Access is at the `viewer` level (read-only). |
+
+All files are uploaded as **private** by default. Public visibility can be toggled by the owner or a collaborator via `PATCH /api/files/{id}/public`.
 
 ---
 

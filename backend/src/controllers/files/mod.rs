@@ -6,7 +6,7 @@ use actix_web_httpauth::middleware::HttpAuthentication;
 use crate::middleware::{jwt_middleware::jwt_validator_adapter, perms_middleware::PermsAuth};
 use handlers::{
     delete_file, download_file, get_files, grant_permission, list_permissions, revoke_permission,
-    upload_file,
+    toggle_public, upload_file,
 };
 
 /// Configures file management routes under the `/files` scope.
@@ -44,6 +44,11 @@ pub fn files_config(cfg: &mut web::ServiceConfig) {
                 web::resource("/{id}/perms/{user_id}")
                     .wrap(HttpAuthentication::bearer(jwt_validator_adapter))
                     .route(web::delete().to(revoke_permission)),
+            )
+            .service(
+                web::resource("/{id}/public")
+                    .wrap(HttpAuthentication::bearer(jwt_validator_adapter))
+                    .route(web::patch().to(toggle_public)),
             ),
     );
 }

@@ -5,13 +5,18 @@ use actix_web_httpauth::middleware::HttpAuthentication;
 
 use crate::middleware::{jwt_middleware::jwt_validator_adapter, role_middleware::RoleAuth};
 use handlers::{
-    delete_user, get_accessible_files, get_users, toggle_user_active, update_user_perms,
+    delete_user, get_accessible_files, get_me, get_users, toggle_user_active, update_user_perms,
 };
 
 /// Configures user management routes with JWT authentication and role-based authorization.
 pub fn users_config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/user")
+            .service(
+                web::resource("/me")
+                    .wrap(HttpAuthentication::bearer(jwt_validator_adapter))
+                    .route(web::get().to(get_me)),
+            )
             .service(
                 web::resource("")
                     .wrap(RoleAuth::new(&["owner"]))
