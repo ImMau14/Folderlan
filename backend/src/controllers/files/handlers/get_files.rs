@@ -12,6 +12,8 @@ pub struct FileQuery {
     pub max_size: Option<i64>,
     pub start_date: Option<String>,
     pub end_date: Option<String>,
+    pub visibility: Option<String>,
+    pub uploaded_by: Option<i64>,
     pub limit: Option<u32>,
     pub offset: Option<u32>,
 }
@@ -86,6 +88,8 @@ pub async fn get_files(
         AND (? IS NULL OR f.size_bytes <= ?)
         AND (? IS NULL OR date(f.uploaded_at) >= date(?))
         AND (? IS NULL OR date(f.uploaded_at) <= date(?))
+        AND (? IS NULL OR (? = 'public' AND f.is_public = 1) OR (? = 'private' AND f.is_public = 0))
+        AND (? IS NULL OR f.uploaded_by = ?)
         ORDER BY f.uploaded_at DESC
         LIMIT ? OFFSET ?
         "#,
@@ -100,6 +104,11 @@ pub async fn get_files(
         q.start_date,
         q.end_date,
         q.end_date,
+        q.visibility,
+        q.visibility,
+        q.visibility,
+        q.uploaded_by,
+        q.uploaded_by,
         limit,
         offset
     )

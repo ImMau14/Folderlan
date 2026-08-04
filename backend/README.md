@@ -66,6 +66,18 @@ cargo build --release
 ./target/release/backend # Or backend.exe on Windows
 ```
 
+4. `sqlx` query macros (`query!`, `query_as!`, `query_scalar!`) are type-checked at compile time against a real database. Create a local `backend/.env` (git-ignored) with:
+
+```bash
+DATABASE_URL=sqlite:db/app.db
+```
+
+   After editing any query macro, regenerate the checked-in offline cache:
+
+```bash
+cargo sqlx prepare
+```
+
 ---
 
 # Configuration — Environment variables
@@ -400,7 +412,9 @@ All file endpoints require `Authorization: Bearer <token>` and appropriate permi
   * `name` (string, optional) — substring match
   * `min_size` (integer, optional, bytes)
   * `max_size` (integer, optional, bytes)
-  * `start_date` / `end_date` (ISO-8601, optional)
+  * `start_date` / `end_date` (ISO-8601, optional) — filter by upload date
+  * `visibility` (`public` | `private`, optional) — filter by visibility
+  * `uploaded_by` (integer, optional) — user id, returns files uploaded by that user
   * `limit` (integer, default 25, max 100)
   * `offset` (integer, default 0)
 
