@@ -46,7 +46,7 @@ export default function LogsTable({ logs, loading }: LogsTableProps) {
     return (
       <FloatingContainer className="min-h-[300px] w-full border border-ui-border">
         <div className="flex flex-col items-center gap-3 py-16">
-          <FaListCheck className="text-ui-text-muted/40 text-3xl" />
+          <FaListCheck className="text-3xl text-ui-text-muted/40" />
           <p className="font-heading text-lg font-bold text-ui-text">{t("config.table.noLogs")}</p>
           <p className="font-body text-sm text-ui-text-muted">{t("config.table.noLogsDesc")}</p>
         </div>
@@ -81,7 +81,7 @@ export default function LogsTable({ logs, loading }: LogsTableProps) {
                   transition={{ duration: 0.25, delay: idx * 0.03, ease: [0.2, 0, 0, 1] }}
                   layout
                   className={clsx(
-                    "hover:bg-ui-front/70 group border-ui-border-muted transition-colors",
+                    "group border-ui-border-muted transition-colors hover:bg-ui-front/70",
                     idx === logs.length - 1 ? "" : "border-b"
                   )}
                 >
@@ -104,7 +104,7 @@ export default function LogsTable({ logs, loading }: LogsTableProps) {
                   <td className="max-w-[280px] px-4 py-3.5">
                     <span
                       className="line-clamp-2 block font-body text-sm text-ui-text-muted"
-                      title={log.description}
+                      title={log.description ?? undefined}
                     >
                       {log.description ?? "—"}
                     </span>
@@ -151,7 +151,7 @@ export default function LogsTable({ logs, loading }: LogsTableProps) {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.25, delay: idx * 0.03, ease: [0.2, 0, 0, 1] }}
               layout
-              className="bg-ui-front/50 flex flex-col gap-2 rounded-xl border border-ui-border-muted p-3 transition-colors hover:bg-ui-front"
+              className="flex flex-col gap-2 rounded-xl border border-ui-border-muted bg-ui-front/50 p-3 transition-colors hover:bg-ui-front"
             >
               <div className="flex items-center gap-2">
                 <FaFilter

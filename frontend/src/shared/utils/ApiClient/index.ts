@@ -25,6 +25,8 @@ import {
   GrantPermissionSchema,
   UsersListSchema,
   AccessibleFilesSchema,
+  MeSchema,
+  TogglePublicSchema,
 
   // TypeScript types
   type ApiResult,
@@ -43,6 +45,8 @@ import {
   type GrantPermissionResponse,
   type UsersListResponse,
   type AccessibleFilesResponse,
+  type MeResponse,
+  type TogglePublicResponse,
 
   // ApiError class
   ApiError,
@@ -446,6 +450,8 @@ export class ApiClient {
     max_size?: number
     start_date?: string
     end_date?: string
+    visibility?: string
+    uploaded_by?: number
     limit?: number
     offset?: number
   }): Promise<ApiResult<FilesListResponse>> {
@@ -516,6 +522,25 @@ export class ApiClient {
 
   async getAccessibleFiles(id: number): Promise<ApiResult<AccessibleFilesResponse>> {
     return this.get(`/api/user/${id}/accessible`, undefined, AccessibleFilesSchema)
+  }
+
+  // ==================== CURRENT USER ENDPOINT ====================
+
+  async getMe(): Promise<ApiResult<MeResponse>> {
+    return this.get("/api/user/me", undefined, MeSchema)
+  }
+
+  // ==================== FILE VISIBILITY ====================
+
+  async toggleFilePublic(id: number, is_public: boolean): Promise<ApiResult<TogglePublicResponse>> {
+    return this.request<TogglePublicResponse>(
+      {
+        method: "PATCH",
+        url: `/api/files/${id}/public`,
+        data: { is_public },
+      },
+      TogglePublicSchema
+    )
   }
 
   // ==================== UTILITY METHODS ====================

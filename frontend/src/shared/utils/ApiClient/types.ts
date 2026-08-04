@@ -41,13 +41,13 @@ export const SimpleMessageSchema = ApiResponseSchema(z.object({}))
 export const AuditEntrySchema = z.object({
   id: z.number(),
   timestamp: z.string(),
-  user_id: z.number().optional(),
-  username: z.string().optional(),
+  user_id: z.number().nullable().optional(),
+  username: z.string().nullable().optional(),
   event_type: z.string().optional(),
-  description: z.string().optional(),
-  ip_address: z.string().optional(),
-  file_id: z.number().optional(),
-  file_name: z.string().optional(),
+  description: z.string().nullable().optional(),
+  ip_address: z.string().nullable().optional(),
+  file_id: z.number().nullable().optional(),
+  file_name: z.string().nullable().optional(),
   success: z.boolean().optional(),
   total_count: z.number().optional(),
 })
@@ -108,6 +108,7 @@ export const UserSchema = z.object({
   upload_limit: z.number(),
   created_at: z.string().optional(),
   last_login_at: z.string().optional(),
+  total_count: z.number().optional(),
 })
 
 export const UsersListSchema = ApiResponseSchema(
@@ -131,6 +132,20 @@ export const AccessibleFileSchema = z.object({
 
 export const AccessibleFilesSchema = ApiResponseSchema(z.array(AccessibleFileSchema))
 
+export const MeSchema = ApiResponseSchema(
+  z.object({
+    id: z.number(),
+    username: z.string(),
+    role: z.string(),
+    can_upload: z.union([z.boolean(), z.number()]).transform((v) => Boolean(v)),
+    can_delete_own_files: z.union([z.boolean(), z.number()]).transform((v) => Boolean(v)),
+    has_upload_limits: z.union([z.boolean(), z.number()]).transform((v) => Boolean(v)),
+    upload_limit: z.number(),
+  })
+)
+
+export const TogglePublicSchema = ApiResponseSchema(z.object({}))
+
 // ==================== INFERRED TYPES ====================
 
 export type DbCheckResponse = z.infer<typeof DbCheckSchema>
@@ -151,6 +166,9 @@ export type User = z.infer<typeof UserSchema>
 export type UsersListResponse = z.infer<typeof UsersListSchema>
 export type AccessibleFile = z.infer<typeof AccessibleFileSchema>
 export type AccessibleFilesResponse = z.infer<typeof AccessibleFilesSchema>
+export type MeData = z.infer<typeof MeSchema>
+export type MeResponse = MeData
+export type TogglePublicResponse = z.infer<typeof TogglePublicSchema>
 
 // ==================== API RESULT TYPES ====================
 

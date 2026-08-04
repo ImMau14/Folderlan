@@ -52,6 +52,7 @@
     }
   },
   "upload": {
+    "noPermission": "Non hai il permesso di caricare file. Contatta l'amministratore.",
     "dropZone": {
       "title": "Carica file",
       "description": "Trascina i tuoi file qui o selezionali manualmente",
@@ -92,7 +93,10 @@
       "fileUploaded": "File caricato",
       "fileUploadedDesc": "Il file \"{{name}}\" è stato caricato con successo.",
       "uploadError": "Errore di caricamento",
-      "uploadErrorDesc": "Impossibile caricare {{name}}."
+      "uploadErrorDesc": "Impossibile caricare {{name}}.",
+      "uploadSummary": "Riepilogo caricamento",
+      "uploadSummaryAll": "Tutti i  file sono stati caricati con successo.",
+      "uploadSummaryPartial": "{{success}} di {{total}} file caricati. {{failed}} falliti."
     }
   },
   "setup": {
@@ -161,15 +165,25 @@
   "download": {
     "filters": {
       "search": "Cerca file...",
-      "nameLabel": "Nome file",
-      "namePlaceholder": "Cerca per nome",
+      "filtersButton": "Filtri",
+      "title": "Filtri",
+      "subtitle": "Raffina l'elenco dei file",
       "minSize": "Dimensione min (byte)",
       "maxSize": "Dimensione max (byte)",
       "startDate": "Data da",
       "endDate": "Data a",
       "apply": "Applica filtri",
       "clear": "Pulisci filtri",
-      "toggleFilters": "Attiva filtri"
+      "user": "Utente",
+      "allUsers": "Tutti gli utenti",
+      "visibility": "Visibilità",
+      "all": "Tutti",
+      "public": "Pubblico",
+      "private": "Privato"
+    },
+    "actionBar": {
+      "selected": "selezionati",
+      "clear": "Pulisci"
     },
     "table": {
       "fileName": "Nome file",
@@ -186,7 +200,9 @@
     "actions": {
       "download": "Scarica",
       "delete": "Elimina",
-      "permissions": "Permessi"
+      "permissions": "Permessi",
+      "makePublic": "Rendi pubblico",
+      "makePrivate": "Rendi privato"
     },
     "pagination": {
       "showing": "Mostra {{start}}-{{end}} di {{total}}",
@@ -197,7 +213,8 @@
       "title": "Elimina file",
       "confirm": "Sei sicuro di voler eliminare \"{{name}}\"? Questa azione non può essere annullata.",
       "cancel": "Annulla",
-      "confirmButton": "Elimina"
+      "confirmButton": "Elimina",
+      "multiName": "{{count}} file"
     },
     "permissions": {
       "title": "Permessi del file",
@@ -210,7 +227,12 @@
       "collaborator": "Collaboratore",
       "grantButton": "Concedi",
       "revokeButton": "Revoca",
+      "multiRevokeHint": "La revoca si applica a tutti i file selezionati",
       "close": "Chiudi"
+    },
+    "visibility": {
+      "title": "Visibilità",
+      "appliedTo": "Applicato a {{count}} file"
     },
     "toast": {
       "downloaded": "Download avviato",
@@ -223,7 +245,10 @@
       "permRevoked": "Permesso revocato",
       "permRevokedDesc": "L'accesso dell'utente è stato revocato.",
       "permListError": "Errore nel caricamento dei permessi",
-      "fetchError": "Errore nel caricamento dei file"
+      "operationFailed": "Operazione fallita per {{count}} file",
+      "fetchError": "Errore nel caricamento dei file",
+      "madePublic": "Il file ora è pubblico",
+      "madePrivate": "Il file ora è privato"
     }
   },
   "config": {
@@ -234,7 +259,11 @@
       "theme": "Tema",
       "themeLight": "Chiaro",
       "themeDark": "Scuro",
-      "language": "Lingua"
+      "language": "Lingua",
+      "lowDetail": "Modalità a basso dettaglio",
+      "lowDetailDesc": "Disabilita gli effetti di sfocatura per migliorare le prestazioni su dispositivi più lenti.",
+      "toastNotifications": "Notifiche",
+      "toastNotificationsDesc": "Mostra notifiche per azioni come caricamenti e modifiche utente."
     },
     "logs": {
       "adminOnlyTitle": "Solo proprietario",
@@ -295,6 +324,13 @@
       "active": "Attivi",
       "inactive": "Inattivi"
     },
+    "permFilters": {
+      "allPerms": "Tutti i permessi",
+      "canUpload": "Può caricare",
+      "noUpload": "Non può caricare",
+      "canDelete": "Può eliminare i propri file",
+      "noDelete": "Non può eliminare i propri file"
+    },
     "role": {
       "owner": "Proprietario",
       "visitor": "Visitatore"
@@ -336,6 +372,23 @@
     },
     "cancel": "Annulla",
     "save": "Salva modifiche",
+    "createUser": {
+      "button": "Nuovo utente",
+      "title": "Crea utente",
+      "subtitle": "Registra un nuovo account visitatore.",
+      "usernameLabel": "Nome utente",
+      "usernamePlaceholder": "Inserisci nome utente",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Inserisci password",
+      "permissionsTitle": "Permessi",
+      "save": "Crea utente",
+      "toast": {
+        "missingFields": "Compila tutti i campi",
+        "success": "Utente creato",
+        "successDesc": "\"{{name}}\" è stato creato con successo.",
+        "error": "Impossibile creare l'utente"
+      }
+    },
     "uploadLimitLabel": "Limite di caricamento (byte)",
     "uploadLimitPlaceholder": "Nessun limite",
     "toast": {

@@ -121,8 +121,15 @@ export const SetupPage: FC = () => {
           return { ok: false, message: msg }
         }
 
-        // Owner is always admin
-        login(token, { username, role: "owner" })
+        // Owner is always admin with full permissions
+        login(token, {
+          username,
+          role: "owner",
+          can_upload: true,
+          can_delete_own_files: true,
+          has_upload_limits: false,
+          upload_limit: 0,
+        })
 
         toast({
           type: "success",

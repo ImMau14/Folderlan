@@ -11,6 +11,8 @@ import { DatabaseProvider } from "@database/context/DatabaseContext"
 import { ThemeProvider } from "@theme/context/ThemeContext"
 import { I18nProvider } from "@i18n/context/I18nContext"
 import { AuthProvider } from "@auth/context/AuthContext"
+import { LowDetailProvider } from "@shared/hooks/useLowDetail"
+import { ModalProvider } from "@modal/context/ModalContext"
 
 import { App } from "@app/App"
 
@@ -24,7 +26,11 @@ createRoot(document.getElementById("root")!).render(
         <AuthProvider>
           <ToastProvider>
             <DatabaseProvider>
-              <App />
+              <LowDetailProvider>
+                <ModalProvider>
+                  <App />
+                </ModalProvider>
+              </LowDetailProvider>
             </DatabaseProvider>
           </ToastProvider>
         </AuthProvider>

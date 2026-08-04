@@ -1,6 +1,7 @@
 /**
  * Provides authentication state and token management via React Context.
- * Stores token, user data (including username and role) in localStorage and enforces TTL.
+ * Stores token and user data (including username, role, and permission flags) in localStorage
+ * and enforces TTL. Fetches full user info from /api/user/me on login/session restore.
  */
 
 import {
@@ -13,18 +14,23 @@ import {
   type ReactNode,
 } from "react"
 
+import ApiClient from "@shared/utils/ApiClient"
+
 const TOKEN_KEY = "auth_token"
 const TOKEN_TS_KEY = "auth_token_ts"
 const USER_KEY = "auth_user"
 const TOKEN_TTL_MS = 60 * 60 * 1000 // 1 hour
 
 /**
- * Represents the authenticated user.
- * Roles match the backend: 'owner' or 'visitor'.
+ * Represents the authenticated user with full permission flags.
  */
 export interface User {
   username: string
   role: "owner" | "visitor"
+  can_upload: boolean
+  can_delete_own_files: boolean
+  has_upload_limits: boolean
+  upload_limit: number
 }
 
 interface AuthContextValue {
@@ -89,21 +95,54 @@ function clearStorage() {
   }
 }
 
+/**
+ * Fetches the current user's full info from /api/user/me.
+ * Returns null if the fetch fails (e.g., token expired, user inactive).
+ */
+async function fetchMe(token: string): Promise<User | null> {
+  try {
+    const client = new ApiClient()
+    client.setToken(token)
+    const result = await client.getMe()
+    if (result.success && result.data.data) {
+      return {
+        username: result.data.data.username,
+        role: result.data.data.role as "owner" | "visitor",
+        can_upload: result.data.data.can_upload,
+        can_delete_own_files: result.data.data.can_delete_own_files,
+        has_upload_limits: result.data.data.has_upload_limits,
+        upload_limit: result.data.data.upload_limit,
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
-    try {
-      if (isTokenValid()) {
-        setToken(readToken())
-        setUser(readUser())
-      } else {
-        clearStorage()
+    async function init() {
+      try {
+        const storedToken = readToken()
+        if (storedToken && isTokenValid()) {
+          const freshUser = await fetchMe(storedToken)
+          if (freshUser) {
+            setToken(storedToken)
+            setUser(freshUser)
+            persistSession(storedToken, freshUser)
+            return
+          }
+        }
+      } catch {
+        // fall through
       }
-    } catch {
       clearStorage()
     }
+    init()
   }, [])
 
   const login = useCallback((newToken: string, newUser: User) => {

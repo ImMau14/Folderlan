@@ -1,43 +1,37 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { motion } from "framer-motion"
-import { FaMagnifyingGlass, FaUsers } from "react-icons/fa6"
+import { FaMagnifyingGlass, FaUserPlus, FaUsers } from "react-icons/fa6"
 
 import { useAuth } from "@auth/context/AuthContext"
 import { useToast } from "@toast/context/ToastContext"
 import { useI18n } from "@i18n/context/I18nContext"
+import { useModal } from "@modal/context/ModalContext"
 import ApiClient from "@shared/utils/ApiClient"
 import Input from "@shared/components/Input"
 import type { User } from "@shared/utils/ApiClient/types"
+import { setPageName } from "@shared/utils/setPageName"
 import FloatingContainer from "../../components/FloatingContainer"
 import Pagination from "../../components/Pagination"
 import UserTable from "./UserTable"
-import PermsModal, { type PermsForm } from "./PermsModal"
+import PermsModal from "./PermsModal"
 import DeleteModal from "./DeleteModal"
+import CreateUserModal from "./CreateUserModal"
 
 const PAGE_SIZE = 10
 
 type StatusFilter = "" | "active" | "inactive"
-
-const emptyPermsForm: PermsForm = {
-  can_upload: false,
-  can_delete_own_files: false,
-  has_upload_limits: false,
-  upload_limit: "",
-}
-
-function formFromUser(user: User): PermsForm {
-  return {
-    can_upload: user.can_upload,
-    can_delete_own_files: user.can_delete_own_files,
-    has_upload_limits: user.has_upload_limits,
-    upload_limit: user.upload_limit > 0 ? String(user.upload_limit) : "",
-  }
-}
+type PermFilter =
+  | ""
+  | "can_upload"
+  | "can_upload:false"
+  | "can_delete_own_files"
+  | "can_delete_own_files:false"
 
 export default function UsersPage() {
   const { token } = useAuth()
   const { toast } = useToast()
   const { t } = useI18n()
+  const { openComponent } = useModal()
 
   const apiClient = useMemo(() => {
     const client = new ApiClient()
@@ -52,26 +46,16 @@ export default function UsersPage() {
   const [fetchKey, setFetchKey] = useState(0)
   const [name, setName] = useState("")
   const [status, setStatus] = useState<StatusFilter>("")
+  const [perm, setPerm] = useState<PermFilter>("")
   const [busyId, setBusyId] = useState<number | null>(null)
-
-  const [permsModal, setPermsModal] = useState<{ open: boolean; user: User | null }>({
-    open: false,
-    user: null,
-  })
-  const [permsForm, setPermsForm] = useState<PermsForm>(emptyPermsForm)
-  const [savingPerms, setSavingPerms] = useState(false)
-
-  const [deleteModal, setDeleteModal] = useState<{ open: boolean; user: User | null }>({
-    open: false,
-    user: null,
-  })
-  const [deleting, setDeleting] = useState(false)
 
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const nameRef = useRef(name)
   nameRef.current = name
   const statusRef = useRef(status)
   statusRef.current = status
+  const permRef = useRef(perm)
+  permRef.current = perm
 
   const fetchUsers = useCallback(
     async (off: number) => {
@@ -82,6 +66,7 @@ export default function UsersPage() {
       }
       if (nameRef.current) params.name = nameRef.current
       if (statusRef.current) params.is_active = statusRef.current === "active"
+      if (permRef.current) params.perm = permRef.current
 
       const result = await apiClient.getUsers(params)
       if (result.success && result.data.data) {
@@ -99,6 +84,11 @@ export default function UsersPage() {
     fetchUsers(offset)
   }, [offset, fetchKey, fetchUsers])
 
+  const refreshList = useCallback(() => {
+    setOffset(0)
+    setFetchKey((k) => k + 1)
+  }, [])
+
   const handleNameSearch = useCallback((value: string) => {
     setName(value)
     if (searchTimeout.current) clearTimeout(searchTimeout.current)
@@ -110,6 +100,12 @@ export default function UsersPage() {
 
   const handleStatusChange = useCallback((value: StatusFilter) => {
     setStatus(value)
+    setOffset(0)
+    setFetchKey((k) => k + 1)
+  }, [])
+
+  const handlePermChange = useCallback((value: PermFilter) => {
+    setPerm(value)
     setOffset(0)
     setFetchKey((k) => k + 1)
   }, [])
@@ -142,83 +138,30 @@ export default function UsersPage() {
     [busyId, apiClient, toast, t]
   )
 
-  const openPermsModal = useCallback((user: User) => {
-    setPermsForm(formFromUser(user))
-    setPermsModal({ open: true, user })
-  }, [])
+  const openPermsModal = useCallback(
+    (user: User) => {
+      openComponent(PermsModal, { user, apiClient, onRefresh: refreshList })
+    },
+    [openComponent, apiClient, refreshList]
+  )
 
-  const closePermsModal = useCallback(() => {
-    setPermsModal({ open: false, user: null })
-  }, [])
+  const openDeleteModal = useCallback(
+    (user: User) => {
+      openComponent(DeleteModal, { user, apiClient, onRefresh: refreshList })
+    },
+    [openComponent, apiClient, refreshList]
+  )
 
-  const handleSavePerms = useCallback(async () => {
-    const user = permsModal.user
-    if (!user || savingPerms) return
-
-    let uploadLimit: number | undefined
-    if (permsForm.has_upload_limits) {
-      uploadLimit = Number(permsForm.upload_limit)
-      if (!Number.isFinite(uploadLimit) || uploadLimit < 0) {
-        toast({ type: "error", title: t("users.toast.invalidLimit"), duration: 4000 })
-        return
-      }
-    }
-
-    setSavingPerms(true)
-    const result = await apiClient.updateUserPerms(user.id, {
-      can_upload: permsForm.can_upload,
-      can_delete_own_files: permsForm.can_delete_own_files,
-      has_upload_limits: permsForm.has_upload_limits,
-      ...(uploadLimit !== undefined ? { upload_limit: uploadLimit } : {}),
-    })
-    if (result.success) {
-      toast({
-        type: "success",
-        title: t("users.toast.permsSuccess"),
-        description: t("users.toast.permsSuccessDesc", { name: user.username }),
-        duration: 3000,
-      })
-      closePermsModal()
-      setFetchKey((k) => k + 1)
-    } else {
-      toast({
-        type: "error",
-        title: t("users.toast.permsError"),
-        description: result.error.message,
-        duration: 4000,
-      })
-    }
-    setSavingPerms(false)
-  }, [permsModal.user, permsForm, savingPerms, apiClient, toast, t, closePermsModal])
-
-  const handleDeleteConfirm = useCallback(async () => {
-    const user = deleteModal.user
-    if (!user || deleting) return
-    setDeleting(true)
-    const result = await apiClient.deleteUser(user.id)
-    if (result.success) {
-      toast({
-        type: "success",
-        title: t("users.toast.deleteSuccess"),
-        description: t("users.toast.deleteSuccessDesc", { name: user.username }),
-        duration: 3000,
-      })
-      setUsers((prev) => prev.filter((u) => u.id !== user.id))
-      setTotal((prev) => Math.max(0, prev - 1))
-    } else {
-      toast({
-        type: "error",
-        title: t("users.toast.deleteError"),
-        description: result.error.message,
-        duration: 4000,
-      })
-    }
-    setDeleting(false)
-    setDeleteModal({ open: false, user: null })
-  }, [deleteModal.user, deleting, apiClient, toast, t])
+  const openCreateUserModal = useCallback(() => {
+    openComponent(CreateUserModal, { apiClient, onSuccess: refreshList })
+  }, [openComponent, apiClient, refreshList])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1
+
+  useEffect(() => {
+    setPageName(t("menu.users"))
+  }, [t])
 
   return (
     <div className="flex h-full flex-col overflow-y-auto scrollbar scrollbar-thin scrollbar-thumb-ui-border scrollbar-track-transparent">
@@ -243,6 +186,15 @@ export default function UsersPage() {
                     {t("users.subtitle")}
                   </p>
                 </div>
+                <motion.button
+                  onClick={openCreateUserModal}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex shrink-0 items-center gap-2 rounded-full bg-ui-primary px-4 py-2 font-body text-sm font-semibold text-ui-highlight transition-colors hover:bg-ui-primary-hover dark:text-ui-base"
+                >
+                  <FaUserPlus className="text-sm" />
+                  {t("users.createUser.button")}
+                </motion.button>
               </div>
 
               <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
@@ -264,6 +216,19 @@ export default function UsersPage() {
                   <option value="active">{t("users.filters.active")}</option>
                   <option value="inactive">{t("users.filters.inactive")}</option>
                 </select>
+                <select
+                  value={perm}
+                  onChange={(e) => handlePermChange(e.target.value as PermFilter)}
+                  className="rounded-full border-2 border-ui-border bg-ui-front px-3 py-2 font-body text-sm text-ui-text transition-colors focus:border-ui-primary focus:outline-none focus:ring-2 focus:ring-ui-primary sm:w-48"
+                >
+                  <option value="">{t("users.permFilters.allPerms")}</option>
+                  <option value="can_upload">{t("users.permFilters.canUpload")}</option>
+                  <option value="can_upload:false">{t("users.permFilters.noUpload")}</option>
+                  <option value="can_delete_own_files">{t("users.permFilters.canDelete")}</option>
+                  <option value="can_delete_own_files:false">
+                    {t("users.permFilters.noDelete")}
+                  </option>
+                </select>
               </div>
             </div>
           </FloatingContainer>
@@ -281,7 +246,7 @@ export default function UsersPage() {
             busyId={busyId}
             onToggle={handleToggle}
             onEditPerms={openPermsModal}
-            onDelete={(user) => setDeleteModal({ open: true, user })}
+            onDelete={openDeleteModal}
           />
         </motion.div>
 
@@ -305,24 +270,6 @@ export default function UsersPage() {
             />
           </motion.div>
         )}
-
-        <PermsModal
-          open={permsModal.open}
-          user={permsModal.user}
-          form={permsForm}
-          saving={savingPerms}
-          onFormChange={setPermsForm}
-          onSave={handleSavePerms}
-          onClose={closePermsModal}
-        />
-
-        <DeleteModal
-          open={deleteModal.open}
-          user={deleteModal.user}
-          deleting={deleting}
-          onConfirm={handleDeleteConfirm}
-          onClose={() => setDeleteModal({ open: false, user: null })}
-        />
       </div>
     </div>
   )

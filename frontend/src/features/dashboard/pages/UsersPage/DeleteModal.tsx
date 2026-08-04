@@ -1,98 +1,114 @@
-import { AnimatePresence, motion } from "framer-motion"
+import { useState, useCallback, useMemo } from "react"
 import { FaTriangleExclamation } from "react-icons/fa6"
 import { IoClose } from "react-icons/io5"
 
 import { useI18n } from "@i18n/context/I18nContext"
-import type { User } from "@shared/utils/ApiClient/types"
-import FloatingContainer from "../../components/FloatingContainer"
+import { useToast } from "@toast/context/ToastContext"
+import { useModal } from "@modal/context/ModalContext"
+import ApiClient from "@shared/utils/ApiClient"
 
 interface DeleteModalProps {
-  open: boolean
-  user: User | null
-  deleting: boolean
-  onConfirm: () => void
-  onClose: () => void
+  fileId?: number
+  fileName?: string
+  fileIds?: number[]
+  apiClient: ApiClient
+  onRefresh: () => void
 }
 
 export default function DeleteModal({
-  open,
-  user,
-  deleting,
-  onConfirm,
-  onClose,
+  fileId,
+  fileName,
+  fileIds,
+  apiClient,
+  onRefresh,
 }: DeleteModalProps) {
   const { t } = useI18n()
+  const { toast } = useToast()
+  const { close } = useModal()
+
+  const [deleting, setDeleting] = useState(false)
+
+  const idsToDelete = useMemo(() => fileIds ?? (fileId ? [fileId] : []), [fileIds, fileId])
+  const displayName = useMemo(
+    () => fileName ?? `${idsToDelete.length} file(s)`,
+    [fileName, idsToDelete.length]
+  )
+
+  const handleConfirm = useCallback(async () => {
+    if (deleting || idsToDelete.length === 0) return
+    setDeleting(true)
+
+    let successCount = 0
+    let failCount = 0
+
+    for (const id of idsToDelete) {
+      const result = await apiClient.deleteFile(id)
+      if (result.success) {
+        successCount++
+      } else {
+        failCount++
+      }
+    }
+
+    if (successCount > 0) {
+      toast({
+        type: "success",
+        title: t("download.toast.deleteSuccess"),
+        description: t("download.toast.deleteSuccessDesc", { name: displayName }),
+        duration: 3000,
+      })
+    }
+    if (failCount > 0) {
+      toast({
+        type: "error",
+        title: t("download.toast.deleteError"),
+        description: `Failed to delete ${failCount} file(s)`,
+        duration: 4000,
+      })
+    }
+
+    onRefresh()
+    close()
+    setDeleting(false)
+  }, [deleting, idsToDelete, displayName, apiClient, toast, t, onRefresh, close])
 
   return (
-    <AnimatePresence>
-      {open && user && (
-        <motion.div
-          key="user-delete-overlay"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          onClick={deleting ? undefined : onClose}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-        >
-          <motion.div
-            onClick={(e) => e.stopPropagation()}
-            initial={{ opacity: 0, scale: 0.92, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: 20 }}
-            transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
-            className="w-full max-w-xl"
-          >
-            <FloatingContainer className="w-full !items-stretch overflow-hidden !p-5 text-left sm:!p-8">
-              <div className="flex w-full items-center gap-4 border-b border-ui-border pb-5">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-ui-border-muted bg-ui-front">
-                  <FaTriangleExclamation className="text-xl text-ui-danger" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-heading text-lg font-bold text-ui-text">
-                    {t("users.deleteModal.title")}
-                  </h3>
-                  <p className="mt-1 break-words font-body text-sm text-ui-text-muted">
-                    {t("users.deleteModal.confirm", { name: user.username })}
-                  </p>
-                </div>
-                <motion.button
-                  onClick={onClose}
-                  disabled={deleting}
-                  whileTap={{ scale: 0.9 }}
-                  className="shrink-0 rounded-lg p-1.5 text-ui-text-muted transition-colors hover:bg-ui-front"
-                >
-                  <IoClose className="text-xl" />
-                </motion.button>
-              </div>
+    <div className="flex w-full flex-col gap-6">
+      <div className="flex items-center gap-4 border-b border-ui-border pb-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-ui-border bg-ui-danger/10 shadow-sm">
+          <FaTriangleExclamation className="text-2xl text-ui-danger" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-heading text-xl font-bold text-ui-text">
+            {t("download.delete.title")}
+          </h3>
+          <p className="mt-1 break-words font-body text-sm font-medium text-ui-text-muted">
+            {t("download.delete.confirm", { name: displayName })}
+          </p>
+        </div>
+      </div>
 
-              <div className="flex w-full gap-3">
-                <motion.button
-                  onClick={onClose}
-                  disabled={deleting}
-                  whileTap={!deleting ? { scale: 0.95 } : undefined}
-                  className="flex flex-1 items-center justify-center rounded-full border-2 border-ui-border bg-ui-front px-4 py-2 font-body text-sm font-semibold text-ui-text transition-all hover:border-ui-primary disabled:opacity-50"
-                >
-                  {t("users.cancel")}
-                </motion.button>
-                <motion.button
-                  onClick={onConfirm}
-                  disabled={deleting}
-                  whileTap={!deleting ? { scale: 0.95 } : undefined}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-full bg-ui-danger px-4 py-2 font-body text-sm font-semibold text-ui-highlight transition-all hover:bg-ui-danger-hover disabled:opacity-50 dark:text-ui-base"
-                >
-                  {deleting ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  ) : (
-                    <IoClose className="text-base" />
-                  )}
-                  {t("users.deleteModal.confirmButton")}
-                </motion.button>
-              </div>
-            </FloatingContainer>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+      <div className="mt-2 flex w-full gap-3">
+        <button
+          onClick={close}
+          disabled={deleting}
+          className="btn-glass flex-1 !py-3 backdrop-blur-md"
+        >
+          {t("download.delete.cancel")}
+        </button>
+        <button
+          onClick={handleConfirm}
+          disabled={deleting}
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-ui-danger px-4 py-3 font-heading text-sm font-bold text-white shadow-ui transition-all hover:-translate-y-0.5 hover:bg-ui-danger-hover hover:shadow-2ui disabled:pointer-events-none disabled:opacity-50"
+        >
+          {deleting ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          ) : (
+            <IoClose className="text-lg" />
+          )}
+          {t("download.delete.confirmButton")}
+        </button>
+      </div>
+    </div>
   )
 }

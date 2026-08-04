@@ -49,7 +49,7 @@ function PermChip({ label, on }: { label: string; on: boolean }) {
       title={label}
       className={clsx(
         "rounded-lg px-2.5 py-1 font-body text-xs",
-        on ? "bg-ui-success/15 text-ui-success" : "text-ui-text-muted/60 bg-ui-front"
+        on ? "bg-ui-success/15 text-ui-success" : "bg-ui-front text-ui-text-muted/60"
       )}
     >
       {label}
@@ -85,7 +85,7 @@ export default function UserTable({
         </div>
       ) : users.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-16">
-          <FaUser className="text-ui-text-muted/40 text-3xl" />
+          <FaUser className="text-3xl text-ui-text-muted/40" />
           <p className="font-heading text-lg font-bold text-ui-text">{t("users.table.noUsers")}</p>
           <p className="font-body text-sm text-ui-text-muted">{t("users.table.noUsersDesc")}</p>
         </div>
@@ -115,7 +115,7 @@ export default function UserTable({
                       transition={{ duration: 0.25, delay: idx * 0.03, ease: [0.2, 0, 0, 1] }}
                       layout
                       className={clsx(
-                        "hover:bg-ui-front/70 group border-ui-border-muted transition-colors",
+                        "group border-ui-border-muted transition-colors hover:bg-ui-front/70",
                         idx === users.length - 1 ? "" : "border-b"
                       )}
                     >
@@ -237,7 +237,7 @@ export default function UserTable({
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.25, delay: idx * 0.03, ease: [0.2, 0, 0, 1] }}
                   layout
-                  className="bg-ui-front/50 flex items-center gap-3 rounded-xl border border-ui-border-muted p-3 transition-colors hover:bg-ui-front"
+                  className="flex items-center gap-3 rounded-xl border border-ui-border-muted bg-ui-front/50 p-3 transition-colors hover:bg-ui-front"
                 >
                   <div className="flex min-w-0 flex-1 items-center gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ui-border bg-ui-front font-body text-xs font-bold text-ui-primary">

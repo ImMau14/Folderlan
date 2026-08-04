@@ -21,6 +21,7 @@
       "@theme/*": ["./src/features/theme/*"],
       "@database/*": ["./src/features/database/*"],
       "@toast/*": ["./src/features/toast/*"],
+      "@modal/*": ["./src/features/modal/*"],
       "@app": ["./src/app"],
       "@shared": ["./src/shared"],
       "@auth": ["./src/features/auth"],
@@ -29,7 +30,8 @@
       "@i18n": ["./src/features/i18n"],
       "@theme": ["./src/features/theme"],
       "@database": ["./src/features/database"],
-      "@toast": ["./src/features/toast"]
+      "@toast": ["./src/features/toast"],
+      "@modal": ["./src/features/modal"]
     },
     "types": ["vite/client", "node"],
     "preserveConstEnums": true

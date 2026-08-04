@@ -1,26 +1,18 @@
 import { useState, useCallback } from "react"
 import { motion } from "framer-motion"
-import { FaGear } from "react-icons/fa6"
+import { FaUserPlus } from "react-icons/fa6"
 import clsx from "clsx"
 
 import { useI18n } from "@i18n/context/I18nContext"
 import { useToast } from "@toast/context/ToastContext"
-import { useModal } from "@modal/context/ModalContext"
 import Input from "@shared/components/Input"
-import type { User } from "@shared/utils/ApiClient/types"
 import ApiClient from "@shared/utils/ApiClient"
+import type { PermsForm } from "./PermsModal"
+import { useModal } from "@modal/context/ModalContext"
 
-export interface PermsForm {
-  can_upload: boolean
-  can_delete_own_files: boolean
-  has_upload_limits: boolean
-  upload_limit: string
-}
-
-interface PermsModalProps {
-  user: User
+interface CreateUserModalProps {
   apiClient: ApiClient
-  onRefresh: () => void
+  onSuccess: () => void
 }
 
 interface SwitchRowProps {
@@ -54,27 +46,28 @@ function SwitchRow({ checked, label, onToggle }: SwitchRowProps) {
   )
 }
 
-function formFromUser(user: User): PermsForm {
-  return {
-    can_upload: user.can_upload,
-    can_delete_own_files: user.can_delete_own_files,
-    has_upload_limits: user.has_upload_limits,
-    upload_limit: user.upload_limit > 0 ? String(user.upload_limit) : "",
-  }
-}
-
-export default function PermsModal({ user, apiClient, onRefresh }: PermsModalProps) {
+export default function CreateUserModal({ apiClient, onSuccess }: CreateUserModalProps) {
   const { t } = useI18n()
   const { toast } = useToast()
   const { close } = useModal()
 
-  const [form, setForm] = useState<PermsForm>(() => formFromUser(user))
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [form, setForm] = useState<PermsForm>({
+    can_upload: false,
+    can_delete_own_files: false,
+    has_upload_limits: false,
+    upload_limit: "",
+  })
   const [saving, setSaving] = useState(false)
 
   const handleSave = useCallback(async () => {
-    if (saving) return
+    if (!username.trim() || !password.trim()) {
+      toast({ type: "error", title: t("users.createUser.toast.missingFields"), duration: 4000 })
+      return
+    }
 
-    let uploadLimit: number | undefined
+    let uploadLimit = 0
     if (form.has_upload_limits) {
       uploadLimit = Number(form.upload_limit)
       if (!Number.isFinite(uploadLimit) || uploadLimit < 0) {
@@ -84,81 +77,108 @@ export default function PermsModal({ user, apiClient, onRefresh }: PermsModalPro
     }
 
     setSaving(true)
-    const result = await apiClient.updateUserPerms(user.id, {
+    const result = await apiClient.registerVisitor({
+      username: username.trim(),
+      password: password.trim(),
       can_upload: form.can_upload,
       can_delete_own_files: form.can_delete_own_files,
       has_upload_limits: form.has_upload_limits,
-      ...(uploadLimit !== undefined ? { upload_limit: uploadLimit } : {}),
+      upload_limit: uploadLimit,
     })
     if (result.success) {
       toast({
         type: "success",
-        title: t("users.toast.permsSuccess"),
-        description: t("users.toast.permsSuccessDesc", { name: user.username }),
+        title: t("users.createUser.toast.success"),
+        description: t("users.createUser.toast.successDesc", { name: username.trim() }),
         duration: 3000,
       })
-      onRefresh()
+      onSuccess()
+      close()
     } else {
       toast({
         type: "error",
-        title: t("users.toast.permsError"),
+        title: t("users.createUser.toast.error"),
         description: result.error.message,
         duration: 4000,
       })
     }
     setSaving(false)
-  }, [form, saving, apiClient, user, toast, t, onRefresh])
+  }, [username, password, form, apiClient, toast, t, onSuccess, close])
 
   return (
     <div className="flex w-full flex-col gap-5">
       <div className="flex items-center gap-4 border-b border-ui-border pb-5">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-ui-border-muted bg-ui-front">
-          <FaGear className="text-xl text-ui-primary" />
+          <FaUserPlus className="text-xl text-ui-primary" />
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="font-heading text-lg font-bold text-ui-text">
-            {t("users.permsModal.title")}
+            {t("users.createUser.title")}
           </h3>
-          <p className="truncate font-body text-sm text-ui-text-muted" title={user.username}>
-            {t("users.permsModal.subtitle", { name: user.username })}
-          </p>
+          <p className="font-body text-sm text-ui-text-muted">{t("users.createUser.subtitle")}</p>
         </div>
       </div>
 
       <div className="flex w-full flex-col gap-3">
-        <SwitchRow
-          checked={form.can_upload}
-          label={t("users.canUpload")}
-          onToggle={(value) => setForm((prev) => ({ ...prev, can_upload: value }))}
-        />
-        <SwitchRow
-          checked={form.can_delete_own_files}
-          label={t("users.canDelete")}
-          onToggle={(value) => setForm((prev) => ({ ...prev, can_delete_own_files: value }))}
-        />
-        <SwitchRow
-          checked={form.has_upload_limits}
-          label={t("users.hasLimits")}
-          onToggle={(value) => setForm((prev) => ({ ...prev, has_upload_limits: value }))}
-        />
-
         <div className="flex w-full flex-col gap-1.5">
           <label className="font-body text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
-            {t("users.uploadLimitLabel")}
+            {t("users.createUser.usernameLabel")}
           </label>
           <Input
-            type="number"
-            min={0}
-            disabled={!form.has_upload_limits}
-            value={form.upload_limit}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                upload_limit: e.target.value.replace(/\D/g, ""),
-              }))
-            }
-            placeholder={t("users.uploadLimitPlaceholder")}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder={t("users.createUser.usernamePlaceholder")}
           />
+        </div>
+        <div className="flex w-full flex-col gap-1.5">
+          <label className="font-body text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
+            {t("users.createUser.passwordLabel")}
+          </label>
+          <Input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={t("users.createUser.passwordPlaceholder")}
+          />
+        </div>
+
+        <div className="mt-1 flex w-full flex-col gap-3">
+          <span className="font-body text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
+            {t("users.createUser.permissionsTitle")}
+          </span>
+          <SwitchRow
+            checked={form.can_upload}
+            label={t("users.canUpload")}
+            onToggle={(value) => setForm((prev) => ({ ...prev, can_upload: value }))}
+          />
+          <SwitchRow
+            checked={form.can_delete_own_files}
+            label={t("users.canDelete")}
+            onToggle={(value) => setForm((prev) => ({ ...prev, can_delete_own_files: value }))}
+          />
+          <SwitchRow
+            checked={form.has_upload_limits}
+            label={t("users.hasLimits")}
+            onToggle={(value) => setForm((prev) => ({ ...prev, has_upload_limits: value }))}
+          />
+          <div className="flex w-full flex-col gap-1.5">
+            <label className="font-body text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
+              {t("users.uploadLimitLabel")}
+            </label>
+            <Input
+              type="number"
+              min={0}
+              disabled={!form.has_upload_limits}
+              value={form.upload_limit}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  upload_limit: e.target.value.replace(/\D/g, ""),
+                }))
+              }
+              placeholder={t("users.uploadLimitPlaceholder")}
+            />
+          </div>
         </div>
       </div>
 
@@ -180,7 +200,7 @@ export default function PermsModal({ user, apiClient, onRefresh }: PermsModalPro
           {saving ? (
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
           ) : null}
-          {t("users.save")}
+          {t("users.createUser.save")}
         </motion.button>
       </div>
     </div>

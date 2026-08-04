@@ -76,6 +76,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const color = theme === "dark" ? "#020617" : "#ffffff"
     setThemeColor(color)
     document.documentElement.setAttribute("data-theme", theme)
+    document.documentElement.classList.toggle("dark", theme === "dark")
   }, [theme])
 
   // Listen to system theme changes

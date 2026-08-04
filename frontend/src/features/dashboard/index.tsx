@@ -7,12 +7,14 @@ import { useAuth } from "@auth/context/AuthContext"
 import Menu from "./components/Menu"
 import TopBar from "./components/TopBar"
 import BottomNav from "./components/BottomNav"
+import { BottomNavProvider, useBottomNav } from "./components/BottomNavContext"
 
 const MOBILE_BREAKPOINT = 768
 
-export const DashboardLayout: FC = () => {
+function DashboardContent() {
   const { user } = useAuth()
   const isOwner = user?.role === "owner"
+  const { isHidden } = useBottomNav()
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT)
 
@@ -57,8 +59,16 @@ export const DashboardLayout: FC = () => {
           <Outlet />
         </div>
       </main>
-      <BottomNav isOwner={isOwner} />
+      {!isHidden && <BottomNav isOwner={isOwner} />}
     </motion.div>
+  )
+}
+
+export const DashboardLayout: FC = () => {
+  return (
+    <BottomNavProvider>
+      <DashboardContent />
+    </BottomNavProvider>
   )
 }
 

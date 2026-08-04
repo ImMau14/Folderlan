@@ -113,7 +113,7 @@ const DropZone: FC<DropZoneProps> = ({ onFilesChange, accept, files = [] }) => {
         </button>
 
         {fileCount > 0 && (
-          <div className="mt-5 w-full rounded-2xl bg-ui-front px-4 py-3 text-left text-sm shadow-sm">
+          <div className="mt-5 w-full rounded-2xl bg-ui-front px-4 py-3 text-center text-sm shadow-sm">
             <p className="font-semibold text-ui-text">
               {t("upload.dropZone.filesReady", { count: fileCount })}
             </p>

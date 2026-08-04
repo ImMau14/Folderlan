@@ -1,98 +1,128 @@
-// Toast notification system providing contextual feedback for user actions
-// Uses Framer Motion for animations and React Context for state management
+// Toast notification system with hover-pause, configurable toggle, and summary support.
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react"
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+  type ReactNode,
+} from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { MdError } from "react-icons/md"
 import { FaCheckCircle, FaInfoCircle } from "react-icons/fa"
 import { IoIosWarning } from "react-icons/io"
 import { IoClose } from "react-icons/io5"
-import { useTheme } from "@theme/context/ThemeContext"
 import clsx from "clsx"
 
-// Toast type definitions
+import { useTheme } from "@theme/context/ThemeContext"
+
 type ToastType = "success" | "error" | "info" | "warning"
+
 type ToastItem = {
   id: string
   type: ToastType
   title?: string
   description?: string
-  duration?: number // Display duration in milliseconds
+  duration?: number
 }
 
-// Context API interface for toast operations
 type ToastContextApi = {
   toast: (t: Omit<ToastItem, "id">) => string
   dismiss: (id: string) => void
+  enabled: boolean
+  setEnabled: (v: boolean) => void
 }
 
 const ToastContext = createContext<ToastContextApi | undefined>(undefined)
 
-// Hook to access toast functions from any component
+const STORAGE_KEY = "folderlan:toastEnabled"
+
+const getInitialEnabled = (): boolean => {
+  if (typeof window === "undefined") return true
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY)
+    return stored !== "false"
+  } catch {
+    return true
+  }
+}
+
 export const useToast = () => {
   const ctx = useContext(ToastContext)
   if (!ctx) throw new Error("useToast must be used within ToastProvider")
   return ctx
 }
 
-// Icon and color mappings for different toast types
 const ICONS: Record<ToastType, React.ElementType> = {
-  error: MdError as unknown as React.ElementType,
+  error: MdError,
   success: FaCheckCircle,
   info: FaInfoCircle,
   warning: IoIosWarning,
 }
 
 const COLORS: Record<ToastType, string> = {
-  error:
-    "bg-red-50 border-red-200 text-red-800 dark:border-transparent dark:bg-red-800 dark:text-red-50",
-  success:
-    "bg-green-50 border-green-200 text-green-800 dark:border-transparent dark:bg-green-800 dark:text-green-50",
-  info: "bg-gray-50 border-gray-200 text-gray-900 dark:border-transparent dark:bg-gray-800 dark:text-gray-50",
-  warning:
-    "bg-yellow-50 border-yellow-200 text-yellow-800 dark:border-transparent dark:bg-yellow-800 dark:text-yellow-50",
+  error: "bg-ui-danger",
+  success: "bg-ui-success",
+  info: "bg-ui-info",
+  warning: "bg-ui-warning",
 }
 
-// Main provider component that manages toast state and rendering
-export const ToastProvider: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+export const ToastProvider: React.FC<{ children?: ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastItem[]>([])
+  const [enabled, setEnabledState] = useState<boolean>(getInitialEnabled)
   const { theme } = useTheme()
 
-  // Create new toast with auto-dismiss functionality
-  const toast = useCallback((t: Omit<ToastItem, "id">) => {
-    const id = crypto?.randomUUID?.() ?? String(Date.now())
-    const item: ToastItem = { id, ...t, duration: t.duration ?? 4000 }
-    setToasts((s) => [item, ...s]) // Newest toasts appear on top
-
-    // Auto-dismiss after specified duration
-    if (item.duration && item.duration > 0) {
-      setTimeout(() => {
-        setToasts((s) => s.filter((toast) => toast.id !== id))
-      }, item.duration)
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, String(enabled))
+    } catch {
+      // silent
     }
-    return id
+  }, [enabled])
+
+  const setEnabled = useCallback((v: boolean) => {
+    setEnabledState(v)
   }, [])
 
-  // Manually dismiss specific toast
+  const toast = useCallback(
+    (t: Omit<ToastItem, "id">) => {
+      const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+      const item: ToastItem = { id, ...t, duration: t.duration ?? 4000 }
+
+      if (!enabled) return id
+
+      setToasts((s) => [item, ...s])
+
+      if (item.duration && item.duration > 0) {
+        setTimeout(() => {
+          setToasts((s) => s.filter((toast) => toast.id !== id))
+        }, item.duration)
+      }
+      return id
+    },
+    [enabled]
+  )
+
   const dismiss = useCallback((id: string) => {
     setToasts((s) => s.filter((t) => t.id !== id))
   }, [])
 
-  const classes = useMemo(
-    () =>
-      // eslint-disable-next-line tailwindcss/no-custom-classname
-      clsx(
-        "pointer-events-none fixed right-4 top-4 z-50 flex w-[90%] max-w-full flex-col gap-3 md:w-[360px]",
-        theme === "dark" && "dark"
-      ),
-    [theme]
-  )
+  const themeClass = useMemo(() => (theme === "dark" ? "dark" : ""), [theme])
 
   return (
-    <ToastContext.Provider value={{ toast, dismiss }}>
+    <ToastContext.Provider value={{ toast, dismiss, enabled, setEnabled }}>
       {children}
-      {/* Toast container with ARIA live region for accessibility */}
-      <div aria-live="polite" role="status" className={classes}>
+      <div
+        aria-live="polite"
+        role="status"
+        className={clsx(
+          "pointer-events-none fixed bottom-4 right-0 z-[100] flex w-full max-w-full flex-col-reverse gap-3 px-4 md:w-[26rem]",
+          themeClass
+        )}
+      >
         <AnimatePresence initial={false}>
           {toasts.map((t) => (
             <ToastCard key={t.id} toast={t} onClose={() => dismiss(t.id)} />
@@ -103,17 +133,38 @@ export const ToastProvider: React.FC<{ children?: React.ReactNode }> = ({ childr
   )
 }
 
-// Animation variants for toast entrance and exit
 const toastVariants = {
-  hidden: { opacity: 0, y: -12, scale: 0.98 },
+  hidden: { opacity: 0, y: 12, scale: 0.98 },
   visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.22 } },
-  exit: { opacity: 0, y: -12, scale: 0.98, transition: { duration: 0.18 } },
+  exit: { opacity: 0, y: 12, scale: 0.98, transition: { duration: 0.18 } },
 }
 
-// Individual toast card component with close button
 const ToastCard: React.FC<{ toast: ToastItem; onClose: () => void }> = ({ toast, onClose }) => {
   const Icon = ICONS[toast.type]
   const color = COLORS[toast.type]
+  const { theme } = useTheme()
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const pauseTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+  }, [])
+
+  const resumeTimer = useCallback(() => {
+    if (toast.duration && toast.duration > 0) {
+      timerRef.current = setTimeout(() => {
+        onClose()
+      }, toast.duration)
+    }
+  }, [toast.duration, onClose])
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [])
 
   return (
     <motion.div
@@ -122,29 +173,31 @@ const ToastCard: React.FC<{ toast: ToastItem; onClose: () => void }> = ({ toast,
       animate="visible"
       exit="exit"
       variants={toastVariants}
+      onMouseEnter={pauseTimer}
+      onMouseLeave={resumeTimer}
       className={clsx(
-        "pointer-events-auto w-full rounded-md border p-3 shadow-lg",
-        "relative flex items-start gap-3",
-        color
+        "pointer-events-auto relative w-full rounded-3xl p-4",
+        "flex items-start gap-3",
+        color,
+        theme === "dark" ? "text-gray-900" : "text-white"
       )}
       role="region"
       aria-label={toast.title ?? toast.type}
     >
-      {/* Toast icon */}
       <div className="self-center">
         <Icon className="h-6 w-6 shrink-0" aria-hidden="true" />
       </div>
 
-      {/* Toast content */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {toast.title && <div className="font-semibold leading-5">{toast.title}</div>}
-        {toast.description && <div className="mt-1 text-sm leading-5">{toast.description}</div>}
+        {toast.title && <div className="font-heading font-semibold leading-5">{toast.title}</div>}
+        {toast.description && (
+          <div className="mt-1 font-body text-sm leading-5 opacity-85">{toast.description}</div>
+        )}
       </div>
 
-      {/* Close button */}
       <button
         onClick={onClose}
-        aria-label="Close notification"
+        aria-label="Cerrar notificación"
         className="absolute right-2 top-2 rounded p-1 text-current opacity-70 hover:opacity-100"
       >
         <IoClose />

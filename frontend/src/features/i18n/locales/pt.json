@@ -52,6 +52,7 @@
     }
   },
   "upload": {
+    "noPermission": "Você não tem permissão para enviar arquivos. Entre em contato com o administrador.",
     "dropZone": {
       "title": "Enviar arquivos",
       "description": "Arraste seus arquivos aqui ou selecione manualmente",
@@ -92,7 +93,10 @@
       "fileUploaded": "Arquivo enviado",
       "fileUploadedDesc": "O arquivo \"{{name}}\" foi enviado com sucesso.",
       "uploadError": "Erro no envio",
-      "uploadErrorDesc": "Não foi possível enviar {{name}}."
+      "uploadErrorDesc": "Não foi possível enviar {{name}}.",
+      "uploadSummary": "Resumo do envio",
+      "uploadSummaryAll": "Todos os {{count}} arquivo(s) foram enviados com sucesso.",
+      "uploadSummaryPartial": "{{success}} de {{total}} arquivos enviados. {{failed}} falharam."
     }
   },
   "setup": {
@@ -161,15 +165,25 @@
   "download": {
     "filters": {
       "search": "Pesquisar arquivos...",
-      "nameLabel": "Nome do arquivo",
-      "namePlaceholder": "Pesquisar por nome",
+      "filtersButton": "Filtros",
+      "title": "Filtros",
+      "subtitle": "Refine a lista de arquivos",
       "minSize": "Tamanho mínimo (bytes)",
       "maxSize": "Tamanho máximo (bytes)",
       "startDate": "Data inicial",
       "endDate": "Data final",
       "apply": "Aplicar filtros",
       "clear": "Limpar filtros",
-      "toggleFilters": "Alternar filtros"
+      "user": "Usuário",
+      "allUsers": "Todos os usuários",
+      "visibility": "Visibilidade",
+      "all": "Todos",
+      "public": "Público",
+      "private": "Privado"
+    },
+    "actionBar": {
+      "selected": "selecionados",
+      "clear": "Limpar"
     },
     "table": {
       "fileName": "Nome do arquivo",
@@ -186,7 +200,9 @@
     "actions": {
       "download": "Baixar",
       "delete": "Excluir",
-      "permissions": "Permissões"
+      "permissions": "Permissões",
+      "makePublic": "Tornar público",
+      "makePrivate": "Tornar privado"
     },
     "pagination": {
       "showing": "Mostrando {{start}}-{{end}} de {{total}}",
@@ -197,7 +213,8 @@
       "title": "Excluir arquivo",
       "confirm": "Tem certeza que deseja excluir \"{{name}}\"? Esta ação não pode ser desfeita.",
       "cancel": "Cancelar",
-      "confirmButton": "Excluir"
+      "confirmButton": "Excluir",
+      "multiName": "{{count}} arquivos"
     },
     "permissions": {
       "title": "Permissões do arquivo",
@@ -210,7 +227,12 @@
       "collaborator": "Colaborador",
       "grantButton": "Conceder",
       "revokeButton": "Revogar",
+      "multiRevokeHint": "A revogação se aplica a todos os arquivos selecionados",
       "close": "Fechar"
+    },
+    "visibility": {
+      "title": "Visibilidade",
+      "appliedTo": "Aplicado a {{count}} arquivos"
     },
     "toast": {
       "downloaded": "Download iniciado",
@@ -223,7 +245,10 @@
       "permRevoked": "Permissão revogada",
       "permRevokedDesc": "Acesso do usuário foi revogado.",
       "permListError": "Falha ao carregar permissões",
-      "fetchError": "Falha ao carregar arquivos"
+      "operationFailed": "Falha na operação para {{count}} arquivos",
+      "fetchError": "Falha ao carregar arquivos",
+      "madePublic": "O arquivo agora é público",
+      "madePrivate": "O arquivo agora é privado"
     }
   },
   "config": {
@@ -234,7 +259,11 @@
       "theme": "Tema",
       "themeLight": "Claro",
       "themeDark": "Escuro",
-      "language": "Idioma"
+      "language": "Idioma",
+      "lowDetail": "Modo de baixo detalhe",
+      "lowDetailDesc": "Desativa os efeitos de desfoque para melhorar o desempenho em dispositivos mais lentos.",
+      "toastNotifications": "Notificações",
+      "toastNotificationsDesc": "Mostrar notificações para ações como envios e alterações de usuário."
     },
     "logs": {
       "adminOnlyTitle": "Acesso somente do proprietário",
@@ -295,6 +324,13 @@
       "active": "Ativos",
       "inactive": "Inativos"
     },
+    "permFilters": {
+      "allPerms": "Todas as permissões",
+      "canUpload": "Pode enviar",
+      "noUpload": "Não pode enviar",
+      "canDelete": "Pode excluir arquivos próprios",
+      "noDelete": "Não pode excluir arquivos próprios"
+    },
     "role": {
       "owner": "Proprietário",
       "visitor": "Visitante"
@@ -336,6 +372,23 @@
     },
     "cancel": "Cancelar",
     "save": "Salvar alterações",
+    "createUser": {
+      "button": "Novo usuário",
+      "title": "Criar usuário",
+      "subtitle": "Registrar uma nova conta de visitante.",
+      "usernameLabel": "Nome de usuário",
+      "usernamePlaceholder": "Digite o nome de usuário",
+      "passwordLabel": "Senha",
+      "passwordPlaceholder": "Digite a senha",
+      "permissionsTitle": "Permissões",
+      "save": "Criar usuário",
+      "toast": {
+        "missingFields": "Preencha todos os campos",
+        "success": "Usuário criado",
+        "successDesc": "\"{{name}}\" foi criado com sucesso.",
+        "error": "Não foi possível criar o usuário"
+      }
+    },
     "uploadLimitLabel": "Limite de envio (bytes)",
     "uploadLimitPlaceholder": "Sem limite",
     "toast": {

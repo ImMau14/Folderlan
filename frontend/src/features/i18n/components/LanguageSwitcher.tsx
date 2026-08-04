@@ -93,7 +93,7 @@ export const LanguageSwitcher: FC<LanguageSwitcherProps> = ({ className, variant
   }, [closeMenu, isOpen])
 
   const buttonClasses = clsx(
-    "group btn-glass relative flex items-center justify-center rounded-full text-ui-text",
+    "group btn-glass relative flex items-center justify-center rounded-full text-ui-text backdrop-blur-md",
     variant === "mobile" ? "h-10 w-10" : "h-11 w-11",
     className
   )
@@ -124,7 +124,7 @@ export const LanguageSwitcher: FC<LanguageSwitcherProps> = ({ className, variant
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.18 }}
-            className="glass absolute right-0 z-50 mt-3 w-48 overflow-hidden rounded-2xl p-2 text-sm font-medium"
+            className="glass absolute right-0 z-50 mt-3 w-48 overflow-hidden rounded-2xl p-2 text-sm font-medium backdrop-blur-md"
           >
             {options.map((option) => {
               const isActive = option.code === locale
@@ -136,7 +136,7 @@ export const LanguageSwitcher: FC<LanguageSwitcherProps> = ({ className, variant
                     aria-selected={isActive}
                     onClick={() => handleSelect(option.code)}
                     className={clsx(
-                      "hover:bg-ui-highlight/30 flex w-full items-center justify-between rounded-xl px-3 py-2 transition hover:text-ui-primary",
+                      "flex w-full items-center justify-between rounded-xl px-3 py-2 transition hover:bg-ui-highlight/30 hover:text-ui-primary",
                       isActive ? "bg-ui-highlight/40 text-ui-primary" : "text-ui-text"
                     )}
                   >

@@ -52,6 +52,7 @@
     }
   },
   "upload": {
+    "noPermission": "You do not have permission to upload files. Contact the administrator.",
     "dropZone": {
       "title": "Upload files",
       "description": "Drag your files here or select them manually",
@@ -92,7 +93,10 @@
       "fileUploaded": "File uploaded",
       "fileUploadedDesc": "The file \"{{name}}\" was uploaded successfully.",
       "uploadError": "Upload error",
-      "uploadErrorDesc": "Could not upload {{name}}."
+      "uploadErrorDesc": "Could not upload {{name}}.",
+      "uploadSummary": "Upload summary",
+      "uploadSummaryAll": "All {{count}} file(s) uploaded successfully.",
+      "uploadSummaryPartial": "{{success}} of {{total}} files uploaded. {{failed}} failed."
     }
   },
   "setup": {
@@ -161,15 +165,25 @@
   "download": {
     "filters": {
       "search": "Search files...",
-      "nameLabel": "File name",
-      "namePlaceholder": "Search by name",
+      "filtersButton": "Filters",
+      "title": "Filters",
+      "subtitle": "Refine the file list",
       "minSize": "Min size (bytes)",
       "maxSize": "Max size (bytes)",
       "startDate": "From date",
       "endDate": "To date",
       "apply": "Apply filters",
       "clear": "Clear filters",
-      "toggleFilters": "Toggle filters"
+      "user": "User",
+      "allUsers": "All users",
+      "visibility": "Visibility",
+      "all": "All",
+      "public": "Public",
+      "private": "Private"
+    },
+    "actionBar": {
+      "selected": "selected",
+      "clear": "Clear"
     },
     "table": {
       "fileName": "File name",
@@ -186,7 +200,9 @@
     "actions": {
       "download": "Download",
       "delete": "Delete",
-      "permissions": "Permissions"
+      "permissions": "Permissions",
+      "makePublic": "Make public",
+      "makePrivate": "Make private"
     },
     "pagination": {
       "showing": "Showing {{start}}-{{end}} of {{total}}",
@@ -197,7 +213,8 @@
       "title": "Delete file",
       "confirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
       "cancel": "Cancel",
-      "confirmButton": "Delete"
+      "confirmButton": "Delete",
+      "multiName": "{{count}} files"
     },
     "permissions": {
       "title": "File permissions",
@@ -210,7 +227,12 @@
       "collaborator": "Collaborator",
       "grantButton": "Grant",
       "revokeButton": "Revoke",
+      "multiRevokeHint": "Revoking applies to all selected files",
       "close": "Close"
+    },
+    "visibility": {
+      "title": "Visibility",
+      "appliedTo": "Applied to {{count}} files"
     },
     "toast": {
       "downloaded": "Download started",
@@ -223,7 +245,10 @@
       "permRevoked": "Permission revoked",
       "permRevokedDesc": "User access has been revoked.",
       "permListError": "Failed to load permissions",
-      "fetchError": "Failed to load files"
+      "operationFailed": "Operation failed for {{count}} files",
+      "fetchError": "Failed to load files",
+      "madePublic": "File is now public",
+      "madePrivate": "File is now private"
     }
   },
   "config": {
@@ -234,7 +259,11 @@
       "theme": "Theme",
       "themeLight": "Light",
       "themeDark": "Dark",
-      "language": "Language"
+      "language": "Language",
+      "lowDetail": "Low detail mode",
+      "lowDetailDesc": "Disables blur effects to improve performance on slower devices.",
+      "toastNotifications": "Notifications",
+      "toastNotificationsDesc": "Show toast notifications for actions like uploads and user changes."
     },
     "logs": {
       "adminOnlyTitle": "Owner access only",
@@ -295,6 +324,13 @@
       "active": "Active",
       "inactive": "Inactive"
     },
+    "permFilters": {
+      "allPerms": "All permissions",
+      "canUpload": "Can upload",
+      "noUpload": "Cannot upload",
+      "canDelete": "Can delete own files",
+      "noDelete": "Cannot delete own files"
+    },
     "role": {
       "owner": "Owner",
       "visitor": "Visitor"
@@ -336,6 +372,23 @@
     },
     "cancel": "Cancel",
     "save": "Save changes",
+    "createUser": {
+      "button": "New user",
+      "title": "Create user",
+      "subtitle": "Register a new visitor account.",
+      "usernameLabel": "Username",
+      "usernamePlaceholder": "Enter username",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter password",
+      "permissionsTitle": "Permissions",
+      "save": "Create user",
+      "toast": {
+        "missingFields": "Please fill in all fields",
+        "success": "User created",
+        "successDesc": "\"{{name}}\" was created successfully.",
+        "error": "Could not create user"
+      }
+    },
     "uploadLimitLabel": "Upload limit (bytes)",
     "uploadLimitPlaceholder": "No limit",
     "toast": {
