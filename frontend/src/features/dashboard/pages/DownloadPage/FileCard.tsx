@@ -129,17 +129,17 @@ export default function FileCard({
         >
           {file.name}
         </h3>
+        <p className="mt-1 flex items-center gap-2 font-body text-xs font-medium text-ui-text-muted">
+          <span>{formatBytes(file.size_bytes)}</span>
+          <span className="h-1 w-1 rounded-full bg-ui-border"></span>
+          <span>{file.uploaded_at ? new Date(file.uploaded_at).toLocaleDateString() : "—"}</span>
+        </p>
         <p
           className="mt-1 flex min-w-0 items-center gap-1.5 font-body text-xs font-medium text-ui-text-muted"
           title={t("download.uploadedBy", { name: uploaderName })}
         >
           <FaUser className="h-3 w-3 shrink-0" />
           <span className="truncate">{uploaderName}</span>
-        </p>
-        <p className="mt-1 flex items-center gap-2 font-body text-xs font-medium text-ui-text-muted">
-          <span>{formatBytes(file.size_bytes)}</span>
-          <span className="h-1 w-1 rounded-full bg-ui-border"></span>
-          <span>{file.uploaded_at ? new Date(file.uploaded_at).toLocaleDateString() : "—"}</span>
         </p>
       </div>
 
