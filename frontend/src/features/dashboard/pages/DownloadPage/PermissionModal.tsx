@@ -229,27 +229,34 @@ export default function PermissionModal({
 
   return (
     // Cap the modal height and let the inner scroll area collapse properly (flex min-h-0).
+    // The modal opens with `paddingless`, so the shell only pads vertically and
+    // this modal owns the horizontal padding (per section) — the scrollbar
+    // sits flush against the modal edge.
     <div className="flex max-h-[65vh] min-h-0 w-full flex-col overflow-hidden">
-      {/* Fixed header: shrink-0 keeps it from collapsing while the body scrolls */}
-      <div className="flex shrink-0 items-center gap-4 border-b border-ui-border pb-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-ui-border bg-ui-base shadow-sm">
-          <FaLock className="text-xl text-ui-primary" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-heading text-xl font-bold text-ui-text">
-            {t("download.permissions.title")}
-          </h3>
-          <p
-            className="truncate font-body text-sm font-medium text-ui-text-muted"
-            title={displayName}
-          >
-            {displayName}
-          </p>
+      {/* Fixed header: shrink-0 keeps it from collapsing while the body scrolls.
+          Padded wrapper keeps the divider line aligned with the content. */}
+      <div className="shrink-0 px-6 sm:px-8">
+        <div className="flex items-center gap-4 border-b border-ui-border pb-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-ui-border bg-ui-base shadow-sm">
+            <FaLock className="text-xl text-ui-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-heading text-xl font-bold text-ui-text">
+              {t("download.permissions.title")}
+            </h3>
+            <p
+              className="truncate font-body text-sm font-medium text-ui-text-muted"
+              title={displayName}
+            >
+              {displayName}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Scrollable body: flex-1 + min-h-0 make this the only scrolling region */}
-      <div className="min-h-0 flex-1 overflow-y-auto py-4 pr-2 scrollbar scrollbar-rounded scrollbar-thin">
+      {/* Scrollable body: flex-1 + min-h-0 make this the only scrolling region.
+          Own x-padding keeps content inset while the scrollbar touches the edge. */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 scrollbar scrollbar-rounded scrollbar-thin sm:px-8">
         {!canManage ? (
           // Viewer-only caller: grant/revoke/visibility all require collaborator
           // level on the target files, so show a notice instead of dead controls.
@@ -400,13 +407,15 @@ export default function PermissionModal({
       </div>
 
       {/* Fixed footer */}
-      <div className="mt-2 shrink-0 border-t border-ui-border pt-4">
-        <button
-          onClick={close}
-          className="flex h-10 w-full items-center justify-center rounded-full border-2 border-ui-border bg-ui-front px-4 font-body text-sm font-semibold text-ui-text transition-all hover:border-ui-primary"
-        >
-          {t("users.cancel")}
-        </button>
+      <div className="shrink-0 px-6 sm:px-8">
+        <div className="mt-2 border-t border-ui-border pt-4">
+          <button
+            onClick={close}
+            className="flex h-10 w-full items-center justify-center rounded-full border-2 border-ui-border bg-ui-front px-4 font-body text-sm font-semibold text-ui-text transition-all hover:border-ui-primary"
+          >
+            {t("users.cancel")}
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -187,16 +187,20 @@ export default function DownloadPage() {
 
   // Open the filters modal; applying new filters resets pagination and refetches.
   const handleOpenFilters = useCallback(() => {
-    openComponent(FiltersModal, {
-      filters,
-      apiClient,
-      initialUsers: prefetchedUsers,
-      onApply: (next) => {
-        setFilters(next)
-        setOffset(0)
-        setFetchKey((k) => k + 1)
+    openComponent(
+      FiltersModal,
+      {
+        filters,
+        apiClient,
+        initialUsers: prefetchedUsers,
+        onApply: (next) => {
+          setFilters(next)
+          setOffset(0)
+          setFetchKey((k) => k + 1)
+        },
       },
-    })
+      { paddingless: true }
+    )
   }, [openComponent, filters, apiClient, prefetchedUsers])
 
   // Toggle a file in/out of the current selection.
@@ -310,14 +314,18 @@ export default function DownloadPage() {
   // Open the permissions modal for all selected files.
   const handleVisibilitySelected = useCallback(() => {
     if (selectedIds.size === 0) return
-    openComponent(PermissionModal, {
-      fileIds: Array.from(selectedIds),
-      apiClient,
-      initialVisibility,
-      canManage: selectedCanManage,
-      initialUsers: prefetchedUsers,
-      onRefresh: refetchCurrent,
-    })
+    openComponent(
+      PermissionModal,
+      {
+        fileIds: Array.from(selectedIds),
+        apiClient,
+        initialVisibility,
+        canManage: selectedCanManage,
+        initialUsers: prefetchedUsers,
+        onRefresh: refetchCurrent,
+      },
+      { paddingless: true }
+    )
   }, [
     selectedIds,
     openComponent,

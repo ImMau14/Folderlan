@@ -111,140 +111,149 @@ export default function FiltersModal({
     "h-10 w-full rounded-full border border-ui-border bg-ui-front px-3 text-sm text-ui-text placeholder-ui-text-muted transition-all focus:border-ui-primary focus:outline-none focus:ring-1 focus:ring-ui-primary dark:[color-scheme:dark]"
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-center gap-4 border-b border-ui-border pb-5">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-ui-border bg-ui-base shadow-sm">
-          <FaSliders className="text-xl text-ui-primary" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-heading text-xl font-bold text-ui-text">
-            {t("download.filters.title")}
-          </h3>
-          <p className="mt-0.5 font-body text-sm text-ui-text-muted">
-            {t("download.filters.subtitle")}
-          </p>
+    // The modal opens with `paddingless`, so the shell only pads vertically and
+    // this modal owns the horizontal padding (per section) — the scrollbar
+    // sits flush against the modal edge.
+    <div className="flex max-h-[65vh] min-h-0 w-full flex-col overflow-hidden">
+      {/* Fixed header with a padded wrapper so the divider aligns with the content */}
+      <div className="shrink-0 px-6 sm:px-8">
+        <div className="flex items-center gap-4 border-b border-ui-border pb-5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-ui-border bg-ui-base shadow-sm">
+            <FaSliders className="text-xl text-ui-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-heading text-xl font-bold text-ui-text">
+              {t("download.filters.title")}
+            </h3>
+            <p className="mt-0.5 font-body text-sm text-ui-text-muted">
+              {t("download.filters.subtitle")}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Form fields */}
-      <div className="flex flex-col gap-5">
-        {/* Uploader + visibility selectors */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
-              {t("download.filters.user")}
-            </h4>
-            <Select
-              value={uploadedBy}
-              placeholder={t("download.filters.allUsers")}
-              options={userOptions}
-              onChange={setUploadedBy}
-            />
+      {/* Scrollable form fields: only this region scrolls, scrollbar at the edge */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 scrollbar scrollbar-rounded scrollbar-thin sm:px-8">
+        <div className="flex flex-col gap-5">
+          {/* Uploader + visibility selectors */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
+                {t("download.filters.user")}
+              </h4>
+              <Select
+                value={uploadedBy}
+                placeholder={t("download.filters.allUsers")}
+                options={userOptions}
+                onChange={setUploadedBy}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
+                {t("download.filters.visibility")}
+              </h4>
+              <Select
+                value={visibility}
+                placeholder={t("download.filters.all")}
+                options={[
+                  { value: "", label: t("download.filters.all") },
+                  { value: "public", label: t("download.filters.public") },
+                  { value: "private", label: t("download.filters.private") },
+                ]}
+                onChange={setVisibility}
+              />
+            </div>
           </div>
 
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
-              {t("download.filters.visibility")}
-            </h4>
-            <Select
-              value={visibility}
-              placeholder={t("download.filters.all")}
-              options={[
-                { value: "", label: t("download.filters.all") },
-                { value: "public", label: t("download.filters.public") },
-                { value: "private", label: t("download.filters.private") },
-              ]}
-              onChange={setVisibility}
-            />
-          </div>
-        </div>
+          {/* Section divider */}
+          <hr className="border-t border-ui-border" />
 
-        {/* Section divider */}
-        <hr className="border-t border-ui-border" />
+          {/* Size range inputs */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
+                {t("download.filters.minSize")}
+              </h4>
+              <input
+                type="number"
+                min={0}
+                value={minSize}
+                onChange={(e) => setMinSize(e.target.value)}
+                placeholder={t("download.filters.minSize")}
+                aria-label={t("download.filters.minSize")}
+                className={inputBaseClasses}
+              />
+            </div>
 
-        {/* Size range inputs */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
-              {t("download.filters.minSize")}
-            </h4>
-            <input
-              type="number"
-              min={0}
-              value={minSize}
-              onChange={(e) => setMinSize(e.target.value)}
-              placeholder={t("download.filters.minSize")}
-              aria-label={t("download.filters.minSize")}
-              className={inputBaseClasses}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
-              {t("download.filters.maxSize")}
-            </h4>
-            <input
-              type="number"
-              min={0}
-              value={maxSize}
-              onChange={(e) => setMaxSize(e.target.value)}
-              placeholder={t("download.filters.maxSize")}
-              aria-label={t("download.filters.maxSize")}
-              className={inputBaseClasses}
-            />
-          </div>
-        </div>
-
-        {/* Upload date range inputs */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
-              {t("download.filters.startDate")}
-            </h4>
-            <input
-              type="date"
-              max={endDate || undefined}
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              placeholder={t("download.filters.startDate")}
-              aria-label={t("download.filters.startDate")}
-              className={inputBaseClasses}
-            />
+            <div className="flex flex-col gap-1.5">
+              <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
+                {t("download.filters.maxSize")}
+              </h4>
+              <input
+                type="number"
+                min={0}
+                value={maxSize}
+                onChange={(e) => setMaxSize(e.target.value)}
+                placeholder={t("download.filters.maxSize")}
+                aria-label={t("download.filters.maxSize")}
+                className={inputBaseClasses}
+              />
+            </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
-              {t("download.filters.endDate")}
-            </h4>
-            <input
-              type="date"
-              min={startDate || undefined}
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              placeholder={t("download.filters.endDate")}
-              aria-label={t("download.filters.endDate")}
-              className={inputBaseClasses}
-            />
+          {/* Upload date range inputs */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
+                {t("download.filters.startDate")}
+              </h4>
+              <input
+                type="date"
+                max={endDate || undefined}
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                placeholder={t("download.filters.startDate")}
+                aria-label={t("download.filters.startDate")}
+                className={inputBaseClasses}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
+                {t("download.filters.endDate")}
+              </h4>
+              <input
+                type="date"
+                min={startDate || undefined}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                placeholder={t("download.filters.endDate")}
+                aria-label={t("download.filters.endDate")}
+                className={inputBaseClasses}
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Footer actions */}
-      <div className="mt-2 flex w-full gap-3">
-        <button
-          onClick={handleClear}
-          className="flex flex-1 items-center justify-center rounded-full border-2 border-ui-border bg-ui-front px-4 py-2.5 font-body text-sm font-semibold text-ui-text transition-all hover:border-ui-primary"
-        >
-          {t("download.filters.clear")}
-        </button>
-        <button
-          onClick={handleApply}
-          disabled={!hasChanges}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-ui-primary px-4 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-ui-primary-hover disabled:pointer-events-none disabled:opacity-50 dark:text-ui-base"
-        >
-          {t("download.filters.apply")}
-        </button>
+      <div className="shrink-0 px-6 sm:px-8">
+        <div className="mt-2 flex w-full gap-3 border-t border-ui-border pt-4">
+          <button
+            onClick={handleClear}
+            className="flex flex-1 items-center justify-center rounded-full border-2 border-ui-border bg-ui-front px-4 py-2.5 font-body text-sm font-semibold text-ui-text transition-all hover:border-ui-primary"
+          >
+            {t("download.filters.clear")}
+          </button>
+          <button
+            onClick={handleApply}
+            disabled={!hasChanges}
+            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-ui-primary px-4 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-ui-primary-hover disabled:pointer-events-none disabled:opacity-50 dark:text-ui-base"
+          >
+            {t("download.filters.apply")}
+          </button>
+        </div>
       </div>
     </div>
   )
