@@ -116,7 +116,7 @@ export default function FiltersModal({
     // sits flush against the modal edge.
     <div className="flex max-h-[65vh] min-h-0 w-full flex-col overflow-hidden">
       {/* Fixed header with a padded wrapper so the divider aligns with the content */}
-      <div className="shrink-0 px-6 sm:px-8">
+      <div className="shrink-0 px-8">
         <div className="flex items-center gap-4 border-b border-ui-border pb-5">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-ui-border bg-ui-base shadow-sm">
             <FaSliders className="text-xl text-ui-primary" />
@@ -133,7 +133,7 @@ export default function FiltersModal({
       </div>
 
       {/* Scrollable form fields: only this region scrolls, scrollbar at the edge */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 scrollbar scrollbar-rounded scrollbar-thin sm:px-8">
+      <div className="min-h-0 flex-1 overflow-y-auto py-4 pl-8 pr-8 scrollbar scrollbar-rounded scrollbar-thin sm:pr-5">
         <div className="flex flex-col gap-5">
           {/* Uploader + visibility selectors */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -238,7 +238,7 @@ export default function FiltersModal({
       </div>
 
       {/* Footer actions */}
-      <div className="shrink-0 px-6 sm:px-8">
+      <div className="shrink-0 px-8">
         <div className="mt-2 flex w-full gap-3 border-t border-ui-border pt-4">
           <button
             onClick={handleClear}

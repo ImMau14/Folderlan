@@ -235,7 +235,7 @@ export default function PermissionModal({
     <div className="flex max-h-[65vh] min-h-0 w-full flex-col overflow-hidden">
       {/* Fixed header: shrink-0 keeps it from collapsing while the body scrolls.
           Padded wrapper keeps the divider line aligned with the content. */}
-      <div className="shrink-0 px-6 sm:px-8">
+      <div className="shrink-0 px-8">
         <div className="flex items-center gap-4 border-b border-ui-border pb-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-ui-border bg-ui-base shadow-sm">
             <FaLock className="text-xl text-ui-primary" />
@@ -256,7 +256,7 @@ export default function PermissionModal({
 
       {/* Scrollable body: flex-1 + min-h-0 make this the only scrolling region.
           Own x-padding keeps content inset while the scrollbar touches the edge. */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 scrollbar scrollbar-rounded scrollbar-thin sm:px-8">
+      <div className="min-h-0 flex-1 overflow-y-auto py-4 pl-8 pr-8 scrollbar scrollbar-rounded scrollbar-thin sm:pr-5">
         {!canManage ? (
           // Viewer-only caller: grant/revoke/visibility all require collaborator
           // level on the target files, so show a notice instead of dead controls.
@@ -407,7 +407,7 @@ export default function PermissionModal({
       </div>
 
       {/* Fixed footer */}
-      <div className="shrink-0 px-6 sm:px-8">
+      <div className="shrink-0 px-8">
         <div className="mt-2 border-t border-ui-border pt-4">
           <button
             onClick={close}

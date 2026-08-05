@@ -141,7 +141,7 @@ function ModalRoot({
 }) {
   const widthClasses = wide ? "max-w-md sm:max-w-lg md:max-w-3xl" : "max-w-md sm:max-w-lg"
   const themeClass = theme === "dark" ? "dark" : ""
-  const paddingClasses = paddingless ? "px-0 py-6 sm:py-8" : "p-6 sm:p-8"
+  const paddingClasses = paddingless ? "px-0 py-8" : "p-6 sm:p-8"
 
   return createPortal(
     <div className={themeClass} data-modal="">
