@@ -254,6 +254,28 @@ async fn test_full_api_workflow() {
     assert!(users_body["success"].as_bool().unwrap());
     assert!(users_body["data"]["items"].as_array().unwrap().len() >= 3);
 
+    // Any authenticated user (not just the owner) can list users
+    let visitor_users_resp = app
+        .get_users_via_api(&visitor_token, &[("limit", "10")])
+        .await
+        .expect("GET /api/users as visitor failed");
+    assert!(
+        visitor_users_resp.status().is_success(),
+        "Visitor should be able to list users. Status: {}",
+        visitor_users_resp.status()
+    );
+
+    let visitor_users_body: serde_json::Value =
+        visitor_users_resp.json().await.expect("Invalid json");
+    assert!(visitor_users_body["success"].as_bool().unwrap());
+    assert!(
+        visitor_users_body["data"]["items"]
+            .as_array()
+            .unwrap()
+            .len()
+            >= 3
+    );
+
     let visitor_id = app
         .find_user_id_by_username(&owner_token, "test_visitor")
         .await

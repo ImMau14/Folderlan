@@ -19,7 +19,6 @@ pub fn users_config(cfg: &mut web::ServiceConfig) {
             )
             .service(
                 web::resource("")
-                    .wrap(RoleAuth::new(&["owner"]))
                     .wrap(HttpAuthentication::bearer(jwt_validator_adapter))
                     .route(web::get().to(get_users)),
             )

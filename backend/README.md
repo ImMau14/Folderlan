@@ -661,7 +661,7 @@ If the `(file, user)` pair already exists, the level and `granted_by` are update
 
 ### User Management
 
-All endpoints under `/api/user` require authentication. Most are restricted to the **owner** role, except for `GET /api/user/me` and `GET /api/user/{id}/accessible`.
+All endpoints under `/api/user` require authentication. Some are restricted to the **owner** role (see individual descriptions), while others are accessible to any authenticated user.
 
 <details>
 <summary><code>GET /api/user/me</code> – Get current user profile</summary>
@@ -690,7 +690,9 @@ All endpoints under `/api/user` require authentication. Most are restricted to t
 </details>
 
 <details>
-<summary><code>GET /api/user</code> – List users (owner only)</summary>
+<summary><code>GET /api/user</code> – List users</summary>
+
+**Access:** authenticated (any role; previously restricted to owner, now open to all authenticated users)
 
 **Query parameters:**
 - `name` – substring match
