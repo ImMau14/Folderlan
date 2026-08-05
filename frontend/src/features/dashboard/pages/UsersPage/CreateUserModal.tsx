@@ -26,7 +26,7 @@ function SwitchRow({ checked, label, onToggle }: SwitchRowProps) {
     <button
       type="button"
       onClick={() => onToggle(!checked)}
-      className="flex w-full items-center justify-between rounded-xl border border-ui-border-muted bg-ui-front px-4 py-3 transition-colors hover:border-ui-primary"
+      className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-ui-border-muted bg-ui-front px-4 py-3 transition-colors hover:border-ui-primary"
     >
       <span className="font-body text-sm font-medium text-ui-text">{label}</span>
       <span
@@ -197,7 +197,8 @@ export default function CreateUserModal({ apiClient, onSuccess }: CreateUserModa
           onClick={close}
           disabled={saving}
           whileTap={!saving ? { scale: 0.95 } : undefined}
-          className="flex flex-1 items-center justify-center rounded-full border-2 border-ui-border bg-ui-front px-4 py-2 font-body text-sm font-semibold text-ui-text transition-all hover:border-ui-primary disabled:opacity-50"
+          transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
+          className="flex flex-1 cursor-pointer items-center justify-center rounded-full border-2 border-ui-border bg-ui-front px-4 py-2 font-body text-sm font-semibold text-ui-text transition-all hover:border-ui-primary disabled:cursor-not-allowed disabled:opacity-50"
         >
           {t("users.cancel")}
         </motion.button>
@@ -205,7 +206,8 @@ export default function CreateUserModal({ apiClient, onSuccess }: CreateUserModa
           onClick={handleSave}
           disabled={saving}
           whileTap={!saving ? { scale: 0.95 } : undefined}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-ui-primary px-4 py-2 font-body text-sm font-semibold text-ui-highlight transition-all hover:bg-ui-primary-hover disabled:opacity-50 dark:text-ui-base"
+          transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
+          className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full bg-ui-primary px-4 py-2 font-body text-sm font-semibold text-ui-highlight transition-all hover:bg-ui-primary-hover disabled:cursor-not-allowed disabled:opacity-50 dark:text-ui-base"
         >
           {saving ? (
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />

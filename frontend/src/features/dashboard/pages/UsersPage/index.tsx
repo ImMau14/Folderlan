@@ -8,6 +8,7 @@ import { useI18n } from "@i18n/context/I18nContext"
 import { useModal } from "@modal/context/ModalContext"
 import ApiClient from "@shared/utils/ApiClient"
 import Input from "@shared/components/Input"
+import Select from "@shared/components/Select"
 import type { User } from "@shared/utils/ApiClient/types"
 import { setPageName } from "@shared/utils/setPageName"
 import FloatingContainer from "../../components/FloatingContainer"
@@ -177,7 +178,7 @@ export default function UsersPage() {
           transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
           style={{ opacity: 0 }}
         >
-          <FloatingContainer className="w-full !items-stretch !p-5 sm:!p-6">
+          <FloatingContainer className="w-full !items-stretch border border-ui-border !p-5 sm:!p-6">
             <div className="flex w-full flex-col gap-4">
               <div className="flex items-start gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-ui-border-muted bg-ui-front">
@@ -195,7 +196,8 @@ export default function UsersPage() {
                   onClick={openCreateUserModal}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex shrink-0 items-center gap-2 rounded-full bg-ui-primary px-4 py-2 font-body text-sm font-semibold text-ui-highlight transition-colors hover:bg-ui-primary-hover dark:text-ui-base"
+                  transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
+                  className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full bg-ui-primary px-4 py-2 font-body text-sm font-semibold text-ui-highlight transition-colors hover:bg-ui-primary-hover dark:text-ui-base"
                 >
                   <FaUserPlus className="text-sm" />
                   {t("users.createUser.button")}
@@ -212,28 +214,30 @@ export default function UsersPage() {
                     className="pl-11"
                   />
                 </div>
-                <select
+                <Select
                   value={status}
-                  onChange={(e) => handleStatusChange(e.target.value as StatusFilter)}
-                  className="rounded-full border-2 border-ui-border bg-ui-front px-3 py-2 font-body text-sm text-ui-text transition-colors focus:border-ui-primary focus:outline-none focus:ring-2 focus:ring-ui-primary sm:w-44"
-                >
-                  <option value="">{t("users.filters.all")}</option>
-                  <option value="active">{t("users.filters.active")}</option>
-                  <option value="inactive">{t("users.filters.inactive")}</option>
-                </select>
-                <select
+                  onChange={(v) => handleStatusChange(v as StatusFilter)}
+                  placeholder={t("users.filters.all")}
+                  options={[
+                    { value: "", label: t("users.filters.all") },
+                    { value: "active", label: t("users.filters.active") },
+                    { value: "inactive", label: t("users.filters.inactive") },
+                  ]}
+                  className="sm:w-44"
+                />
+                <Select
                   value={perm}
-                  onChange={(e) => handlePermChange(e.target.value as PermFilter)}
-                  className="rounded-full border-2 border-ui-border bg-ui-front px-3 py-2 font-body text-sm text-ui-text transition-colors focus:border-ui-primary focus:outline-none focus:ring-2 focus:ring-ui-primary sm:w-48"
-                >
-                  <option value="">{t("users.permFilters.allPerms")}</option>
-                  <option value="can_upload">{t("users.permFilters.canUpload")}</option>
-                  <option value="can_upload:false">{t("users.permFilters.noUpload")}</option>
-                  <option value="can_delete_own_files">{t("users.permFilters.canDelete")}</option>
-                  <option value="can_delete_own_files:false">
-                    {t("users.permFilters.noDelete")}
-                  </option>
-                </select>
+                  onChange={(v) => handlePermChange(v as PermFilter)}
+                  placeholder={t("users.permFilters.allPerms")}
+                  options={[
+                    { value: "", label: t("users.permFilters.allPerms") },
+                    { value: "can_upload", label: t("users.permFilters.canUpload") },
+                    { value: "can_upload:false", label: t("users.permFilters.noUpload") },
+                    { value: "can_delete_own_files", label: t("users.permFilters.canDelete") },
+                    { value: "can_delete_own_files:false", label: t("users.permFilters.noDelete") },
+                  ]}
+                  className="sm:w-48"
+                />
               </div>
             </div>
           </FloatingContainer>

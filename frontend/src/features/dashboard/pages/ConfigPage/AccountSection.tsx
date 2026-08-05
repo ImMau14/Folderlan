@@ -67,7 +67,7 @@ export default function AccountSection({ myBytes }: AccountSectionProps) {
         <div className="flex flex-col gap-5">
           {/* Avatar + nombre + rol */}
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-ui-primary/15 font-heading text-2xl font-extrabold tracking-tight text-ui-primary">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-ui-primary/15 font-heading text-2xl font-bold tracking-tight text-ui-primary">
               {initial}
             </div>
             <div className="min-w-0">
@@ -82,7 +82,7 @@ export default function AccountSection({ myBytes }: AccountSectionProps) {
                     : "bg-ui-secondary/15 text-ui-secondary"
                 )}
               >
-                <FaUserShield className="text-[10px]" />
+                <FaUserShield className="text-xs" />
                 {isOwner ? t("users.role.owner") : t("users.role.visitor")}
               </span>
             </div>

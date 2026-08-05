@@ -214,7 +214,7 @@ export default function ConfigPage() {
                 <FaGear className="text-xl text-ui-primary" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="font-heading text-2xl font-bold tracking-tight text-ui-text">
+                <h2 className="font-heading text-xl font-bold tracking-tight text-ui-text">
                   {t("menu.config")}
                 </h2>
                 <p className="mt-1 font-body text-sm font-medium text-ui-text-muted">

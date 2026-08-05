@@ -32,8 +32,9 @@ function ActionButton({ action, title, disabled, className, onClick }: ActionBut
       disabled={disabled}
       whileHover={disabled ? undefined : { scale: 1.1 }}
       whileTap={disabled ? undefined : { scale: 0.9 }}
+      transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
       className={clsx(
-        "rounded-lg p-2 opacity-100 transition-all disabled:cursor-not-allowed disabled:opacity-40",
+        "cursor-pointer rounded-lg p-2 opacity-100 transition-all disabled:cursor-not-allowed disabled:opacity-40",
         className
       )}
       title={title}
@@ -48,7 +49,7 @@ function PermChip({ label, on }: { label: string; on: boolean }) {
     <span
       title={label}
       className={clsx(
-        "rounded-lg px-2.5 py-1 font-body text-xs",
+        "rounded-lg px-2.5 py-1 font-body text-xs font-semibold",
         on ? "bg-ui-success/15 text-ui-success" : "bg-ui-front text-ui-text-muted/60"
       )}
     >
@@ -121,7 +122,7 @@ export default function UserTable({
                     >
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ui-border bg-ui-front font-body text-xs font-bold text-ui-primary">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ui-border bg-ui-front font-heading text-xs font-bold text-ui-primary">
                             {user.username.charAt(0).toUpperCase()}
                           </div>
                           <span
@@ -135,7 +136,7 @@ export default function UserTable({
                       <td className="px-4 py-3.5">
                         <span
                           className={clsx(
-                            "inline-block rounded-lg px-2.5 py-1 font-body text-xs",
+                            "inline-block rounded-lg px-2.5 py-1 font-body text-xs font-semibold",
                             isOwner(user)
                               ? "bg-ui-primary/15 text-ui-primary"
                               : "bg-ui-front text-ui-text-muted"
@@ -167,11 +168,11 @@ export default function UserTable({
                           <PermChip label={t("users.canUpload")} on={user.can_upload} />
                           <PermChip label={t("users.canDelete")} on={user.can_delete_own_files} />
                           {user.has_upload_limits ? (
-                            <span className="rounded-lg bg-ui-front px-2.5 py-1 font-body text-xs text-ui-text-muted">
+                            <span className="rounded-lg bg-ui-front px-2.5 py-1 font-body text-xs font-semibold text-ui-text-muted">
                               {t("users.limitOf", { size: formatBytes(user.upload_limit) })}
                             </span>
                           ) : (
-                            <span className="rounded-lg bg-ui-front px-2.5 py-1 font-body text-xs text-ui-text-muted">
+                            <span className="rounded-lg bg-ui-front px-2.5 py-1 font-body text-xs font-semibold text-ui-text-muted">
                               {t("users.noLimit")}
                             </span>
                           )}
@@ -240,7 +241,7 @@ export default function UserTable({
                   className="flex items-center gap-3 rounded-xl border border-ui-border-muted bg-ui-front/50 p-3 transition-colors hover:bg-ui-front"
                 >
                   <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ui-border bg-ui-front font-body text-xs font-bold text-ui-primary">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ui-border bg-ui-front font-heading text-xs font-bold text-ui-primary">
                       {user.username.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -258,7 +259,7 @@ export default function UserTable({
                           )}
                         />
                       </div>
-                      <div className="mt-0.5 truncate text-xs text-ui-text-muted">
+                      <div className="mt-0.5 truncate font-body text-xs font-medium text-ui-text-muted">
                         {t(`users.role.${user.role}`)} ·{" "}
                         {user.is_active ? t("users.status.active") : t("users.status.inactive")} ·{" "}
                         {formatSqliteDatetime(user.created_at)}

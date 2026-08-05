@@ -103,7 +103,7 @@ export default function LogFilters({
             <h3 className="font-heading text-lg font-bold text-ui-text">
               {t("config.filters.title")}
             </h3>
-            <p className="text-xs text-ui-text-muted">
+            <p className="font-body text-xs font-medium text-ui-text-muted">
               {hasActiveFilters
                 ? t("config.filters.activeFilters")
                 : t("config.filters.noActiveFilters")}
@@ -114,7 +114,7 @@ export default function LogFilters({
         {/* Controles de filtro */}
         <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
+            <span className="font-body text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
               {t("config.filters.eventType")}
             </span>
             <Select
@@ -127,7 +127,7 @@ export default function LogFilters({
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
+            <span className="font-body text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
               {t("config.filters.status")}
             </span>
             <Select
@@ -140,7 +140,7 @@ export default function LogFilters({
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
+            <span className="font-body text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
               {t("config.filters.user")}
             </span>
             <Select
@@ -153,7 +153,7 @@ export default function LogFilters({
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
+            <span className="font-body text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
               {t("config.filters.startDate")}
             </span>
             <input
@@ -165,7 +165,7 @@ export default function LogFilters({
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
+            <span className="font-body text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
               {t("config.filters.endDate")}
             </span>
             <input
