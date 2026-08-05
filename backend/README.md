@@ -1,808 +1,879 @@
-# Folderlan Backend Documentation · [![Rust CI](https://github.com/ImMau14/Folderlan/actions/workflows/rust-ci.yaml/badge.svg)](https://github.com/ImMau14/Folderlan/actions/workflows/rust-ci.yaml)
+# 📁 Folderlan Backend · [![Rust CI](https://github.com/ImMau14/Folderlan/actions/workflows/rust-ci.yaml/badge.svg)](https://github.com/ImMau14/Folderlan/actions/workflows/rust-ci.yaml)
 
-## Table of contents
-
-1. [Quick start](#quick-start)  
-2. [Build & run (developer steps)](#build--run-developer-steps)  
-3. [Configuration — Environment variables](#configuration--environment-variables)  
-   - [Main server variables](#main-server-variables)  
-   - [Watcher variables](#watcher-variables)  
-4. [File system watcher](#file-system-watcher)  
-   - [Pipeline](#pipeline)  
-   - [Guarantees & features](#guarantees--features)  
-5. [API reference](#api-reference)  
-   - [Database management](#database-management)  
-   - [Authentication](#authentication)  
-   - [Audit logs](#audit-logs)  
-   - [File management](#file-management)  
-   - [User management](#user-management)  
-6. [Common rules: auth / pagination / errors](#common-rules-auth--pagination--errors)  
-7. [Appendix: canonical response schemas](#appendix-canonical-response-schemas)  
+REST API for the Folderlan file‑sharing platform — handles authentication, user management, file operations, permissions, and real‑time filesystem monitoring.
 
 ---
 
-# Quick start
-1. Clone repo and go to backend:
+## Index
 
-  ```bash
-  cd backend
-````
-
-2. Build or run:
-
-```bash
-cargo build            # or cargo run
-cargo build --release  # for optimized binary
-```
-
-3. First run will:
-
-* Create the SQLite file (default `db/app.db`);
-* Create `uploads` directory;
-* Require creating a single **owner** account (use local-only owner registration endpoint).
-
-4. Configure runtime via environment variables (see [Configuration](#configuration--environment-variables-explanation-only)).
-
----
-
-# Build & run (developer steps)
-
-1. Change dir:
-
-```bash
-cd backend
-```
-
-2. Debug build & run:
-
-```bash
-cargo run
-```
-
-3. Release build:
-
-```bash
-cargo build --release
-./target/release/backend # Or backend.exe on Windows
-```
-
-4. `sqlx` query macros (`query!`, `query_as!`, `query_scalar!`) are type-checked at compile time against a real database. Create a local `backend/.env` (git-ignored) with:
-
-```bash
-DATABASE_URL=sqlite:db/app.db
-```
-
-   After editing any query macro, regenerate the checked-in offline cache:
-
-```bash
-cargo sqlx prepare
-```
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [Configuration – Environment Variables](#configuration--environment-variables)
+- [Architecture & Core Concepts](#architecture--core-concepts)
+  - [User Roles](#user-roles)
+  - [File Permissions](#file-permissions)
+  - [How Roles & Permissions Combine](#how-roles--permissions-combine)
+  - [Authentication & Authorization Flow](#authentication--authorization-flow)
+  - [Database Schema](#database-schema)
+  - [File Watcher](#file-watcher)
+- [API Reference](#api-reference)
+  - [Database Management](#database-management)
+  - [Authentication](#authentication)
+  - [File Management](#file-management)
+  - [File Permissions](#file-permissions-1)
+  - [User Management](#user-management)
+  - [Audit Logs](#audit-logs)
+- [Common Rules: Pagination, Filters & Errors](#common-rules)
+- [Appendix: Canonical Response Schema](#appendix-canonical-response-schema)
 
 ---
 
-# Configuration — Environment variables
+## Overview
 
-## Main server variables
+<details>
+<summary><strong>What is Folderlan Backend?</strong></summary>
 
-|      Name       |      Type     |         Default         | Purpose / Notes                                                                       |
-| :-----------:   | :-----------: | :---------------------: | ------------------------------------------------------------------------------------- |
-|   `OFF_CORS`    |    boolean    |         `false`         | If `true`, modifies CORS builder behavior. Set to `true` for restricted environments. |
-|   `LOCAL_ONLY`  |    boolean    |         `true`          | If `true`, disable the protection middleware only for local endpoints                 |
-|     `PORT`      |    integer    |         `8080`          | TCP port to bind server.                                                              |
-|   `ADDRESS`     |     string    |        `0.0.0.0`        | Bind address. Use `127.0.0.1` for local-only.                                         |
-| `SQLITE_FILE`   | string (path) |       `db/app.db`       | SQLite DB file path. Parent dirs are created automatically.                           |
-|  `SECRET_JWT`   |     string    |         Random          | JWT signing secret.                                                                   |
+Folderlan Backend is the server‑side component of the Folderlan file‑sharing application. It exposes a RESTful API built with **Actix‑web** and **SQLite**.  
+Its responsibilities include:
 
-**Usage:** set env vars in shell, systemd, or container env. Example:
+- Managing exactly one **owner** account and multiple **visitor** accounts.
+- Handling file uploads, downloads, listing, and deletion with granular permissions.
+- Enforcing storage quotas per user.
+- Granting and revoking per‑file access rights (`viewer` / `collaborator`).
+- Toggling file visibility (public/private).
+- Watching the `uploads/` directory in real time and automatically registering new or deleted files.
+- Providing an auditable trail of all security‑relevant events.
+- Exposing the authenticated user's profile via `/api/user/me`.
 
-```bash
-export PORT=8080
-export SECRET_JWT="change-me"
+The backend does **not** include a graphical interface. It is designed to be consumed by the [Folderlan frontend](https://github.com/ImMau14/Folderlan) or any HTTP client.
+
+</details>
+
+<details>
+<summary><strong>Project structure</strong></summary>
+
+```
+backend/
+├── migrations/             # SQL migration scripts (applied on first POST /api/db)
+├── src/
+│   ├── controllers/        # Route handlers grouped by domain (auth, files, users, audit, db)
+│   ├── middleware/          # JWT validation, role checks, permission checks, local‑only guard
+│   ├── models/             # Shared types and response builders
+│   ├── utils/              # Database helpers (register user, register file, check permissions), password hashing
+│   ├── watcher/            # Filesystem monitor logic (config, locks, metrics, processing)
+│   ├── lib.rs              # App configuration, CORS setup, route mounting
+│   └── main.rs             # Entry point, DB initialisation, server startup
+├── Cargo.toml
+└── README.md
 ```
 
-## Watcher variables
-
-|              Name             |   Type  | Typical value | Purpose                                             |
-| :---------------------------: | :-----: | :-----------: | --------------------------------------------------- |
-|   `WATCHER_IGNORE_TTL_SECS`   | integer |      `30`     | Avoid reprocessing same file for this many seconds. |
-|  `WATCHER_STABILITY_CHECK_MS` | integer |     `300`     | Milliseconds between file size checks.              |
-|  `WATCHER_STABILITY_REQUIRED` | integer |      `3`      | Required number of stable checks before processing. |
-|    `WATCHER_LOCK_TTL_SECS`    | integer |     `300`     | TTL for cleaning idle per-file locks.               |
-| `WATCHER_PRUNE_INTERVAL_SECS` | integer |      `10`     | Cleanup frequency for internal structures.          |
-|   `WATCHER_CHANNEL_CAPACITY`  | integer |      `64`     | Internal event channel capacity.                    |
-
-**Note:** increase stability values for remote filesystems (NFS/SMB).
+</details>
 
 ---
 
-# File system watcher
+## Quick Start
 
-## Purpose
+<details>
+<summary><strong>First run – step by step</strong></summary>
 
-Monitors `uploads` folder, detects finished file writes, and registers changes in the DB (or logs them if DB unavailable).
+1. **Clone the repository and enter the backend directory**  
+   ```bash
+   git clone https://github.com/ImMau14/Folderlan.git
+   cd Folderlan/backend
+   ```
 
-## Pipeline
+2. **Build and run the server**  
+   ```bash
+   cargo run --release
+   ```
+   The server starts on `http://0.0.0.0:8080` by default.
 
-1. **Event received** (create/modify/remove).
-2. **Filter**: ignore directories and configured tmp-subdir.
-3. **Stability checks**: poll size until it stops growing (configurable).
-4. **Acquire per-file lock** (async mutex).
-5. **Register**: insert/update/delete DB record with metadata (size, mime, owner).
-6. **Mark processed** (in-memory TTL) to avoid immediate reprocessing.
+3. **Initial setup (all requests must come from the same machine)**  
+   The database is empty at this point. Use the following endpoints **in order**:
 
-## Guarantees & features
+   ```bash
+   # a) Run migrations (create tables)
+   curl -X POST http://127.0.0.1:8080/api/db
 
-* Duplicate events are suppressed via short TTL.
-* Temporary subdirectory (e.g., `tmp`) is ignored to avoid partial uploads.
-* Per-file locks avoid race conditions for concurrent events.
-* When DB is unavailable, watcher falls back to log-only mode (does not crash server).
-* Metrics: internal counters and periodic logs for observability.
+   # b) Register the owner account
+   curl -X POST http://127.0.0.1:8080/api/auth/owner_register \
+     -H "Content-Type: application/json" \
+     -d '{"username":"admin","password":"supersecret"}'
 
----
+   # c) Log in and obtain a JWT token
+   curl -X POST http://127.0.0.1:8080/api/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"username":"admin","password":"supersecret"}'
+   ```
+   The returned `token` field must be included in all subsequent authenticated requests as `Authorization: Bearer <token>`.
 
-# API reference
+4. **Create your first visitor** (example)  
+   ```bash
+   curl -X POST http://127.0.0.1:8080/api/auth/register \
+     -H "Authorization: Bearer <owner_token>" \
+     -H "Content-Type: application/json" \
+     -d '{"username":"alice","password":"alice123","can_upload":true,"can_delete_own_files":true,"has_upload_limits":false,"upload_limit":0}'
+   ```
 
-## Database management
-
-### GET `/api/db` — Check database existence
-
-* **Access**: public
-* **Method**: `GET`
-* **Headers**: none
-* **Query**: none
-* **Body**: none
-* **Response (200)**:
-
-  ```json
-  {
-    "success": true,
-    "exists": true
-  }
-  ```
-* **Errors**: `500` when db aren't initialized.
-
-### POST `/api/db` — Initialize database
-
-* **Access**: Local-only
-* **Method**: `POST`
-* **Body**: none
-* **Response (200)**:
-
-  ```json
-  {
-    "success": true,
-    "message": "Database initialized"
-  }
-  ```
-* **Errors**: `500` on schema execution or file read error.
+</details>
 
 ---
 
-## Authentication
+## Configuration – Environment Variables
 
-### POST `/api/auth/login`
+<details>
+<summary><strong>Main server variables</strong></summary>
 
-* **Access**: public
+| Variable      | Type   | Default     | Description |
+|---------------|--------|-------------|-------------|
+| `PORT`        | u16    | `8080`      | TCP port to bind. |
+| `ADDRESS`     | string | `0.0.0.0`   | Bind address. Use `127.0.0.1` for local‑only exposure. |
+| `SQLITE_FILE` | string | `db/app.db` | Path to the SQLite database file. Parent directories are created automatically. |
+| `SECRET_JWT`  | string | *random hex* | Secret key for signing JWTs (HS256). If not set, a new random key is generated **on every start**, invalidating previous tokens. Set it explicitly for persistence. |
+| `OFF_CORS`    | bool   | `false`     | If `true`, allows all origins (`Cors::permissive()`). If `false`, restricts CORS to `http://{ADDRESS}:{PORT}` with methods `GET, POST, DELETE, PATCH, OPTIONS` and headers `Content-Type, Authorization`. |
+| `LOCAL_ONLY`  | bool   | `true`      | If `true`, endpoints guarded by `LocalOnly` middleware only accept requests from `127.0.0.1` or `::1`. Set to `false` to disable this protection (e.g., when behind a reverse proxy). |
 
-* **Method**: `POST`
+</details>
 
-* **Headers**: `Content-Type: application/json`
+<details>
+<summary><strong>File Watcher variables</strong></summary>
 
-* **Body (required)**:
+These control the real‑time monitor that watches the `uploads/` directory.
 
-  ```json
-  {
-    "username": "alice",
-    "password": "s3cr3t"
-  }
-  ```
+| Variable                         | Type  | Default | Description |
+|----------------------------------|-------|---------|-------------|
+| `WATCHER_IGNORE_TTL_SECS`        | u64   | `30`    | Seconds to ignore a file that was recently processed (avoids duplicate events). |
+| `WATCHER_STABILITY_CHECK_MS`     | u64   | `300`   | Milliseconds between consecutive size checks while waiting for a file to stop growing. |
+| `WATCHER_STABILITY_REQUIRED`     | usize | `3`     | Number of consecutive stable‑size checks required before a file is considered completely written. |
+| `WATCHER_LOCK_TTL_SECS`          | u64   | `300`   | Seconds an idle per‑file lock stays alive before being pruned from memory. |
+| `WATCHER_PRUNE_INTERVAL_SECS`    | u64   | `10`    | How often the watcher cleans up expired internal structures. |
+| `WATCHER_CHANNEL_CAPACITY`       | usize | `64`    | Size of the internal event channel buffer. |
 
-* **Response (200)**:
+> **Note:** For remote or slow filesystems (NFS, SMB), consider increasing stability values to avoid processing incomplete files.
 
-  ```json
-  {
-    "success": true,
-    "message": "Login successful",
-    "token": "eyJhbGciOiJIUzI1NiIs..."
-  }
-  ```
-
-* **Notes**: token expires in 1 hour.
-
-* **Errors**: `401` invalid credentials, `500` server error.
-
-### POST `/api/auth/register` — Register visitor
-
-* **Access**: Owner (must include `Authorization: Bearer <token>`)
-
-* **Method**: `POST`
-
-* **Headers**: `Authorization`, `Content-Type: application/json`
-
-* **Body (required)**:
-
-  ```json
-  {
-    "username": "bob",
-    "password": "p@ssw0rd",
-    "can_upload": true,
-    "can_delete_own_files": true,
-    "has_upload_limits": false,
-    "upload_limit": 0
-  }
-  ```
-
-* **Response (200)**:
-
-  ```json
-  {
-    "success": true,
-    "message": "Visitor created"
-  }
-  ```
-
-* **Errors**: `400` invalid input, `403` insufficient perms, `500` DB error.
-
-### POST `/api/auth/owner_register` — Register owner (local-only)
-
-* **Access**: Local-only
-
-* **Method**: `POST`
-
-* **Body**:
-
-  ```json
-  {
-    "username": "owner",
-    "password": "ownerpass"
-  }
-  ```
-
-* **Response**: same as visitor register.
-
-### POST `/api/auth/owner_reset_password` — Reset owner password (local-only)
-
-* **Access**: Local-only
-
-* **Method**: `POST`
-
-* **Body**:
-
-  ```json
-  {
-    "password": "new_owner_password"
-  }
-  ```
-
-* **Response**:
-
-  ```json
-  {
-    "success": true,
-    "message": "Password updated"
-  }
-  ```
-
-* **Errors**: `500` if owner not found.
-
-### POST `/api/auth/visitor_reset_password` — Reset visitor password (owner only)
-
-* **Access**: Owner
-
-* **Method**: `POST`
-
-* **Headers**: `Authorization`, `Content-Type: application/json`
-
-* **Body**:
-
-  ```json
-  {
-    "username": "bob",
-    "password": "new_password"
-  }
-  ```
-
-* **Response**:
-
-  ```json
-  {
-    "success": true,
-    "message": "Password updated"
-  }
-  ```
-
-* **Errors**: `404` visitor not found, `400` invalid.
+</details>
 
 ---
 
-## Audit logs
+## Architecture & Core Concepts
 
-### GET `/api/audit`
+### User Roles
 
-* **Access**: Owner only
-* **Method**: `GET`
-* **Headers**: `Authorization: Bearer <token>`
-* **Query params**:
+There are exactly two system‑level roles stored in the `Users` table (column `role`):
 
-  * `start` (ISO-8601 string, optional)
-  * `end` (ISO-8601 string, optional)
-  * `user_id` (integer, optional)
-  * `file_id` (integer, optional)
-  * `event_type` (string, optional)
-  * `success` (boolean, optional)
-  * `limit` (integer, optional, default 100, max 1000)
-  * `offset` (integer, optional, default 0)
-* **Response (200)**:
+| Role      | Count | Created by                                | Capabilities |
+|-----------|-------|-------------------------------------------|--------------|
+| `owner`   | 1     | `POST /api/auth/owner_register` (local)   | Full access to **everything**. Ignores all file‑level permission checks. Can manage users, view audit logs, upload/delete any file. |
+| `visitor` | 0…N   | `POST /api/auth/register` (by owner)      | Limited by account flags (`can_upload`, `can_delete_own_files`, quotas) and explicit file permissions. |
 
+No additional roles (admin, auditor) exist.
+
+### File Permissions
+
+Independently of the user’s role, **each file** can have explicit permissions stored in the `FilePermissions` table. The supported access levels are:
+
+| Level         | Meaning |
+|---------------|---------|
+| `viewer`      | Can list and download the file. |
+| `collaborator`| All `viewer` rights **plus** can delete the file, grant/revoke permissions on it, list its permissions, and toggle its public flag. |
+
+The original uploader (`uploaded_by`) is implicitly granted certain rights based on their own flags (see next section).
+
+### How Roles & Permissions Combine
+
+When a user tries to access a file (list, download, delete, change permissions, toggle public), the server evaluates the following rules **in order**:
+
+1. **Owner** → always granted full access (no further checks).
+2. **File is public** (`is_public = 1`) and the operation only requires `viewer` level (e.g., download, listing) → allowed.
+3. **User is the uploader** (`uploaded_by` matches the current user):
+   - For `viewer`‑only operations → **always allowed** (the uploader can always see and download their own files).
+   - For `collaborator`‑level operations (delete, manage permissions, toggle public) → allowed **only if** the user’s `can_delete_own_files` flag is `true`.
+4. **Explicit permission** in `FilePermissions` with a level equal or higher than required:
+   - `viewer` satisfies `MinLevel::Viewer`
+   - `collaborator` satisfies `MinLevel::Collaborator`
+5. **None of the above** → `403 Forbidden`.
+
+> **Warning:** An uploader without `can_delete_own_files = true` **cannot delete their own files**, share them, or change their public status, because those actions require `collaborator` rights. The uploader is effectively limited to viewing and downloading.
+
+### Authentication & Authorization Flow
+
+<details>
+<summary><strong>Step‑by‑step details</strong></summary>
+
+- **JWT Tokens:** generated at login (`POST /api/auth/login`). Payload contains:
   ```json
   {
-    "message": "Audit entries retrieved",
-    "data": [
+    "sub": "user_id (as string)",
+    "username": "...",
+    "role": "owner|visitor",
+    "exp": <unix timestamp one hour later>
+  }
+  ```
+  Algorithm: HS256. Key comes from the `SECRET_JWT` env variable.
+
+- **Middleware stack** (applied in order when defined on a route):
+  1. `HttpAuthentication::bearer(jwt_validator_adapter)` – validates the token, extracts `AuthUser` and injects it into request extensions.
+  2. `RoleAuth(["owner"])` – checks that the JWT’s `role` matches one of the allowed roles.
+  3. `PermsAuth(["can_upload"])` – queries the database for the user’s boolean flags and denies if the required flag is `false`. **Owners bypass** this check (they are granted all flags as `true`).
+  4. `LocalOnly` – if enabled (`LOCAL_ONLY=true`), rejects requests not coming from `127.0.0.1` or `::1`.
+
+- **Password hashing:** Argon2 with random salt (via `argon2` crate).
+
+- **Account status:** a user must be `is_active = 1` and `is_deleted = 0` to log in. Soft‑deleted users are effectively disabled.
+
+</details>
+
+### Database Schema
+
+<details>
+<summary><strong>Key tables and fields</strong></summary>
+
+- **`Users`**  
+  `id`, `username`, `password_hash`, `role`, `can_upload`, `can_delete_own_files`, `has_upload_limits`, `upload_limit` (bytes, if limits enabled), `is_active`, `is_deleted`, `created_at`, `last_login_at`, `deleted_at`.
+
+- **`Files`**  
+  `id`, `name` (sanitised original name), `internal_path` (relative to `uploads/`), `size_bytes`, `mime_type`, `uploaded_by` → `Users.id`, `is_public`, `is_deleted`, `uploaded_at`, `deleted_at`.  
+  Soft‑delete: `is_deleted = 1` keeps the record; the physical file is removed.
+
+- **`FilePermissions`**  
+  `file_id`, `user_id`, `access_level` (`'viewer'` or `'collaborator'`), `granted_by`, `granted_at`.  
+  Composite unique key `(file_id, user_id)` with `ON CONFLICT ... DO UPDATE` to allow overwriting the level.
+
+- **`AuditLog`**  
+  `id`, `timestamp`, `user_id` (nullable), `event_type`, `description`, `ip_address`, `file_id` (nullable), `success`.  
+  Populated by explicit insertions in handlers and by database triggers (e.g., on `is_active` toggle).
+
+> **Note:** SQLite optimisations `WAL` journal mode and `busy_timeout = 30000` are applied automatically at startup.
+
+</details>
+
+### File Watcher
+
+<details>
+<summary><strong>Real‑time filesystem monitor – full behaviour</strong></summary>
+
+A background task powered by the `notify` crate watches the `uploads/` directory recursively.
+
+- **Events processed:** `Create`, `Modify`, `Remove`.
+- **Ignored:** directories, and any path inside a temporary subdirectory (configured via `tmp_subdir_name`; currently unused but ready).
+- **Stability check:** before registering a newly created or modified file, the watcher repeatedly checks its size every `WATCHER_STABILITY_CHECK_MS` ms. It requires `WATCHER_STABILITY_REQUIRED` consecutive checks with the same size to confirm the file is fully written.
+- **Deduplication:** a global `HANDLED_REGISTRY` (in‑memory) holds recently processed paths for `WATCHER_IGNORE_TTL_SECS` seconds. If a path is already in the registry, the event is skipped.
+- **Per‑file locking:** each file being handled acquires an asynchronous mutex (`FILE_LOCKS` map) to prevent race conditions between overlapping events.
+- **Database actions (if DB pool is provided):**
+  - New stable file → `INSERT OR IGNORE INTO Files …` with `uploaded_by` set to the `owner_user_id` (default `1`). This means manually copied files appear as owned by the system owner.
+  - Removed file → `UPDATE Files SET is_deleted = 1 WHERE internal_path = ?`.
+- **Without database:** events are simply logged with `info!()`, and a metric `files_detected_no_db` is incremented.
+- **Metrics:** internal counters (files registered, events processed, remove events, etc.) are periodically logged every prune interval.
+
+</details>
+
+---
+
+## API Reference
+
+### Database Management
+
+<details>
+<summary><code>GET /api/db</code> – Check database status</summary>
+
+**Access:** public
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "exists": true
+}
+```
+`exists` is `true` if at least one non‑deleted owner account exists (i.e., the database has been initialised and the owner registered).
+
+**Errors:** `500` if the `Users` table is missing or another DB error occurs.
+
+</details>
+
+<details>
+<summary><code>POST /api/db</code> – Initialise database (run migrations)</summary>
+
+**Access:** local‑only (`LocalOnly` middleware)
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Migrations executed successfully"
+}
+```
+
+**Errors:** `500` if migration scripts fail.
+
+</details>
+
+### Authentication
+
+<details>
+<summary><code>POST /api/auth/login</code></summary>
+
+**Access:** public
+
+**Body:**
+```json
+{
+  "username": "alice",
+  "password": "secret"
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Login success",
+  "token": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+The token expires after **1 hour**.
+
+**Errors:** `401` (invalid credentials, account deleted or disabled), `500`.
+
+</details>
+
+<details>
+<summary><code>POST /api/auth/register</code> – Register a visitor (owner only)</summary>
+
+**Access:** owner authenticated (JWT + `RoleAuth(["owner"])`)
+
+**Body:**
+```json
+{
+  "username": "bob",
+  "password": "p@ssw0rd",
+  "can_upload": true,
+  "can_delete_own_files": true,
+  "has_upload_limits": false,
+  "upload_limit": 0
+}
+```
+`upload_limit` is only enforced if `has_upload_limits` is `true`. The owner cannot create another owner via this endpoint (returns an internal error).
+
+**Response 201:**
+```json
+{
+  "success": true,
+  "message": "User created successfully"
+}
+```
+
+**Errors:** `400` (invalid data), `403` (not owner), `500`.
+
+</details>
+
+<details>
+<summary><code>POST /api/auth/owner_register</code> – Register the owner (local only)</summary>
+
+**Access:** local‑only
+
+**Body:**
+```json
+{
+  "username": "admin",
+  "password": "adminpass"
+}
+```
+
+**Response 201** (same as visitor registration).
+
+**Errors:** `500` if the payload contains a visitor variant or DB error occurs.
+
+</details>
+
+<details>
+<summary><code>POST /api/auth/owner_reset_password</code> – Reset owner password (local only)</summary>
+
+**Access:** local‑only
+
+**Body:**
+```json
+{
+  "password": "newpassword"
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Owner password updated successfully"
+}
+```
+
+**Errors:** `500` if no owner exists.
+
+</details>
+
+<details>
+<summary><code>POST /api/auth/visitor_reset_password</code> – Reset a visitor’s password (owner only)</summary>
+
+**Access:** owner authenticated
+
+**Body:**
+```json
+{
+  "username": "bob",
+  "password": "newpassword"
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Visitor password updated successfully"
+}
+```
+
+**Errors:** `400` (empty username, target is not a visitor, user deleted), `404` (not found), `500`.
+
+</details>
+
+### File Management
+
+All file endpoints require a valid JWT (except where noted) and respect the permission model described above.
+
+<details>
+<summary><code>POST /api/files/upload</code> – Upload a file</summary>
+
+**Access:** authenticated + `can_upload` permission (verified by `PermsAuth`). Owner always allowed.
+
+**Headers:** `Authorization`, `Content-Type: multipart/form-data`
+
+**Request body:** single file field (field name arbitrary). The first file field encountered is processed; any additional fields are ignored.
+
+**Behaviour:**
+- Sanitises the original filename (`sanitize_filename` crate).
+- If a file with the same name already exists in the uploads root, a counter is appended (e.g., `report (1).pdf`).
+- **Quota enforcement:** if the user has `has_upload_limits = 1`, the server calculates used space as `SUM(size_bytes) FROM Files WHERE uploaded_by = <user> AND is_deleted = 0`. If `used + new_file_size > upload_limit`, the request is rejected with `400` and any partially written file is removed.
+- After successful write, the file is registered in the database using `INSERT OR IGNORE`. The internal path is added to the watcher’s handled registry to prevent a duplicate registration.
+- On transient DB errors (5xx) the registration is retried up to 3 times. If all fail, the uploaded file is deleted.
+
+**Response 200** (from `register_file`):
+```json
+{
+  "success": true,
+  "message": "Saved file successfully"
+}
+```
+or `200` with `"File already registered"` if the file record already existed (INSERT OR IGNORE was a no‑op).
+
+**Errors:** `401` (no token), `403` (missing `can_upload`), `400` (invalid filename, quota exceeded, no file provided), `500`.
+
+</details>
+
+<details>
+<summary><code>GET /api/files</code> – List accessible files</summary>
+
+**Access:** authenticated
+
+**Query parameters (all optional):**
+- `name` – substring match (SQL `LIKE %...%`)
+- `min_size`, `max_size` – bytes
+- `start_date`, `end_date` – date part only (ISO‑8601, e.g., `2025-01-01`)
+- `visibility` – filter by public/private status: `"public"` (only `is_public = 1`) or `"private"` (only `is_public = 0`)
+- `uploaded_by` – user ID of the original uploader
+- `limit` (default 25, max 100)
+- `offset` (default 0)
+
+**Visibility rules:** returns files where the authenticated user:
+- is the owner, **or**
+- is the uploader, **or**
+- has an explicit `FilePermissions` entry, **or**
+- the file is marked `is_public = 1`.
+
+Additionally, the user’s own account must be active and not deleted (a self‑join ensures this).
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Files fetched",
+  "data": {
+    "items": [
       {
-        "id": 123,
-        "timestamp": "2025-09-28T12:34:56Z",
-        "user_id": 42,
-        "username": "alice",
-        "event_type": "file_upload",
-        "description": "Uploaded file report.pdf",
-        "ip_address": "192.168.0.1",
-        "file_id": 77,
-        "file_name": "report.pdf",
-        "success": true,
+        "id": 77,
+        "name": "report.pdf",
+        "size_bytes": 123456,
+        "internal_path": "2025/09/report.pdf",
+        "mime_type": "application/pdf",
+        "is_public": false,
+        "uploaded_by": "alice",
+        "uploaded_at": "2025-09-28T12:00:00Z",
         "total_count": 42
       }
-    ]
+    ],
+    "total": 42,
+    "limit": 25,
+    "offset": 0
   }
-  ```
+}
+```
 
-  `total_count` is the total number of matching rows across all pages (useful for pagination).
+**Errors:** `401`, `500`.
 
----
+</details>
 
-## File management
+<details>
+<summary><code>DELETE /api/files/{id}</code> – Delete a file</summary>
 
-All file endpoints require `Authorization: Bearer <token>` and appropriate permissions.
+**Access:** authenticated, requires `collaborator` level on the target file (see permission rules).
 
-### `POST /api/files/upload` — Single file upload (multipart)
+**Behaviour:**
+- Soft‑delete: `UPDATE Files SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP`.
+- The physical file on disk is removed.
+- If the file record was already deleted, a `404` is returned.
 
-* **Permission required**: `can_upload`
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "File deleted successfully"
+}
+```
 
-* **Method**: `POST`
+**Errors:** `403` (insufficient permissions), `404`, `500`.
 
-* **Headers**: `Authorization`, `Content-Type: multipart/form-data`
+</details>
 
-* **Multipart field**:
+<details>
+<summary><code>GET /api/files/download/{id}</code> – Download a file</summary>
 
-  * `file` (binary) — **required** (the first file field found; field name can be arbitrary)
+**Access:** authenticated, requires at least `viewer` level.
 
-* **Behavior**:
+**Response:** the file is streamed with `Content-Disposition: attachment; filename="..."`. The MIME type is determined from the file extension.
 
-  * Server receives the complete file in a single multipart request.
-  * Filename is sanitized; if a file with the same name already exists in the upload directory, a counter is added (e.g., `file (1).ext`).
-  * Files are uploaded as **private** by default (`is_public = 0`).
-  * User quota is enforced during streaming:
-    - If the user has upload limits (`has_upload_limits != 0`), the server calculates used space by summing `size_bytes` of all non-deleted files owned by the user.
-    - If the new file would exceed the individual limit or total quota (`used + file_size > upload_limit`), the upload is rejected and any partial file is deleted.
-  * After successful write, the file is registered in the `Files` table via `register_file`.
-  * The internal path is marked as handled in the watcher system to avoid duplicate events.
+**Errors:** `403` (permission denied), `404` (file not found or deleted, or physical file missing), `500`.
 
-* **Response (200 OK)**:
+</details>
 
-  ```json
-  {
-    "success": true,
-    "message": "File registered successfully",
-    "data": { ... }
-  }
-  ```
+<details>
+<summary><code>PATCH /api/files/{id}/public</code> – Toggle public visibility</summary>
 
-* **Errors**:
+**Access:** authenticated, requires `collaborator` level on the file.
 
-  * `401 Unauthorized` – Invalid or missing authentication
-  * `403 Forbidden` – User lacks `can_upload`, is inactive, or deleted
-  * `400 Bad Request` – Invalid filename after sanitization, no file provided, or quota exceeded
-  * `500 Internal Server Error` – Directory creation failure, file write error, database error, or registration failure
+**Body:**
+```json
+{
+  "is_public": true
+}
+```
 
-### GET `/api/files` — List files
+**Behaviour:**
+- Sets the `is_public` flag of the file to the given boolean value.
+- Operates within a transaction to ensure consistency.
 
-* **Method**: `GET`
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "File is now public"
+}
+```
+or `"File is now private"` accordingly.
 
-* **Query params**:
+**Errors:** `403` (insufficient permissions), `404` (file not found), `500`.
 
-  * `name` (string, optional) — substring match
-  * `min_size` (integer, optional, bytes)
-  * `max_size` (integer, optional, bytes)
-  * `start_date` / `end_date` (ISO-8601, optional) — filter by upload date
-  * `visibility` (`public` | `private`, optional) — filter by visibility
-  * `uploaded_by` (integer, optional) — user id, returns files uploaded by that user
-  * `limit` (integer, default 25, max 100)
-  * `offset` (integer, default 0)
+</details>
 
-* **Response (200)**:
+### File Permissions
 
-  ```json
-  {
-    "message": "Files retrieved",
-    "data": {
-      "items": [
-        {
-          "id": 77,
-          "name": "report.pdf",
-          "size_bytes": 123456,
-          "internal_path": "uploads/2025/09/report.pdf",
-          "mime_type": "application/pdf",
-          "uploaded_by": "alice",
-          "is_public": false,
-          "uploaded_at": "2025-09-28T12:00:00Z",
-          "total_count": 1
-        }
-      ],
-      "total": 1,
-      "limit": 25,
-      "offset": 0
-    }
-  }
-  ```
+These endpoints manage the `FilePermissions` table. They all require authentication and that the requesting user has `collaborator` level on the target file.
 
-### DELETE `/api/files/{id}` — Delete file
+<details>
+<summary><code>POST /api/files/{id}/perms</code> – Grant/update permission</summary>
 
-* **Method**: `DELETE`
+**Body:**
+```json
+{
+  "user_id": 42,
+  "access_level": "viewer"
+}
+```
+`access_level` must be `"viewer"` or `"collaborator"`.
 
-* **URL param**: `id` (integer)
-
-* **Response**:
-
-  ```json
-  {
-    "success": true,
-    "message": "File deleted"
-  }
-  ```
-
-* **Errors**: `403` no permission, `404` not found, `500` server error.
-
-### PATCH `/api/files/{id}/public` — Toggle public visibility
-
-* **Method**: `PATCH`
-
-* **URL param**: `id` (integer)
-
-* **Body**:
-
-  ```json
-  {
-    "is_public": true
-  }
-  ```
-
-* **Permission required**: Collaborator-level (owner, uploader with `can_delete_own_files`, or granted collaborator).
-
-* **Behavior**:
-  * Public files (`is_public = true`) are visible and downloadable by **all** authenticated users without explicit permission grants.
-  * Private files (`is_public = false`) are only visible to the owner, uploader, and users with explicit `FilePermissions` grants.
-
-* **Response (200)**:
-
-  ```json
-  {
-    "success": true,
-    "message": "File is now public"
-  }
-  ```
-
-* **Errors**: `403` no permission, `404` not found, `500` server error.
-
-### GET `/api/files/download/{id}` — Download file
-
-* **Method**: `GET`
-* **URL param**: `id` (integer)
-* **Response**: raw file stream with `Content-Disposition: attachment; filename="..."`.
-* **Errors**: `403` permission, `404` not found.
-
-### POST `/api/files/{id}/perms` — Grant/update permission
-
-* **Method**: `POST`
-
-* **URL param**: `id` (integer)
-
-* **Body**:
-
-  ```json
-  {
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Permission granted/updated",
+  "data": {
     "user_id": 42,
-    "access_level": "viewer"
+    "username": "bob",
+    "access_level": "viewer",
+    "granted_at": "2025-09-28T12:35:00Z",
+    "granted_by": 1
   }
-  ```
+}
+```
+If the `(file, user)` pair already exists, the level and `granted_by` are updated.
 
-* **Response (200)**:
+**Errors:** `400` (invalid level), `404` (target user not found), `403` (caller lacks collaborator rights), `500`.
 
-  ```json
-  {
-    "success": true,
-    "message": "Permission granted",
-    "data": {
+</details>
+
+<details>
+<summary><code>GET /api/files/{id}/perms</code> – List all permissions on a file</summary>
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Permissions listed",
+  "data": [
+    {
       "user_id": 42,
       "username": "bob",
-      "access_level": "viewer",
+      "access_level": "collaborator",
       "granted_at": "2025-09-28T12:35:00Z",
       "granted_by": 1
     }
-  }
-  ```
+  ]
+}
+```
 
-* **Errors**: `400` invalid access level, `404` user/file missing, `403` insufficient perms.
+**Errors:** `403`, `500`.
 
-### GET `/api/files/{id}/perms` — List permissions
+</details>
 
-* **Method**: `GET`
-* **URL param**: `id` (integer)
-* **Response**:
+<details>
+<summary><code>DELETE /api/files/{id}/perms/{user_id}</code> – Revoke a permission</summary>
 
-  ```json
-  {
-    "success": true,
-    "message": "Permissions listed",
-    "data": [
-      {
-        "user_id": 42,
-        "username": "bob",
-        "access_level": "collaborator",
-        "granted_at": "2025-09-28T12:35:00Z",
-        "granted_by": 1
-      }
-    ]
-  }
-  ```
+**Access:** caller must have `collaborator` level on file `{id}`.
 
-### DELETE `/api/files/{id}/perms/{user_id}` — Revoke permission
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Permission revoked"
+}
+```
 
-* **Method**: `DELETE`
-* **URL params**: `id` (file id integer), `user_id` (integer)
-* **Response**:
+**Errors:** `403`, `404` (permission entry not found), `500`.
 
-  ```json
-  {
-    "success": true,
-    "message": "Permission revoked"
-  }
-  ```
+</details>
 
----
+### User Management
 
-## User management
+All endpoints under `/api/user` require authentication. Most are restricted to the **owner** role, except for `GET /api/user/me` and `GET /api/user/{id}/accessible`.
 
-### GET `/api/user/me` — Current user info
+<details>
+<summary><code>GET /api/user/me</code> – Get current user profile</summary>
 
-* **Access**: Any authenticated user (owner or visitor)
+**Access:** authenticated (any role)
 
-* **Method**: `GET`
-
-* **Headers**: `Authorization: Bearer <token>`
-
-* **Response (200)**:
-
-  ```json
-  {
-    "success": true,
-    "message": "User info retrieved",
-    "data": {
-      "id": 42,
-      "username": "bob",
-      "role": "visitor",
-      "can_upload": true,
-      "can_delete_own_files": false,
-      "has_upload_limits": false,
-      "upload_limit": 0
-    }
-  }
-  ```
-
-* **Purpose**: Allows the frontend to know the current user's permission flags without knowing the user ID.
-
-* **Errors**: `401` unauthorized, `404` user not found or inactive.
-
-### GET `/api/user` — List users
-
-* **Access**: Owner only
-
-* **Method**: `GET`
-
-* **Query params**:
-
-  * `name` (string)
-  * `perm` (string filter)
-  * `is_active` (boolean)
-  * `include_deleted` (boolean),
-  * `limit` (int)
-  * `offset` (int)
-
-* **Response**: paginated list of users. Each item:
-
-  ```json
-  {
-    "success": true,
-    "message": "Users retrieved",
-    "data": [
-      {
-        "id": 42,
-        "username": "bob",
-        "role": "visitor",
-        "is_active": true,
-        "can_upload": true,
-        "can_delete_own_files": false,
-        "has_upload_limits": false,
-        "upload_limit": 0,
-        "created_at": "2025-01-01T09:00:00Z",
-        "last_login_at": "2025-09-27T18:00:00Z"
-      }
-    ]
-  }
-  ```
-
-### DELETE `/api/user/{id}` — Soft-delete user
-
-* **Access**: Owner only (cannot delete owner user)
-
-* **Method**: `DELETE`
-
-* **Response**:
-
-  ```json
-  {
-    "success": true,
-    "message": "User soft-deleted"
-  }
-  ```
-
-* **Errors**: `400` cannot delete owner, `404` not found.
-
-### POST `/api/user/{id}/toggle` — Toggle active status
-
-* **Access**: Owner only
-* **Behavior**: Toggles the user's `is_active` flag. A `USER_ACTIVE_UPDATE` audit event is logged automatically via a database trigger.
-* **Response**:
-
-  ```json
-  {
-    "success": true,
-    "message": "User active status toggled"
-  }
-  ```
-
-### POST `/api/user/{id}/perms` — Update user permissions
-
-* **Access**: Owner only
-
-* **Body**:
-
-  ```json
-  {
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "User info retrieved",
+  "data": {
+    "id": 42,
+    "username": "bob",
+    "role": "visitor",
     "can_upload": true,
     "can_delete_own_files": false,
     "has_upload_limits": false,
     "upload_limit": 0
   }
-  ```
-
-* **Response**:
-
-  ```json
-  {
-    "success": true,
-    "message": "Permissions updated"
-  }
-  ```
-
-### GET `/api/user/{id}/accessible` — Files a user can access
-
-* **Access**: Owner or authorized token
-* **Response**: list of file objects with `access_type` ∈ `{"owner","viewer","collaborator"}`.
-
-  ```json
-  {
-    "success": true,
-    "message": "Accessible files",
-    "data": [
-      {
-        "id": 77,
-        "name": "report.pdf",
-        "size_bytes": 123456,
-        "mime_type": "application/pdf",
-        "uploaded_by": 42,
-        "uploaded_at": "2025-09-28T12:00:00Z",
-        "access_type": "viewer"
-      }
-    ]
-  }
-  ```
-
----
-
-
-# Common rules: auth / pagination / errors
-
-* **Authorization**: Unless noted, endpoints require `Authorization: Bearer <token>`.
-* **Owner vs Visitor**:
-
-  * Owner = full admin rights. Bypasses all permission checks.
-  * Visitor = restricted. Capabilities depend on permission flags set by the owner.
-* **Pagination**: Standard `limit` + `offset`.
-* **Errors**:
-
-  * `400` invalid request
-  * `401` unauthorized
-  * `403` forbidden
-  * `404` not found
-  * `500` server/db error
-
----
-
-# Permission model
-
-## Account roles
-
-There are exactly **two** account roles (enforced by DB constraint):
-
-| Role | Description |
-|------|-------------|
-| `owner` | Full admin. Bypasses all permission checks. Can manage users, view audit logs, manage all files. |
-| `visitor` | Regular user. Capabilities are governed by permission flags and per-file grants. |
-
-## Visitor permission flags
-
-These flags are set per-visitor by the owner via `POST /api/user/{id}/perms`:
-
-| Flag | Effect |
-|------|--------|
-| `can_upload` | If true, visitor can upload files via `POST /api/files/upload`. |
-| `can_delete_own_files` | If true, visitor can delete their own files and manage permissions on them (grant/revoke to other visitors). Also grants the visitor full control over their own uploaded files. |
-| `has_upload_limits` | If true, the `upload_limit` field is enforced during uploads. |
-| `upload_limit` | Maximum total bytes the visitor can upload. Only enforced when `has_upload_limits` is true. |
-
-## Per-file access levels
-
-The `FilePermissions` table grants per-file access to specific visitors. Access levels are hierarchical:
-
-| Level | Value | Capabilities |
-|-------|-------|-------------|
-| `viewer` | 1 | Can download the file. Cannot delete or manage permissions. |
-| `collaborator` | 2 | Can download, delete the file, and grant/revoke/list permissions for that file. |
-
-### Who can do what on a file
-
-| Actor | View/Download | Delete | Manage permissions |
-|-------|:---:|:---:|:---:|
-| Owner (role) | Always | Always | Always |
-| Uploader (visitor who uploaded) | Always | Only if `can_delete_own_files = true` | Only if `can_delete_own_files = true` |
-| Granted `collaborator` | Yes | Yes | Yes |
-| Granted `viewer` | Yes | No | No |
-| Any authenticated user on a `is_public` file | Yes (viewer level) | No | No |
-
-## File visibility
-
-Files have a visibility setting:
-
-| Visibility | Behavior |
-|------------|----------|
-| `is_public = false` (private, default) | Only visible to owner, uploader, and users with explicit `FilePermissions` grants. |
-| `is_public = true` (public) | Visible and downloadable by **all** authenticated users. No grants needed. Access is at the `viewer` level (read-only). |
-
-All files are uploaded as **private** by default. Public visibility can be toggled by the owner or a collaborator via `PATCH /api/files/{id}/public`.
-
----
-
-# Appendix: canonical response schemas
-
-All endpoints embed responses in consistent wrapper:
-
-```json
-{
-  "success": true,
-  "message": "OK",
-  "data": null,
-  "token": null,
-  "exists": false
 }
 ```
 
-Fields may be null if not relevant.
+**Errors:** `401` (not authenticated or user not found/inactive), `500`.
+
+</details>
+
+<details>
+<summary><code>GET /api/user</code> – List users (owner only)</summary>
+
+**Query parameters:**
+- `name` – substring match
+- `perm` – permission filter, e.g., `"can_upload:true"` or `"can_upload:true,can_delete_own_files:false"`
+- `is_active` – boolean filter
+- `include_deleted` – include soft‑deleted users (default `false`)
+- `limit` (default 25, max 100)
+- `offset` (default 0)
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Users fetched",
+  "data": {
+    "items": [
+      {
+        "id": 42,
+        "username": "bob",
+        "role": "visitor",
+        "is_active": 1,
+        "can_upload": 1,
+        "can_delete_own_files": 0,
+        "has_upload_limits": 0,
+        "upload_limit": 0,
+        "created_at": "2025-01-01T09:00:00Z",
+        "last_login_at": "2025-09-27T18:00:00Z",
+        "total_count": 5
+      }
+    ],
+    "total": 5,
+    "limit": 25,
+    "offset": 0
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><code>DELETE /api/user/{id}</code> – Soft‑delete a user (owner only)</summary>
+
+- Cannot delete the owner (returns `400`).
+- Sets `is_deleted = 1`, `deleted_at = now`, and `is_active = 0`.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "User deleted successfully"
+}
+```
+
+</details>
+
+<details>
+<summary><code>POST /api/user/{id}/toggle</code> – Toggle active status (owner only)</summary>
+
+Flips `is_active` from 1 to 0 or vice‑versa. The change is automatically logged in the audit trail via a database trigger.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "User status toggled successfully"
+}
+```
+
+</details>
+
+<details>
+<summary><code>POST /api/user/{id}/perms</code> – Update user permissions (owner only)</summary>
+
+**Body** (all fields optional, only provided fields are updated):
+```json
+{
+  "can_upload": true,
+  "can_delete_own_files": false,
+  "has_upload_limits": false,
+  "upload_limit": 0
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "User permissions updated successfully"
+}
+```
+
+</details>
+
+<details>
+<summary><code>GET /api/user/{id}/accessible</code> – Files accessible by a user</summary>
+
+**Access:** authenticated (any role). Useful for checking which files a particular user can see.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Files fetched successfully",
+  "data": [
+    {
+      "id": 77,
+      "name": "report.pdf",
+      "size_bytes": 123456,
+      "mime_type": "application/pdf",
+      "uploaded_by": 42,
+      "uploaded_at": "2025-09-28T12:00:00Z",
+      "access_type": "owner"
+    }
+  ]
+}
+```
+`access_type` can be `"owner"`, `"viewer"`, or `"collaborator"`.
+
+</details>
+
+### Audit Logs
+
+<details>
+<summary><code>GET /api/audit</code> – Retrieve audit entries (owner only)</summary>
+
+**Access:** owner only (`RoleAuth(["owner"])` + JWT)
+
+**Query parameters (all optional):**
+- `start`, `end` – ISO‑8601 timestamps (used as `>= start` and `<= end`)
+- `user_id`, `file_id`
+- `event_type` – exact match
+- `success` – boolean
+- `limit` (default 100, max 1000)
+- `offset` (default 0)
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Audit entries retrieved",
+  "data": [
+    {
+      "id": 123,
+      "timestamp": "2025-09-28T12:34:56Z",
+      "user_id": 42,
+      "username": "alice",
+      "event_type": "file_upload",
+      "description": "Uploaded file report.pdf",
+      "ip_address": "192.168.1.10",
+      "file_id": 77,
+      "file_name": "report.pdf",
+      "success": true,
+      "total_count": 15
+    }
+  ]
+}
+```
+
+</details>
+
+---
+
+## Common Rules
+
+- **Authentication:** unless marked as public, all endpoints require `Authorization: Bearer <token>`.
+- **Pagination:** `limit` (max varies by resource) and `offset`. The response includes a `total` count or per‑row `total_count` for windowed pagination.
+- **Error format:** every error response follows the canonical schema with `"success": false` and an appropriate HTTP status (`400`, `401`, `403`, `404`, `500`).
+- **Soft‑deletes:** users and files are marked as deleted (`is_deleted = 1`) but remain in the database. File permissions are physically removed when revoked.
+
+---
+
+## Appendix: Canonical Response Schema
+
+All responses (success or error) adhere to this JSON structure:
+
+```json
+{
+  "success": true | false,
+  "message": "optional human‑readable string",
+  "data": { ... },
+  "token": "present only on login",
+  "exists": true/false  // used only by the DB status endpoint
+}
+```
+
+Fields that are not relevant are omitted from the serialised output.
