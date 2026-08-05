@@ -253,7 +253,8 @@
       "fetchErrorDesc": "The file list could not be loaded. Try again later.",
       "madePublicDesc": "\"{{name}}\" is now visible to everyone.",
       "madePrivateDesc": "\"{{name}}\" is now private."
-    }
+    },
+    "uploadedBy": "Uploaded by {{name}}"
   },
   "config": {
     "subtitle": "Review the interface preferences and the system activity logs.",

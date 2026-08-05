@@ -17,6 +17,7 @@ import {
   FaLock,
   FaCheck,
   FaDownload,
+  FaUser,
 } from "react-icons/fa6"
 import clsx from "clsx"
 
@@ -62,6 +63,15 @@ export default function FileCard({
   const { icon: IconComponent, color, bg } = getFileIcon(file.mime_type)
   const { t } = useI18n()
   const { user } = useAuth()
+
+  // Uploader display name; falls back to an id or a placeholder when the
+  // uploader account is missing (e.g. soft-deleted user).
+  const uploaderName =
+    typeof file.uploaded_by === "string"
+      ? file.uploaded_by
+      : typeof file.uploaded_by === "number"
+        ? `User #${file.uploaded_by}`
+        : "—"
 
   // Management actions (toggle public/private) require collaborator level or owner.
   // Falls back to the role when the backend does not send `my_access` yet.
@@ -123,6 +133,14 @@ export default function FileCard({
           <span>{formatBytes(file.size_bytes)}</span>
           <span className="h-1 w-1 rounded-full bg-ui-border"></span>
           <span>{file.uploaded_at ? new Date(file.uploaded_at).toLocaleDateString() : "—"}</span>
+          <span className="h-1 w-1 rounded-full bg-ui-border"></span>
+          <span
+            className="flex min-w-0 items-center gap-1"
+            title={t("download.uploadedBy", { name: uploaderName })}
+          >
+            <FaUser className="h-3 w-3 shrink-0" />
+            <span className="truncate">{uploaderName}</span>
+          </span>
         </p>
       </div>
 

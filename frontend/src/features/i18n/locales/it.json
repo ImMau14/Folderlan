@@ -253,7 +253,8 @@
       "fetchErrorDesc": "Impossibile caricare l'elenco dei file. Riprova più tardi.",
       "madePublicDesc": "\"{{name}}\" ora è visibile a tutti.",
       "madePrivateDesc": "\"{{name}}\" ora è privato."
-    }
+    },
+    "uploadedBy": "Caricato da {{name}}"
   },
   "config": {
     "subtitle": "Controlla le preferenze dell'interfaccia e i log di attività del sistema.",

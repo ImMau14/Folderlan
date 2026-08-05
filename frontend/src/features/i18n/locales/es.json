@@ -253,7 +253,8 @@
       "fetchErrorDesc": "No se pudo cargar la lista de archivos. Inténtalo de nuevo.",
       "madePublicDesc": "\"{{name}}\" ahora es visible para todos.",
       "madePrivateDesc": "\"{{name}}\" ahora es privado."
-    }
+    },
+    "uploadedBy": "Subido por {{name}}"
   },
   "config": {
     "subtitle": "Revisa las preferencias de interfaz y los registros de actividad del sistema.",
