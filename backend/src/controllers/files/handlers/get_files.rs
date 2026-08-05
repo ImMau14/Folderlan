@@ -29,6 +29,8 @@ struct FileRow {
     uploaded_by: Option<String>,
     uploaded_at: Option<String>,
     total_count: i64,
+    /// Caller's access level on this file: "owner", "collaborator" or "viewer".
+    my_access: String,
 }
 
 #[derive(Serialize)]
@@ -69,7 +71,17 @@ pub async fn get_files(
             f.is_public as "is_public!",
             u.username as "uploaded_by: _",
             f.uploaded_at as "uploaded_at: _", 
-            COUNT(*) OVER () as "total_count!"
+            COUNT(*) OVER () as "total_count!",
+            CASE
+                WHEN ru.role = 'owner' THEN 'owner'
+                WHEN f.uploaded_by = ru.id THEN
+                    CASE WHEN ru.can_delete_own_files = 1 THEN 'collaborator' ELSE 'viewer' END
+                WHEN EXISTS (
+                    SELECT 1 FROM FilePermissions fp2
+                    WHERE fp2.file_id = f.id AND fp2.user_id = ru.id AND fp2.access_level = 'collaborator'
+                ) THEN 'collaborator'
+                ELSE 'viewer'
+            END as "my_access!: String"
         FROM Files f
         JOIN Users ru ON ru.id = ? AND ru.is_deleted = 0 AND ru.is_active = 1
         LEFT JOIN Users u ON u.id = f.uploaded_by
