@@ -78,7 +78,12 @@ export default function PermsModal({ user, apiClient, onRefresh }: PermsModalPro
     if (form.has_upload_limits) {
       uploadLimit = Number(form.upload_limit)
       if (!Number.isFinite(uploadLimit) || uploadLimit < 0) {
-        toast({ type: "error", title: t("users.toast.invalidLimit"), duration: 4000 })
+        toast({
+          type: "error",
+          title: t("users.toast.invalidLimit"),
+          description: t("users.toast.invalidLimitDesc"),
+          duration: 4000,
+        })
         return
       }
     }

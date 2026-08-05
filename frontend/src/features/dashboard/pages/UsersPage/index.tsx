@@ -73,7 +73,12 @@ export default function UsersPage() {
         setUsers(result.data.data.items ?? [])
         setTotal(result.data.data.total ?? 0)
       } else {
-        toast({ type: "error", title: t("users.toast.fetchError"), duration: 4000 })
+        toast({
+          type: "error",
+          title: t("users.toast.fetchError"),
+          description: t("users.toast.fetchErrorDesc"),
+          duration: 4000,
+        })
       }
       setLoading(false)
     },

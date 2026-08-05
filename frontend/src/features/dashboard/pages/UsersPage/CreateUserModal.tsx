@@ -63,7 +63,12 @@ export default function CreateUserModal({ apiClient, onSuccess }: CreateUserModa
 
   const handleSave = useCallback(async () => {
     if (!username.trim() || !password.trim()) {
-      toast({ type: "error", title: t("users.createUser.toast.missingFields"), duration: 4000 })
+      toast({
+        type: "error",
+        title: t("users.createUser.toast.missingFields"),
+        description: t("users.createUser.toast.missingFieldsDesc"),
+        duration: 4000,
+      })
       return
     }
 
@@ -71,7 +76,12 @@ export default function CreateUserModal({ apiClient, onSuccess }: CreateUserModa
     if (form.has_upload_limits) {
       uploadLimit = Number(form.upload_limit)
       if (!Number.isFinite(uploadLimit) || uploadLimit < 0) {
-        toast({ type: "error", title: t("users.toast.invalidLimit"), duration: 4000 })
+        toast({
+          type: "error",
+          title: t("users.toast.invalidLimit"),
+          description: t("users.toast.invalidLimitDesc"),
+          duration: 4000,
+        })
         return
       }
     }

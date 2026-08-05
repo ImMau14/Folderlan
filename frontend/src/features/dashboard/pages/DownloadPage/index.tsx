@@ -114,7 +114,12 @@ export default function DownloadPage() {
         setFiles(data.items ?? [])
         setTotal(data.total ?? 0)
       } else {
-        toast({ type: "error", title: t("download.toast.fetchError"), duration: 4000 })
+        toast({
+          type: "error",
+          title: t("download.toast.fetchError"),
+          description: t("download.toast.fetchErrorDesc"),
+          duration: 4000,
+        })
       }
       setLoading(false)
     },
@@ -230,6 +235,10 @@ export default function DownloadPage() {
         toast({
           type: "success",
           title: newValue ? t("download.toast.madePublic") : t("download.toast.madePrivate"),
+          description: t(
+            newValue ? "download.toast.madePublicDesc" : "download.toast.madePrivateDesc",
+            { name: file.name }
+          ),
           duration: 2500,
         })
       } else {

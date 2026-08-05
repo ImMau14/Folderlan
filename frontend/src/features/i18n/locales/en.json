@@ -249,7 +249,10 @@
       "operationFailed": "Operation failed for {{count}} files",
       "fetchError": "Failed to load files",
       "madePublic": "File is now public",
-      "madePrivate": "File is now private"
+      "madePrivate": "File is now private",
+      "fetchErrorDesc": "The file list could not be loaded. Try again later.",
+      "madePublicDesc": "\"{{name}}\" is now visible to everyone.",
+      "madePrivateDesc": "\"{{name}}\" is now private."
     }
   },
   "config": {
@@ -312,7 +315,8 @@
       "loading": "Loading logs..."
     },
     "toast": {
-      "fetchError": "Failed to load logs"
+      "fetchError": "Failed to load logs",
+      "fetchErrorDesc": "The audit log could not be loaded. Try again later."
     }
   },
   "users": {
@@ -387,7 +391,8 @@
         "missingFields": "Please fill in all fields",
         "success": "User created",
         "successDesc": "\"{{name}}\" was created successfully.",
-        "error": "Could not create user"
+        "error": "Could not create user",
+        "missingFieldsDesc": "Username and password are required."
       }
     },
     "uploadLimitLabel": "Upload limit (bytes)",
@@ -403,7 +408,9 @@
       "permsError": "Could not save permissions",
       "deleteSuccess": "User deleted",
       "deleteSuccessDesc": "\"{{name}}\" was deleted.",
-      "deleteError": "Could not delete user"
+      "deleteError": "Could not delete user",
+      "invalidLimitDesc": "The upload limit must be a non-negative number.",
+      "fetchErrorDesc": "The user list could not be loaded. Try again later."
     }
   },
   "pagination": {

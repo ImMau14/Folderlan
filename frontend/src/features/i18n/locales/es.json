@@ -249,7 +249,10 @@
       "operationFailed": "La operación falló en {{count}} archivos",
       "fetchError": "Error al cargar archivos",
       "madePublic": "El archivo ahora es público",
-      "madePrivate": "El archivo ahora es privado"
+      "madePrivate": "El archivo ahora es privado",
+      "fetchErrorDesc": "No se pudo cargar la lista de archivos. Inténtalo de nuevo.",
+      "madePublicDesc": "\"{{name}}\" ahora es visible para todos.",
+      "madePrivateDesc": "\"{{name}}\" ahora es privado."
     }
   },
   "config": {
@@ -312,7 +315,8 @@
       "loading": "Cargando registros..."
     },
     "toast": {
-      "fetchError": "Error al cargar los registros"
+      "fetchError": "Error al cargar los registros",
+      "fetchErrorDesc": "No se pudieron cargar los registros de auditoría. Inténtalo de nuevo."
     }
   },
   "users": {
@@ -387,7 +391,8 @@
         "missingFields": "Completa todos los campos",
         "success": "Usuario creado",
         "successDesc": "\"{{name}}\" fue creado correctamente.",
-        "error": "No se pudo crear el usuario"
+        "error": "No se pudo crear el usuario",
+        "missingFieldsDesc": "El nombre de usuario y la contraseña son obligatorios."
       }
     },
     "uploadLimitLabel": "Límite de subida (bytes)",
@@ -403,7 +408,9 @@
       "permsError": "No se pudieron guardar los permisos",
       "deleteSuccess": "Usuario eliminado",
       "deleteSuccessDesc": "\"{{name}}\" fue eliminado.",
-      "deleteError": "No se pudo eliminar el usuario"
+      "deleteError": "No se pudo eliminar el usuario",
+      "invalidLimitDesc": "El límite de subida debe ser un número no negativo.",
+      "fetchErrorDesc": "No se pudo cargar la lista de usuarios. Inténtalo de nuevo."
     }
   },
   "pagination": {

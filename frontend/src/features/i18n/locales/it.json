@@ -249,7 +249,10 @@
       "operationFailed": "Operazione fallita per {{count}} file",
       "fetchError": "Errore nel caricamento dei file",
       "madePublic": "Il file ora è pubblico",
-      "madePrivate": "Il file ora è privato"
+      "madePrivate": "Il file ora è privato",
+      "fetchErrorDesc": "Impossibile caricare l'elenco dei file. Riprova più tardi.",
+      "madePublicDesc": "\"{{name}}\" ora è visibile a tutti.",
+      "madePrivateDesc": "\"{{name}}\" ora è privato."
     }
   },
   "config": {
@@ -312,7 +315,8 @@
       "loading": "Caricamento registri..."
     },
     "toast": {
-      "fetchError": "Errore nel caricamento dei registri"
+      "fetchError": "Errore nel caricamento dei registri",
+      "fetchErrorDesc": "Impossibile caricare i registri di controllo. Riprova più tardi."
     }
   },
   "users": {
@@ -387,7 +391,8 @@
         "missingFields": "Compila tutti i campi",
         "success": "Utente creato",
         "successDesc": "\"{{name}}\" è stato creato con successo.",
-        "error": "Impossibile creare l'utente"
+        "error": "Impossibile creare l'utente",
+        "missingFieldsDesc": "Nome utente e password sono obbligatori."
       }
     },
     "uploadLimitLabel": "Limite di caricamento (byte)",
@@ -403,7 +408,9 @@
       "permsError": "Impossibile salvare i permessi",
       "deleteSuccess": "Utente eliminato",
       "deleteSuccessDesc": "\"{{name}}\" è stato eliminato.",
-      "deleteError": "Impossibile eliminare l'utente"
+      "deleteError": "Impossibile eliminare l'utente",
+      "invalidLimitDesc": "Il limite di caricamento deve essere un numero non negativo.",
+      "fetchErrorDesc": "Impossibile caricare l'elenco degli utenti. Riprova più tardi."
     }
   },
   "pagination": {

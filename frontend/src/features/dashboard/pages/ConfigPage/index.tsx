@@ -78,7 +78,12 @@ export default function ConfigPage() {
         setLogs(entries)
         setTotal(entries.length > 0 ? (entries[0].total_count ?? 0) : 0)
       } else {
-        toast({ type: "error", title: t("config.toast.fetchError"), duration: 4000 })
+        toast({
+          type: "error",
+          title: t("config.toast.fetchError"),
+          description: t("config.toast.fetchErrorDesc"),
+          duration: 4000,
+        })
         setLogs([])
         setTotal(0)
       }
