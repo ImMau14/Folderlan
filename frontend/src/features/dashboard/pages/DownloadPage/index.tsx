@@ -19,7 +19,7 @@ import { useToast } from "@toast/context/ToastContext"
 import { useI18n } from "@i18n/context/I18nContext"
 import { useModal } from "@modal/context/ModalContext"
 import ApiClient from "@shared/utils/ApiClient"
-import type { FileItem } from "@shared/utils/ApiClient/types"
+import type { FileItem, User } from "@shared/utils/ApiClient/types"
 import { setPageName } from "@shared/utils/setPageName"
 
 import FilterBar from "./FilterBar"
@@ -131,6 +131,26 @@ export default function DownloadPage() {
     fetchFiles(offset, filtersRef.current)
   }, [offset, fetchKey, fetchFiles])
 
+  // Prefetch the user list on mount so the permission and filter modals can
+  // open instantly without waiting for a fetch of their own.
+  const [prefetchedUsers, setPrefetchedUsers] = useState<User[]>([])
+  useEffect(() => {
+    let active = true
+    apiClient
+      .getUsers({ limit: 200 })
+      .then((result) => {
+        if (active && result.success) {
+          setPrefetchedUsers(result.data.data?.items ?? [])
+        }
+      })
+      .catch(() => {
+        // Prefetch is best-effort; modals fall back to their own fetch.
+      })
+    return () => {
+      active = false
+    }
+  }, [apiClient])
+
   // Debounce the search input: wait until the user stops typing before refetching.
   const handleNameSearch = useCallback((value: string) => {
     setFilters((prev) => ({ ...prev, name: value }))
@@ -170,13 +190,14 @@ export default function DownloadPage() {
     openComponent(FiltersModal, {
       filters,
       apiClient,
+      initialUsers: prefetchedUsers,
       onApply: (next) => {
         setFilters(next)
         setOffset(0)
         setFetchKey((k) => k + 1)
       },
     })
-  }, [openComponent, filters, apiClient])
+  }, [openComponent, filters, apiClient, prefetchedUsers])
 
   // Toggle a file in/out of the current selection.
   const handleSelectFile = useCallback((file: FileItem) => {
@@ -294,9 +315,18 @@ export default function DownloadPage() {
       apiClient,
       initialVisibility,
       canManage: selectedCanManage,
+      initialUsers: prefetchedUsers,
       onRefresh: refetchCurrent,
     })
-  }, [selectedIds, openComponent, apiClient, initialVisibility, selectedCanManage, refetchCurrent])
+  }, [
+    selectedIds,
+    openComponent,
+    apiClient,
+    initialVisibility,
+    selectedCanManage,
+    prefetchedUsers,
+    refetchCurrent,
+  ])
 
   // Open the delete confirmation modal for all selected files.
   const handleDeleteSelected = useCallback(() => {

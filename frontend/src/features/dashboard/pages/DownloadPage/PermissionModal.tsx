@@ -26,6 +26,8 @@ interface PermissionModalProps {
   initialVisibility?: boolean | "mixed"
   /** Whether the caller can manage (grant/revoke/toggle) these files. */
   canManage?: boolean
+  /** Users prefetched by the page, so the grant selector opens instantly. */
+  initialUsers?: User[]
   apiClient: ApiClient
   onRefresh: () => void
 }
@@ -36,6 +38,7 @@ export default function PermissionModal({
   fileIds,
   initialVisibility,
   canManage = true,
+  initialUsers,
   apiClient,
   onRefresh,
 }: PermissionModalProps) {
@@ -84,13 +87,17 @@ export default function PermissionModal({
     setInitialized(true)
     if (!canManage) return
 
-    const usersResult = await apiClient.getUsers({ limit: 200 })
-    if (usersResult.success) {
-      setUsers(usersResult.data.data?.items ?? [])
+    if (initialUsers && initialUsers.length > 0) {
+      setUsers(initialUsers)
+    } else {
+      const usersResult = await apiClient.getUsers({ limit: 200 })
+      if (usersResult.success) {
+        setUsers(usersResult.data.data?.items ?? [])
+      }
     }
 
     await loadPerms()
-  }, [initialized, canManage, apiClient, loadPerms])
+  }, [initialized, canManage, initialUsers, apiClient, loadPerms])
 
   if (!initialized) {
     initialize()

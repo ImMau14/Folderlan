@@ -18,10 +18,17 @@ import type { FileFilters } from "./index"
 interface FiltersModalProps {
   filters: FileFilters
   apiClient: ApiClient
+  /** Users prefetched by the page, so the uploader selector opens instantly. */
+  initialUsers?: User[]
   onApply: (filters: FileFilters) => void
 }
 
-export default function FiltersModal({ filters, apiClient, onApply }: FiltersModalProps) {
+export default function FiltersModal({
+  filters,
+  apiClient,
+  initialUsers,
+  onApply,
+}: FiltersModalProps) {
   const { t } = useI18n()
   const { close } = useModal()
 
@@ -39,11 +46,15 @@ export default function FiltersModal({ filters, apiClient, onApply }: FiltersMod
   const initialize = useCallback(async () => {
     if (initialized) return
     setInitialized(true)
+    if (initialUsers && initialUsers.length > 0) {
+      setUsers(initialUsers)
+      return
+    }
     const usersResult = await apiClient.getUsers({ limit: 200 })
     if (usersResult.success) {
       setUsers(usersResult.data.data?.items ?? [])
     }
-  }, [initialized, apiClient])
+  }, [initialized, initialUsers, apiClient])
 
   if (!initialized) {
     initialize()
