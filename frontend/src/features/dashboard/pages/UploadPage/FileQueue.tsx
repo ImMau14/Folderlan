@@ -35,7 +35,7 @@ export const FileQueue: FC<FileQueueProps> = ({
   const hasFiles = files.length > 0
 
   return (
-    <FloatingContainer className="animate-fall-on-2 h-full overflow-hidden border border-ui-border px-0 brightness-[99%] filter lg:overflow-hidden">
+    <FloatingContainer className="animate-fall-on-2 h-128 overflow-hidden border border-ui-border px-0 brightness-[99%] filter md:h-full lg:overflow-hidden">
       <div className="flex h-full w-full flex-col gap-4">
         {/* Cabecera */}
         <div className="flex shrink-0 items-start justify-between gap-4 px-8 sm:items-center">
@@ -77,7 +77,7 @@ export const FileQueue: FC<FileQueueProps> = ({
 
         {/* Lista de archivos o estado vacío */}
         {hasFiles ? (
-          <div className="stagger-group flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pl-8 pr-5 scrollbar scrollbar-rounded scrollbar-thin scrollbar-thumb-ui-border scrollbar-track-transparent">
+          <div className="stagger-group flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pl-8 pr-8 scrollbar scrollbar-rounded scrollbar-thin scrollbar-thumb-ui-border scrollbar-track-transparent sm:pr-5">
             {files.map((file) => (
               <FileContainer
                 key={file.key}

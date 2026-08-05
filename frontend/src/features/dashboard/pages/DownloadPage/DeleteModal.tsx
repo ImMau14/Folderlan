@@ -112,7 +112,7 @@ export default function DeleteModal({
         <button
           onClick={handleConfirm}
           disabled={deleting}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-ui-danger px-4 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-ui-danger-hover disabled:pointer-events-none disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-ui-danger px-4 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-ui-danger-hover disabled:pointer-events-none disabled:opacity-50 dark:text-ui-base"
         >
           {/* Spinner while the deletion is in flight */}
           {deleting ? (
