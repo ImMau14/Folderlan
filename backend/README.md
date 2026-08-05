@@ -194,6 +194,8 @@ When a user tries to access a file (list, download, delete, change permissions, 
 5. **None of the above** → `403 Forbidden`.
 
 > **Warning:** An uploader without `can_delete_own_files = true` **cannot delete their own files**, share them, or change their public status, because those actions require `collaborator` rights. The uploader is effectively limited to viewing and downloading.
+>
+> **Note:** `can_delete_own_files` only affects **files uploaded by the visitor themselves**. It grants no rights over files uploaded by others (or by the file watcher, which assigns ownership to the owner): for those, the visitor needs an explicit `collaborator` permission in `FilePermissions` — the flag alone will still return `403`.
 
 ### Authentication & Authorization Flow
 
@@ -285,9 +287,7 @@ A background task powered by the `notify` crate watches the `uploads/` directory
   "exists": true
 }
 ```
-`exists` is `true` if at least one non‑deleted owner account exists (i.e., the database has been initialised and the owner registered).
-
-**Errors:** `500` if the `Users` table is missing or another DB error occurs.
+`exists` is `true` if at least one non‑deleted owner account exists (i.e., the database has been initialised and the owner registered). If the `Users` table does not exist yet, the endpoint still returns `200` with `"exists": false` (no error).
 
 </details>
 
@@ -455,7 +455,7 @@ All file endpoints require a valid JWT (except where noted) and respect the perm
 - After successful write, the file is registered in the database using `INSERT OR IGNORE`. The internal path is added to the watcher’s handled registry to prevent a duplicate registration.
 - On transient DB errors (5xx) the registration is retried up to 3 times. If all fail, the uploaded file is deleted.
 
-**Response 200** (from `register_file`):
+**Response 201** (from `register_file`):
 ```json
 {
   "success": true,
@@ -490,6 +490,8 @@ or `200` with `"File already registered"` if the file record already existed (IN
 
 Additionally, the user’s own account must be active and not deleted (a self‑join ensures this).
 
+Every row also includes `my_access`, the caller’s effective access level on that file: `"owner"`, `"collaborator"` or `"viewer"`. The frontend uses it to show/hide management actions (delete, share, toggle public) without having to guess. An uploader without `can_delete_own_files` gets `"viewer"` on their own files, matching the permission rules above.
+
 **Response 200:**
 ```json
 {
@@ -506,6 +508,7 @@ Additionally, the user’s own account must be active and not deleted (a self‑
         "is_public": false,
         "uploaded_by": "alice",
         "uploaded_at": "2025-09-28T12:00:00Z",
+        "my_access": "collaborator",
         "total_count": 42
       }
     ],
