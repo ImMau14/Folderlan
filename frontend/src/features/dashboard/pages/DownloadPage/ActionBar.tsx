@@ -14,6 +14,8 @@ import { useBottomNav } from "../../components/BottomNavContext"
 
 interface ActionBarProps {
   selectedCount: number
+  /** True when every selected file can be managed (collaborator/owner access). */
+  canManage: boolean
   onDownload: () => void
   onVisibility: () => void
   onDelete: () => void
@@ -22,6 +24,7 @@ interface ActionBarProps {
 
 export default function ActionBar({
   selectedCount,
+  canManage,
   onDownload,
   onVisibility,
   onDelete,
@@ -68,21 +71,27 @@ export default function ActionBar({
               <span className="hidden sm:inline">{t("download.actions.download")}</span>
             </button>
 
-            <button
-              onClick={onVisibility}
-              className="flex items-center gap-2 rounded-full border-2 border-ui-border bg-ui-front px-4 py-2 font-body text-sm font-semibold text-ui-text transition-all hover:border-ui-primary"
-            >
-              <FaGlobe className="h-4 w-4" />
-              <span className="hidden sm:inline">{t("download.actions.permissions")}</span>
-            </button>
+            {/* Permissions + delete only shown when the caller can actually manage
+                every selected file; otherwise they would fail on the backend. */}
+            {canManage && (
+              <>
+                <button
+                  onClick={onVisibility}
+                  className="flex items-center gap-2 rounded-full border-2 border-ui-border bg-ui-front px-4 py-2 font-body text-sm font-semibold text-ui-text transition-all hover:border-ui-primary"
+                >
+                  <FaGlobe className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t("download.actions.permissions")}</span>
+                </button>
 
-            <button
-              onClick={onDelete}
-              className="flex items-center gap-2 rounded-full bg-ui-danger px-4 py-2 font-body text-sm font-semibold text-white transition-all hover:bg-ui-danger-hover dark:text-ui-base"
-            >
-              <FaTrash className="h-4 w-4" />
-              <span className="hidden sm:inline">{t("download.actions.delete")}</span>
-            </button>
+                <button
+                  onClick={onDelete}
+                  className="flex items-center gap-2 rounded-full bg-ui-danger px-4 py-2 font-body text-sm font-semibold text-white transition-all hover:bg-ui-danger-hover dark:text-ui-base"
+                >
+                  <FaTrash className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t("download.actions.delete")}</span>
+                </button>
+              </>
+            )}
 
             <div className="mx-1 h-6 w-[1px] bg-ui-border"></div>
 

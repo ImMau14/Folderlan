@@ -228,7 +228,8 @@
       "grantButton": "Grant",
       "revokeButton": "Revoke",
       "multiRevokeHint": "Revoking applies to all selected files",
-      "close": "Close"
+      "close": "Close",
+      "noPermission": "You don't have permission to manage these files"
     },
     "visibility": {
       "title": "Visibility",

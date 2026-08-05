@@ -47,7 +47,7 @@ export interface FileFilters {
 }
 
 export default function DownloadPage() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const { toast } = useToast()
   const { t } = useI18n()
   const { openComponent } = useModal()
@@ -141,6 +141,24 @@ export default function DownloadPage() {
     const { name: _name, ...rest } = filters
     return Object.values(rest).filter((v) => v !== "").length
   }, [filters])
+
+  // A file can be managed (delete, share, toggle public) when the caller has
+  // collaborator or owner access on it. Falls back to the role if the backend
+  // does not send `my_access` yet.
+  const canManageFile = useCallback(
+    (file: FileItem) => {
+      const level = file.my_access ?? (user?.role === "owner" ? "owner" : "viewer")
+      return level === "owner" || level === "collaborator"
+    },
+    [user?.role]
+  )
+
+  // Bulk management actions are only offered when EVERY selected file supports
+  // them, so the buttons never lead to partial 403 errors.
+  const selectedCanManage = useMemo(() => {
+    const selected = files.filter((f) => selectedIds.has(f.id))
+    return selected.length > 0 && selected.every(canManageFile)
+  }, [files, selectedIds, canManageFile])
 
   // Open the filters modal; applying new filters resets pagination and refetches.
   const handleOpenFilters = useCallback(() => {
@@ -266,9 +284,10 @@ export default function DownloadPage() {
       fileIds: Array.from(selectedIds),
       apiClient,
       initialVisibility,
+      canManage: selectedCanManage,
       onRefresh: refetchCurrent,
     })
-  }, [selectedIds, openComponent, apiClient, initialVisibility, refetchCurrent])
+  }, [selectedIds, openComponent, apiClient, initialVisibility, selectedCanManage, refetchCurrent])
 
   // Open the delete confirmation modal for all selected files.
   const handleDeleteSelected = useCallback(() => {
@@ -373,6 +392,7 @@ export default function DownloadPage() {
       {/* Floating bulk actions (only when files are selected) */}
       <ActionBar
         selectedCount={selectedIds.size}
+        canManage={selectedCanManage}
         onDownload={handleDownloadSelected}
         onVisibility={handleVisibilitySelected}
         onDelete={handleDeleteSelected}

@@ -65,6 +65,8 @@ export const FileItemSchema = z.object({
   uploaded_by: z.union([z.string(), z.number()]).nullable().optional(),
   is_public: z.boolean(),
   uploaded_at: z.string().nullable().optional(),
+  /** Caller's access level on this file: "owner", "collaborator" or "viewer". */
+  my_access: z.enum(["owner", "collaborator", "viewer"]).optional(),
   total_count: z.number().optional(),
 })
 

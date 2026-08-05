@@ -228,7 +228,8 @@
       "grantButton": "Conceder",
       "revokeButton": "Revogar",
       "multiRevokeHint": "A revogação se aplica a todos os arquivos selecionados",
-      "close": "Fechar"
+      "close": "Fechar",
+      "noPermission": "Você não tem permissão para gerenciar estes arquivos"
     },
     "visibility": {
       "title": "Visibilidade",

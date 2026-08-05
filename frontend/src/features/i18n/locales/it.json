@@ -228,7 +228,8 @@
       "grantButton": "Concedi",
       "revokeButton": "Revoca",
       "multiRevokeHint": "La revoca si applica a tutti i file selezionati",
-      "close": "Chiudi"
+      "close": "Chiudi",
+      "noPermission": "Non hai il permesso di gestire questi file"
     },
     "visibility": {
       "title": "Visibilità",

@@ -24,6 +24,8 @@ interface PermissionModalProps {
   fileIds?: number[]
   /** true = all public, false = all private, "mixed" = a combination of both */
   initialVisibility?: boolean | "mixed"
+  /** Whether the caller can manage (grant/revoke/toggle) these files. */
+  canManage?: boolean
   apiClient: ApiClient
   onRefresh: () => void
 }
@@ -33,6 +35,7 @@ export default function PermissionModal({
   fileName,
   fileIds,
   initialVisibility,
+  canManage = true,
   apiClient,
   onRefresh,
 }: PermissionModalProps) {
@@ -79,6 +82,7 @@ export default function PermissionModal({
   const initialize = useCallback(async () => {
     if (initialized) return
     setInitialized(true)
+    if (!canManage) return
 
     const usersResult = await apiClient.getUsers({ limit: 200 })
     if (usersResult.success) {
@@ -86,7 +90,7 @@ export default function PermissionModal({
     }
 
     await loadPerms()
-  }, [initialized, apiClient, loadPerms])
+  }, [initialized, canManage, apiClient, loadPerms])
 
   if (!initialized) {
     initialize()
@@ -239,140 +243,153 @@ export default function PermissionModal({
 
       {/* Scrollable body: flex-1 + min-h-0 make this the only scrolling region */}
       <div className="min-h-0 flex-1 overflow-y-auto py-4 pr-2 scrollbar scrollbar-rounded scrollbar-thin">
-        <div className="flex flex-col gap-6">
-          {/* Grant access section */}
-          <div className="flex w-full flex-col gap-3">
-            <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
-              {t("download.permissions.grantTitle")}
-            </h4>
-            <div className="flex flex-col gap-3">
-              <div className="w-full">
-                <Select
-                  value={grantUserId}
-                  placeholder={t("download.permissions.selectUser")}
-                  options={users.map((u) => ({ value: String(u.id), label: u.username }))}
-                  onChange={(v) => setGrantUserId(v)}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <div className="flex-1">
+        {!canManage ? (
+          // Viewer-only caller: grant/revoke/visibility all require collaborator
+          // level on the target files, so show a notice instead of dead controls.
+          <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+            <div className="rounded-full border border-ui-border bg-ui-base p-4 shadow-sm">
+              <FaLock className="text-2xl text-ui-text-muted" />
+            </div>
+            <p className="max-w-xs font-body text-sm font-medium text-ui-text-muted">
+              {t("download.permissions.noPermission")}
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-6">
+            {/* Grant access section */}
+            <div className="flex w-full flex-col gap-3">
+              <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
+                {t("download.permissions.grantTitle")}
+              </h4>
+              <div className="flex flex-col gap-3">
+                <div className="w-full">
                   <Select
-                    value={grantLevel}
-                    options={[
-                      { value: "viewer", label: t("download.permissions.viewer") },
-                      { value: "collaborator", label: t("download.permissions.collaborator") },
-                    ]}
-                    onChange={(v) => setGrantLevel(v as "viewer" | "collaborator")}
+                    value={grantUserId}
+                    placeholder={t("download.permissions.selectUser")}
+                    options={users.map((u) => ({ value: String(u.id), label: u.username }))}
+                    onChange={(v) => setGrantUserId(v)}
                     className="w-full"
                   />
                 </div>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <div className="flex-1">
+                    <Select
+                      value={grantLevel}
+                      options={[
+                        { value: "viewer", label: t("download.permissions.viewer") },
+                        { value: "collaborator", label: t("download.permissions.collaborator") },
+                      ]}
+                      onChange={(v) => setGrantLevel(v as "viewer" | "collaborator")}
+                      className="w-full"
+                    />
+                  </div>
+                  <button
+                    onClick={handleGrant}
+                    disabled={!grantUserId}
+                    className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-ui-primary px-5 font-body text-sm font-semibold text-white transition-all hover:bg-ui-primary-hover disabled:pointer-events-none disabled:opacity-50 sm:w-auto dark:text-ui-base"
+                  >
+                    <FaUserPlus />
+                    {t("download.permissions.grantButton")}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <hr className="border-t border-ui-border" />
+
+            {/* Bulk visibility section */}
+            <div className="flex w-full flex-col gap-3">
+              <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
+                {t("download.visibility.title")}
+              </h4>
+              <div className="flex flex-row gap-3">
                 <button
-                  onClick={handleGrant}
-                  disabled={!grantUserId}
-                  className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-ui-primary px-5 font-body text-sm font-semibold text-white transition-all hover:bg-ui-primary-hover disabled:pointer-events-none disabled:opacity-50 sm:w-auto dark:text-ui-base"
+                  onClick={() => handleBulkVisibility(true)}
+                  title={t("download.visibility.appliedTo", { count: idsToManage.length })}
+                  className={`${btnBase} ${visibility === true ? btnActive : btnInactive}`}
                 >
-                  <FaUserPlus />
-                  {t("download.permissions.grantButton")}
+                  <FaGlobe />
+                  {t("download.actions.makePublic")}
+                </button>
+                <button
+                  onClick={() => handleBulkVisibility(false)}
+                  title={t("download.visibility.appliedTo", { count: idsToManage.length })}
+                  className={`${btnBase} ${visibility === false ? btnActive : btnInactive}`}
+                >
+                  <FaLock />
+                  {t("download.actions.makePrivate")}
                 </button>
               </div>
             </div>
-          </div>
 
-          <hr className="border-t border-ui-border" />
+            <hr className="border-t border-ui-border" />
 
-          {/* Bulk visibility section */}
-          <div className="flex w-full flex-col gap-3">
-            <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
-              {t("download.visibility.title")}
-            </h4>
-            <div className="flex flex-row gap-3">
-              <button
-                onClick={() => handleBulkVisibility(true)}
-                title={t("download.visibility.appliedTo", { count: idsToManage.length })}
-                className={`${btnBase} ${visibility === true ? btnActive : btnInactive}`}
-              >
-                <FaGlobe />
-                {t("download.actions.makePublic")}
-              </button>
-              <button
-                onClick={() => handleBulkVisibility(false)}
-                title={t("download.visibility.appliedTo", { count: idsToManage.length })}
-                className={`${btnBase} ${visibility === false ? btnActive : btnInactive}`}
-              >
-                <FaLock />
-                {t("download.actions.makePrivate")}
-              </button>
-            </div>
-          </div>
-
-          <hr className="border-t border-ui-border" />
-
-          {/* Current permissions list */}
-          <div className="flex w-full flex-col gap-3">
-            <div className="flex items-baseline justify-between gap-2">
-              <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
-                {t("download.permissions.currentPerms")}
-              </h4>
-              {/* Hint shown only when a batch revoke affects several files */}
-              {idsToManage.length > 1 && (
-                <p className="font-body text-xs font-medium text-ui-text-muted">
-                  {t("download.permissions.multiRevokeHint")}
-                </p>
-              )}
-            </div>
-
-            <div className="min-h-[140px] rounded-2xl border border-ui-border bg-ui-front p-2">
-              {loadingPerms ? (
-                <div className="flex h-[120px] items-center justify-center">
-                  <span className="h-8 w-8 animate-spin rounded-full border-[3px] border-ui-border border-t-ui-primary shadow-sm" />
-                </div>
-              ) : permissions.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center gap-2 py-8">
-                  <div className="rounded-full border border-ui-border bg-ui-base p-3 shadow-sm">
-                    <FaLock className="text-xl text-ui-primary" />
-                  </div>
-                  <p className="font-body text-sm font-medium text-ui-text-muted">
-                    {t("download.permissions.noPerms")}
+            {/* Current permissions list */}
+            <div className="flex w-full flex-col gap-3">
+              <div className="flex items-baseline justify-between gap-2">
+                <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-ui-text-muted">
+                  {t("download.permissions.currentPerms")}
+                </h4>
+                {/* Hint shown only when a batch revoke affects several files */}
+                {idsToManage.length > 1 && (
+                  <p className="font-body text-xs font-medium text-ui-text-muted">
+                    {t("download.permissions.multiRevokeHint")}
                   </p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-1.5 px-1">
-                  {permissions.map((p) => (
-                    <div
-                      key={p.user_id}
-                      className="group flex items-center justify-between rounded-xl border border-transparent p-2 transition-all hover:border-ui-border hover:bg-ui-base hover:shadow-sm"
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-ui-border-muted bg-ui-base font-heading text-sm font-bold text-ui-primary shadow-sm">
-                          {(p.username ?? `User #${p.user_id}`).charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate font-heading text-sm font-bold text-ui-text">
-                            {p.username ?? `User #${p.user_id}`}
-                          </p>
-                          <p className="font-body text-xs font-medium text-ui-text-muted">
-                            {p.access_level === "collaborator"
-                              ? t("download.permissions.collaborator")
-                              : t("download.permissions.viewer")}
-                          </p>
-                        </div>
-                      </div>
-                      {/* Revoke access for this user (desktop: revealed on hover) */}
-                      <button
-                        onClick={() => handleRevoke(p.user_id)}
-                        className="rounded-full p-2 text-ui-text-muted transition-all hover:bg-ui-front hover:text-red-500 focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                        title={t("download.permissions.revokeButton")}
-                      >
-                        <FaUserMinus className="h-4 w-4" />
-                      </button>
+                )}
+              </div>
+
+              <div className="min-h-[140px] rounded-2xl border border-ui-border bg-ui-front p-2">
+                {loadingPerms ? (
+                  <div className="flex h-[120px] items-center justify-center">
+                    <span className="h-8 w-8 animate-spin rounded-full border-[3px] border-ui-border border-t-ui-primary shadow-sm" />
+                  </div>
+                ) : permissions.length === 0 ? (
+                  <div className="flex h-full flex-col items-center justify-center gap-2 py-8">
+                    <div className="rounded-full border border-ui-border bg-ui-base p-3 shadow-sm">
+                      <FaLock className="text-xl text-ui-primary" />
                     </div>
-                  ))}
-                </div>
-              )}
+                    <p className="font-body text-sm font-medium text-ui-text-muted">
+                      {t("download.permissions.noPerms")}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1.5 px-1">
+                    {permissions.map((p) => (
+                      <div
+                        key={p.user_id}
+                        className="group flex items-center justify-between rounded-xl border border-transparent p-2 transition-all hover:border-ui-border hover:bg-ui-base hover:shadow-sm"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-ui-border-muted bg-ui-base font-heading text-sm font-bold text-ui-primary shadow-sm">
+                            {(p.username ?? `User #${p.user_id}`).charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate font-heading text-sm font-bold text-ui-text">
+                              {p.username ?? `User #${p.user_id}`}
+                            </p>
+                            <p className="font-body text-xs font-medium text-ui-text-muted">
+                              {p.access_level === "collaborator"
+                                ? t("download.permissions.collaborator")
+                                : t("download.permissions.viewer")}
+                            </p>
+                          </div>
+                        </div>
+                        {/* Revoke access for this user (desktop: revealed on hover) */}
+                        <button
+                          onClick={() => handleRevoke(p.user_id)}
+                          className="rounded-full p-2 text-ui-text-muted transition-all hover:bg-ui-front hover:text-red-500 focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                          title={t("download.permissions.revokeButton")}
+                        >
+                          <FaUserMinus className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Fixed footer */}

@@ -23,6 +23,7 @@ import clsx from "clsx"
 import formatBytes from "@shared/utils/formatBytes"
 import type { FileItem } from "@shared/utils/ApiClient/types"
 import { useI18n } from "@i18n/context/I18nContext"
+import { useAuth } from "@auth/context/AuthContext"
 
 interface FileCardProps {
   file: FileItem
@@ -60,6 +61,14 @@ export default function FileCard({
 }: FileCardProps) {
   const { icon: IconComponent, color, bg } = getFileIcon(file.mime_type)
   const { t } = useI18n()
+  const { user } = useAuth()
+
+  // Management actions (toggle public/private) require collaborator level or owner.
+  // Falls back to the role when the backend does not send `my_access` yet.
+  const canManage =
+    file.my_access === "owner" ||
+    file.my_access === "collaborator" ||
+    (!file.my_access && user?.role === "owner")
 
   // Delegates clicks to the parent so the grid owns all selection logic.
   const handleClick = useCallback(() => {
@@ -129,19 +138,23 @@ export default function FileCard({
         </span>
 
         <div className="flex shrink-0 items-center gap-1">
-          {/* Toggle public/private for this file only */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onToggleVisibility(file)
-            }}
-            title={
-              file.is_public ? t("download.actions.makePrivate") : t("download.actions.makePublic")
-            }
-            className="rounded-lg p-2 text-ui-text-muted transition-colors hover:bg-ui-base hover:text-ui-text"
-          >
-            {file.is_public ? <FaGlobe className="h-4 w-4" /> : <FaLock className="h-4 w-4" />}
-          </button>
+          {/* Toggle public/private for this file only (needs collaborator level) */}
+          {canManage && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleVisibility(file)
+              }}
+              title={
+                file.is_public
+                  ? t("download.actions.makePrivate")
+                  : t("download.actions.makePublic")
+              }
+              className="rounded-lg p-2 text-ui-text-muted transition-colors hover:bg-ui-base hover:text-ui-text"
+            >
+              {file.is_public ? <FaGlobe className="h-4 w-4" /> : <FaLock className="h-4 w-4" />}
+            </button>
+          )}
           {/* Download this file */}
           <button
             onClick={(e) => {
