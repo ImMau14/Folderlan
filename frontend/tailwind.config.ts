@@ -362,6 +362,18 @@ export const config: Config = {
         heading: ["Montserrat Variable"],
         body: ["Inter Variable"],
       },
+      // Modular type scale (ratio 1.25, base 16px). Line-height rides inside
+      // each token so sizes never ship without a sensible line-height.
+      fontSize: {
+        xs: ["0.75rem", { lineHeight: "1.4" }], // 12 – captions, labels, table meta
+        sm: ["0.875rem", { lineHeight: "1.5" }], // 14 – secondary UI text
+        base: ["1rem", { lineHeight: "1.6" }], // 16 – body
+        lg: ["1.125rem", { lineHeight: "1.6" }], // 18 – lead paragraphs
+        xl: ["1.25rem", { lineHeight: "1.3", letterSpacing: "-0.01em" }], // 20 – section titles
+        "2xl": ["1.5625rem", { lineHeight: "1.25", letterSpacing: "-0.015em" }], // 25 – page titles
+        "3xl": ["1.9375rem", { lineHeight: "1.2", letterSpacing: "-0.02em" }], // 31 – hero-ish
+        "4xl": ["2.4375rem", { lineHeight: "1.1", letterSpacing: "-0.025em" }], // 39 – display
+      },
       spacing: {
         128: "32rem",
         144: "36rem",

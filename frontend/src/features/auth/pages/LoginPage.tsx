@@ -65,6 +65,7 @@ export const LoginPage: FC = () => {
           if (meRes.success && meRes.data.data) {
             const d = meRes.data.data
             const user: User = {
+              id: d.id,
               username: d.username,
               role: d.role as User["role"],
               can_upload: d.can_upload,

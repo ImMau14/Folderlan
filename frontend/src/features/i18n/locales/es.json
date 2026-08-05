@@ -34,7 +34,7 @@
     "title": "Menú",
     "upload": "Subir",
     "download": "Descargar",
-    "config": "Config",
+    "config": "Configuración",
     "users": "Usuarios"
   },
   "topbar": {
@@ -258,6 +258,27 @@
   },
   "config": {
     "subtitle": "Revisa las preferencias de interfaz y los registros de actividad del sistema.",
+    "summary": {
+      "title": "Resumen",
+      "subtitle": "Un vistazo rápido a tu espacio y actividad.",
+      "files": "Archivos accesibles",
+      "space": "Espacio usado",
+      "mySpace": "Mi espacio",
+      "mySpaceDesc": "Subido por ti",
+      "activeUsers": "Usuarios activos",
+      "quota": "Cuota de subida",
+      "noLimit": "Sin límite"
+    },
+    "account": {
+      "title": "Mi cuenta",
+      "subtitle": "Tu perfil y permisos de acceso.",
+      "canUpload": "Puede subir",
+      "canDeleteOwn": "Puede borrar sus archivos",
+      "limitsEnabled": "Límite de subida: {{limit}}",
+      "noLimits": "Sin límite de subida",
+      "fullAccess": "Acceso total: el rol de propietario omite todas las comprobaciones de permisos.",
+      "quotaLabel": "Almacenamiento usado"
+    },
     "ui": {
       "title": "Preferencias de interfaz",
       "subtitle": "Personaliza la apariencia y el idioma de la interfaz.",
@@ -270,12 +291,11 @@
       "toastNotifications": "Notificaciones",
       "toastNotificationsDesc": "Mostrar notificaciones para acciones como subidas y cambios de usuario."
     },
-    "logs": {
-      "adminOnlyTitle": "Acceso solo para el propietario",
-      "adminOnlyDesc": "Los registros de actividad solo son visibles para el propietario del sistema."
-    },
     "filters": {
       "title": "Registros de actividad",
+      "subtitle": "Filtra los registros de actividad del sistema.",
+      "activeFilters": "Filtros activos",
+      "noActiveFilters": "Sin filtros activos",
       "eventType": "Tipo de evento",
       "allEvents": "Todos los eventos",
       "status": "Estado",
@@ -317,7 +337,9 @@
     },
     "toast": {
       "fetchError": "Error al cargar los registros",
-      "fetchErrorDesc": "No se pudieron cargar los registros de auditoría. Inténtalo de nuevo."
+      "fetchErrorDesc": "No se pudieron cargar los registros de auditoría. Inténtalo de nuevo.",
+      "summaryError": "Error al cargar el resumen",
+      "summaryErrorDesc": "No se pudieron cargar los datos del resumen. Inténtalo de nuevo."
     }
   },
   "users": {

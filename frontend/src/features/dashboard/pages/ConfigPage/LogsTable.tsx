@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion"
-import { FaFilter, FaListCheck } from "react-icons/fa6"
+import { FaListCheck } from "react-icons/fa6"
 import clsx from "clsx"
 
 import { useI18n } from "@i18n/context/I18nContext"
@@ -141,7 +141,7 @@ export default function LogsTable({ logs, loading }: LogsTableProps) {
       </div>
 
       {/* Mobile card list */}
-      <div className="flex w-full flex-col gap-2 md:hidden">
+      <div className="flex w-full flex-col gap-2 p-2 md:hidden">
         <AnimatePresence mode="popLayout">
           {logs.map((log, idx) => (
             <motion.div
@@ -154,12 +154,6 @@ export default function LogsTable({ logs, loading }: LogsTableProps) {
               className="flex flex-col gap-2 rounded-xl border border-ui-border-muted bg-ui-front/50 p-3 transition-colors hover:bg-ui-front"
             >
               <div className="flex items-center gap-2">
-                <FaFilter
-                  className={clsx(
-                    "shrink-0 text-xs",
-                    log.success ? "text-ui-success" : "text-ui-danger"
-                  )}
-                />
                 <span
                   className={clsx(
                     "rounded-lg px-2 py-0.5 font-body text-xs font-semibold",

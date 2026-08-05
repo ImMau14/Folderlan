@@ -258,6 +258,27 @@
   },
   "config": {
     "subtitle": "Review the interface preferences and the system activity logs.",
+    "summary": {
+      "title": "Overview",
+      "subtitle": "A quick look at your space and activity.",
+      "files": "Accessible files",
+      "space": "Space used",
+      "mySpace": "My space",
+      "mySpaceDesc": "Uploaded by you",
+      "activeUsers": "Active users",
+      "quota": "Upload quota",
+      "noLimit": "No limit"
+    },
+    "account": {
+      "title": "My account",
+      "subtitle": "Your profile and access permissions.",
+      "canUpload": "Can upload",
+      "canDeleteOwn": "Can delete own files",
+      "limitsEnabled": "Upload limit: {{limit}}",
+      "noLimits": "No upload limit",
+      "fullAccess": "Full access — the owner role bypasses all permission checks.",
+      "quotaLabel": "Storage used"
+    },
     "ui": {
       "title": "Interface preferences",
       "subtitle": "Customize the appearance and language of the interface.",
@@ -270,12 +291,11 @@
       "toastNotifications": "Notifications",
       "toastNotificationsDesc": "Show toast notifications for actions like uploads and user changes."
     },
-    "logs": {
-      "adminOnlyTitle": "Owner access only",
-      "adminOnlyDesc": "The activity logs are only visible to the system owner."
-    },
     "filters": {
       "title": "Activity logs",
+      "subtitle": "Filter the system activity log.",
+      "activeFilters": "Active filters",
+      "noActiveFilters": "No active filters",
       "eventType": "Event type",
       "allEvents": "All events",
       "status": "Status",
@@ -317,7 +337,9 @@
     },
     "toast": {
       "fetchError": "Failed to load logs",
-      "fetchErrorDesc": "The audit log could not be loaded. Try again later."
+      "fetchErrorDesc": "The audit log could not be loaded. Try again later.",
+      "summaryError": "Failed to load summary",
+      "summaryErrorDesc": "The overview data could not be loaded. Try again later."
     }
   },
   "users": {

@@ -25,6 +25,7 @@ const TOKEN_TTL_MS = 60 * 60 * 1000 // 1 hour
  * Represents the authenticated user with full permission flags.
  */
 export interface User {
+  id: number
   username: string
   role: "owner" | "visitor"
   can_upload: boolean
@@ -106,6 +107,7 @@ async function fetchMe(token: string): Promise<User | null> {
     const result = await client.getMe()
     if (result.success && result.data.data) {
       return {
+        id: result.data.data.id,
         username: result.data.data.username,
         role: result.data.data.role as "owner" | "visitor",
         can_upload: result.data.data.can_upload,

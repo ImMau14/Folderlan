@@ -258,6 +258,27 @@
   },
   "config": {
     "subtitle": "Revise as preferências da interface e os registros de atividade do sistema.",
+    "summary": {
+      "title": "Resumo",
+      "subtitle": "Uma visão rápida do seu espaço e atividade.",
+      "files": "Arquivos acessíveis",
+      "space": "Espaço usado",
+      "mySpace": "Meu espaço",
+      "mySpaceDesc": "Enviado por você",
+      "activeUsers": "Usuários ativos",
+      "quota": "Cota de upload",
+      "noLimit": "Sem limite"
+    },
+    "account": {
+      "title": "Minha conta",
+      "subtitle": "Seu perfil e permissões de acesso.",
+      "canUpload": "Pode enviar",
+      "canDeleteOwn": "Pode excluir seus arquivos",
+      "limitsEnabled": "Limite de upload: {{limit}}",
+      "noLimits": "Sem limite de upload",
+      "fullAccess": "Acesso total: o papel de proprietário ignora todas as verificações de permissão.",
+      "quotaLabel": "Armazenamento usado"
+    },
     "ui": {
       "title": "Preferências da interface",
       "subtitle": "Personalize a aparência e o idioma da interface.",
@@ -270,12 +291,11 @@
       "toastNotifications": "Notificações",
       "toastNotificationsDesc": "Mostrar notificações para ações como envios e alterações de usuário."
     },
-    "logs": {
-      "adminOnlyTitle": "Acesso somente do proprietário",
-      "adminOnlyDesc": "Os registros de atividade são visíveis apenas para o proprietário do sistema."
-    },
     "filters": {
       "title": "Registros de atividade",
+      "subtitle": "Filtre os registros de atividade do sistema.",
+      "activeFilters": "Filtros ativos",
+      "noActiveFilters": "Sem filtros ativos",
       "eventType": "Tipo de evento",
       "allEvents": "Todos os eventos",
       "status": "Status",
@@ -317,7 +337,9 @@
     },
     "toast": {
       "fetchError": "Falha ao carregar registros",
-      "fetchErrorDesc": "Não foi possível carregar os registros de auditoria. Tente novamente mais tarde."
+      "fetchErrorDesc": "Não foi possível carregar os registros de auditoria. Tente novamente mais tarde.",
+      "summaryError": "Falha ao carregar o resumo",
+      "summaryErrorDesc": "Não foi possível carregar os dados do resumo. Tente novamente mais tarde."
     }
   },
   "users": {

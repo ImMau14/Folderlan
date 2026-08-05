@@ -258,6 +258,27 @@
   },
   "config": {
     "subtitle": "Controlla le preferenze dell'interfaccia e i log di attività del sistema.",
+    "summary": {
+      "title": "Riepilogo",
+      "subtitle": "Uno sguardo rapido al tuo spazio e alla tua attività.",
+      "files": "File accessibili",
+      "space": "Spazio utilizzato",
+      "mySpace": "Il mio spazio",
+      "mySpaceDesc": "Caricato da te",
+      "activeUsers": "Utenti attivi",
+      "quota": "Quota di caricamento",
+      "noLimit": "Nessun limite"
+    },
+    "account": {
+      "title": "Il mio account",
+      "subtitle": "Il tuo profilo e i permessi di accesso.",
+      "canUpload": "Può caricare",
+      "canDeleteOwn": "Può eliminare i propri file",
+      "limitsEnabled": "Limite di caricamento: {{limit}}",
+      "noLimits": "Nessun limite di caricamento",
+      "fullAccess": "Accesso completo: il ruolo proprietario bypassa tutti i controlli dei permessi.",
+      "quotaLabel": "Spazio di archiviazione utilizzato"
+    },
     "ui": {
       "title": "Preferenze interfaccia",
       "subtitle": "Personalizza l'aspetto e la lingua dell'interfaccia.",
@@ -270,12 +291,11 @@
       "toastNotifications": "Notifiche",
       "toastNotificationsDesc": "Mostra notifiche per azioni come caricamenti e modifiche utente."
     },
-    "logs": {
-      "adminOnlyTitle": "Solo proprietario",
-      "adminOnlyDesc": "I registri di attività sono visibili solo al proprietario del sistema."
-    },
     "filters": {
       "title": "Registri di attività",
+      "subtitle": "Filtra i log di attività del sistema.",
+      "activeFilters": "Filtri attivi",
+      "noActiveFilters": "Nessun filtro attivo",
       "eventType": "Tipo di evento",
       "allEvents": "Tutti gli eventi",
       "status": "Stato",
@@ -317,7 +337,9 @@
     },
     "toast": {
       "fetchError": "Errore nel caricamento dei registri",
-      "fetchErrorDesc": "Impossibile caricare i registri di controllo. Riprova più tardi."
+      "fetchErrorDesc": "Impossibile caricare i registri di controllo. Riprova più tardi.",
+      "summaryError": "Errore nel caricamento del riepilogo",
+      "summaryErrorDesc": "Impossibile caricare i dati del riepilogo. Riprova più tardi."
     }
   },
   "users": {

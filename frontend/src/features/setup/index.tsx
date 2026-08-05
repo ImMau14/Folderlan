@@ -121,8 +121,22 @@ export const SetupPage: FC = () => {
           return { ok: false, message: msg }
         }
 
-        // Owner is always admin with full permissions
+        // Owner is always admin with full permissions.
+        // Fetch /me to obtain the real user id instead of hardcoding it.
+        const meRes = await client.getMe()
+        if (!meRes.success || !meRes.data.data) {
+          const msg = t("setup.toast.loginNoTokenDescription")
+          toast({
+            type: "error",
+            title: t("setup.toast.loginErrorTitle"),
+            description: msg,
+            duration: 4000,
+          })
+          return { ok: false, message: msg }
+        }
+        const me = meRes.data.data
         login(token, {
+          id: me.id,
           username,
           role: "owner",
           can_upload: true,

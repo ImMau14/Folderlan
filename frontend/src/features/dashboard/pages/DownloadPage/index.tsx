@@ -364,10 +364,10 @@ export default function DownloadPage() {
   }, [clearSelection, scrollToTop])
 
   const handleNextPage = useCallback(() => {
-    setOffset((prev) => Math.min(Math.max(0, total - 1), prev + PAGE_SIZE))
+    setOffset((prev) => Math.min((totalPages - 1) * PAGE_SIZE, prev + PAGE_SIZE))
     clearSelection()
     scrollToTop()
-  }, [total, clearSelection, scrollToTop])
+  }, [totalPages, clearSelection, scrollToTop])
 
   // Clear the selection when clicking anywhere outside the cards, the
   // floating action bar or an open modal.
