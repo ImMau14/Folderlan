@@ -126,7 +126,7 @@ export const AccessibleFileSchema = z.object({
   id: z.number(),
   name: z.string(),
   size_bytes: z.number(),
-  mime_type: z.string(),
+  mime_type: z.string().nullable().optional(),
   uploaded_by: z.number(),
   uploaded_at: z.string(),
   access_type: z.enum(["owner", "viewer", "collaborator"]),

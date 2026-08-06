@@ -129,7 +129,12 @@ export default function SummarySection({ stats, loading = false }: SummarySectio
           subtitle={t("config.summary.subtitle")}
         />
 
-        <div className="grid w-full grid-cols-1 gap-3 xs:grid-cols-2 lg:grid-cols-4">
+        <div
+          className={clsx(
+            "grid w-full grid-cols-1 gap-3 xs:grid-cols-2",
+            stats.isOwner ? "lg:grid-cols-4" : "lg:grid-cols-3"
+          )}
+        >
           {cards.map((card, idx) => (
             <motion.div
               key={card.label}
