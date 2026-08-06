@@ -156,7 +156,7 @@ function ModalRoot({
         <motion.div
           role="dialog"
           aria-modal="true"
-          className={`relative max-h-[90vh] w-full ${widthClasses} overflow-auto rounded-3xl border border-ui-border bg-ui-base shadow-ui scrollbar scrollbar-rounded scrollbar-thin scrollbar-thumb-ui-text-muted ${paddingClasses}`}
+          className={`relative max-h-[90vh] w-full ${widthClasses} overflow-auto rounded-3xl border border-ui-border bg-ui-base shadow-ui ${paddingClasses}`}
           onMouseDown={(e) => e.stopPropagation()}
           initial={{ opacity: 0, scale: 0.92, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
