@@ -106,7 +106,7 @@ export const TopBar: FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.18 }}
-              className="glass absolute right-0 top-14 z-50 w-64 overflow-hidden rounded-2xl p-2 text-sm font-medium"
+              className="glass absolute right-0 top-14 z-50 w-64 overflow-hidden rounded-2xl p-2 text-sm font-medium backdrop-blur-md"
             >
               <div className="flex flex-col gap-0.5 px-3 py-2.5">
                 <span className="text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
@@ -130,7 +130,7 @@ export const TopBar: FC = () => {
                 <button
                   type="button"
                   onClick={handleToggleTheme}
-                  className={`focus:ring-ui-primary/20 relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 ${
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ui-primary/20 ${
                     isDark ? "bg-ui-primary" : "bg-ui-border"
                   }`}
                 >

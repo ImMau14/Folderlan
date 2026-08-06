@@ -23,21 +23,6 @@ import { AnimatedBackground } from "@shared/components/AnimatedBackground"
 import { useI18n } from "@i18n/context/I18nContext"
 import { useAuth, type User } from "@auth/context/AuthContext"
 
-interface LoginSuccess {
-  ok: true
-  token: string
-}
-
-interface LoginFailure {
-  ok: false
-  message?: string
-}
-
-type LoginResult = LoginSuccess | LoginFailure
-
-const isUserRole = (value: unknown): value is User["role"] =>
-  value === "owner" || value === "visitor"
-
 export const LoginPage: FC = () => {
   const { t } = useI18n()
   const { login } = useAuth()
@@ -56,7 +41,7 @@ export const LoginPage: FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false)
 
   const loginRequest = useCallback(
-    async (username: string, password: string): Promise<LoginResult> => {
+    async (username: string, password: string) => {
       try {
         const client = new ApiClient()
         const loginRes = await client.login(username, password)
@@ -65,7 +50,7 @@ export const LoginPage: FC = () => {
           const errorMessage =
             typeof loginRes?.error?.message === "string" ? loginRes.error.message : undefined
           return {
-            ok: false,
+            ok: false as const,
             message:
               errorMessage ??
               t("login.toast.errorDescription", {
@@ -76,48 +61,30 @@ export const LoginPage: FC = () => {
 
         const token = loginRes?.data?.token
         if (token) {
-          return { ok: true, token }
+          const meRes = await client.getMe()
+          if (meRes.success && meRes.data.data) {
+            const d = meRes.data.data
+            const user: User = {
+              id: d.id,
+              username: d.username,
+              role: d.role as User["role"],
+              can_upload: d.can_upload,
+              can_delete_own_files: d.can_delete_own_files,
+              has_upload_limits: d.has_upload_limits,
+              upload_limit: d.upload_limit,
+            }
+            return { ok: true as const, token, user }
+          }
+          return { ok: false as const, message: "Could not fetch user info" }
         }
 
-        return { ok: false, message: "unknown error" }
+        return { ok: false as const, message: "unknown error" }
       } catch (err) {
         console.error("loginRequest error:", err)
-        return { ok: false, message: t("login.toast.networkErrorDescription") }
+        return { ok: false as const, message: t("login.toast.networkErrorDescription") }
       }
     },
     [t]
-  )
-
-  /**
-   * Fetch the user's role from the backend.
-   * The API returns users in data.data.items, with role "owner" or "visitor".
-   * Throws if the role cannot be determined, to avoid silent fallbacks.
-   */
-  const fetchUserRole = useCallback(
-    async (username: string, client: ApiClient): Promise<User["role"]> => {
-      const usersRes = await client.getUsers({ name: username, limit: 1 })
-      if (!usersRes.success) {
-        console.error("getUsers failed. Full error:", usersRes.error)
-        if (Array.isArray(usersRes.error.details)) {
-          console.table(usersRes.error.details)
-        }
-        const detail = usersRes.error?.message ?? "Unknown error"
-        throw new Error(`Failed to fetch user list: ${detail}`)
-      }
-
-      const items = usersRes.data?.data?.items
-      if (!items || items.length === 0) {
-        throw new Error(`User "${username}" not found in user list`)
-      }
-
-      const apiRole = items[0].role
-      if (!isUserRole(apiRole)) {
-        throw new Error(`Invalid role received from API: "${apiRole}"`)
-      }
-
-      return apiRole
-    },
-    []
   )
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -139,10 +106,7 @@ export const LoginPage: FC = () => {
 
       if (res.ok) {
         setIsLoggedIn(true)
-        const client = new ApiClient()
-        client.setToken(res.token)
-        const role = await fetchUserRole(username, client)
-        login(res.token, { username, role })
+        login(res.token, res.user)
 
         toast({
           type: "success",
@@ -164,7 +128,6 @@ export const LoginPage: FC = () => {
       })
       console.warn("Login failed:", res.message ?? "invalid credentials / server error")
     } catch (err) {
-      // Error fetching role
       const message = err instanceof Error ? err.message : String(err)
       toast({
         type: "error",

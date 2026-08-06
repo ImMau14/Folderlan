@@ -52,6 +52,7 @@
     }
   },
   "upload": {
+    "noPermission": "You do not have permission to upload files. Contact the administrator.",
     "dropZone": {
       "title": "Upload files",
       "description": "Drag your files here or select them manually",
@@ -92,7 +93,10 @@
       "fileUploaded": "File uploaded",
       "fileUploadedDesc": "The file \"{{name}}\" was uploaded successfully.",
       "uploadError": "Upload error",
-      "uploadErrorDesc": "Could not upload {{name}}."
+      "uploadErrorDesc": "Could not upload {{name}}.",
+      "uploadSummary": "Upload summary",
+      "uploadSummaryAll": "All {{count}} file(s) uploaded successfully.",
+      "uploadSummaryPartial": "{{success}} of {{total}} files uploaded. {{failed}} failed."
     }
   },
   "setup": {
@@ -161,15 +165,25 @@
   "download": {
     "filters": {
       "search": "Search files...",
-      "nameLabel": "File name",
-      "namePlaceholder": "Search by name",
+      "filtersButton": "Filters",
+      "title": "Filters",
+      "subtitle": "Refine the file list",
       "minSize": "Min size (bytes)",
       "maxSize": "Max size (bytes)",
       "startDate": "From date",
       "endDate": "To date",
       "apply": "Apply filters",
       "clear": "Clear filters",
-      "toggleFilters": "Toggle filters"
+      "user": "User",
+      "allUsers": "All users",
+      "visibility": "Visibility",
+      "all": "All",
+      "public": "Public",
+      "private": "Private"
+    },
+    "actionBar": {
+      "selected": "selected",
+      "clear": "Clear"
     },
     "table": {
       "fileName": "File name",
@@ -186,7 +200,9 @@
     "actions": {
       "download": "Download",
       "delete": "Delete",
-      "permissions": "Permissions"
+      "permissions": "Permissions",
+      "makePublic": "Make public",
+      "makePrivate": "Make private"
     },
     "pagination": {
       "showing": "Showing {{start}}-{{end}} of {{total}}",
@@ -197,7 +213,8 @@
       "title": "Delete file",
       "confirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
       "cancel": "Cancel",
-      "confirmButton": "Delete"
+      "confirmButton": "Delete",
+      "multiName": "{{count}} files"
     },
     "permissions": {
       "title": "File permissions",
@@ -210,7 +227,13 @@
       "collaborator": "Collaborator",
       "grantButton": "Grant",
       "revokeButton": "Revoke",
-      "close": "Close"
+      "multiRevokeHint": "Revoking applies to all selected files",
+      "close": "Close",
+      "noPermission": "You don't have permission to manage these files"
+    },
+    "visibility": {
+      "title": "Visibility",
+      "appliedTo": "Applied to {{count}} files"
     },
     "toast": {
       "downloaded": "Download started",
@@ -223,8 +246,222 @@
       "permRevoked": "Permission revoked",
       "permRevokedDesc": "User access has been revoked.",
       "permListError": "Failed to load permissions",
-      "fetchError": "Failed to load files"
+      "operationFailed": "Operation failed for {{count}} files",
+      "fetchError": "Failed to load files",
+      "madePublic": "File is now public",
+      "madePrivate": "File is now private",
+      "fetchErrorDesc": "The file list could not be loaded. Try again later.",
+      "madePublicDesc": "\"{{name}}\" is now visible to everyone.",
+      "madePrivateDesc": "\"{{name}}\" is now private."
+    },
+    "uploadedBy": "Uploaded by {{name}}"
+  },
+  "config": {
+    "subtitle": "Review the interface preferences and the system activity logs.",
+    "summary": {
+      "title": "Overview",
+      "subtitle": "A quick look at your space and activity.",
+      "files": "Accessible files",
+      "space": "Space used",
+      "mySpace": "My space",
+      "mySpaceDesc": "Uploaded by you",
+      "activeUsers": "Active users",
+      "quota": "Upload quota",
+      "noLimit": "No limit"
+    },
+    "account": {
+      "title": "My account",
+      "subtitle": "Your profile and access permissions.",
+      "canUpload": "Can upload",
+      "canDeleteOwn": "Can delete own files",
+      "limitsEnabled": "Upload limit: {{limit}}",
+      "noLimits": "No upload limit",
+      "fullAccess": "Full access — the owner role bypasses all permission checks.",
+      "quotaLabel": "Storage used"
+    },
+    "ui": {
+      "title": "Interface preferences",
+      "subtitle": "Customize the appearance and language of the interface.",
+      "theme": "Theme",
+      "themeLight": "Light",
+      "themeDark": "Dark",
+      "language": "Language",
+      "lowDetail": "Low detail mode",
+      "lowDetailDesc": "Disables blur effects to improve performance on slower devices.",
+      "toastNotifications": "Notifications",
+      "toastNotificationsDesc": "Show toast notifications for actions like uploads and user changes."
+    },
+    "filters": {
+      "title": "Activity logs",
+      "subtitle": "Filter the system activity log.",
+      "activeFilters": "Active filters",
+      "noActiveFilters": "No active filters",
+      "eventType": "Event type",
+      "allEvents": "All events",
+      "status": "Status",
+      "allStatus": "All",
+      "user": "User",
+      "allUsers": "All users",
+      "startDate": "From date",
+      "endDate": "To date",
+      "apply": "Apply filters",
+      "clear": "Clear filters"
+    },
+    "status": {
+      "success": "Success",
+      "failed": "Failed"
+    },
+    "eventTypes": {
+      "FILE_UPLOAD": "File upload",
+      "FILE_SOFT_DELETE": "File deleted",
+      "FILE_RESTORE": "File restored",
+      "PERMISSION_GRANT": "Permission granted",
+      "PERMISSION_UPDATE": "Permission updated",
+      "PERMISSION_REVOKE": "Permission revoked",
+      "USER_PERM_UPDATE": "User permissions updated",
+      "USER_ACTIVE_UPDATE": "User status updated",
+      "USER_SOFT_DELETE": "User deleted",
+      "USER_RESTORE": "User restored",
+      "OWNER_RESET_VISITOR_PASSWORD": "Password reset by owner"
+    },
+    "table": {
+      "timestamp": "Date",
+      "user": "User",
+      "event": "Event",
+      "description": "Details",
+      "file": "File",
+      "ip": "IP address",
+      "status": "Status",
+      "noLogs": "No activity found",
+      "noLogsDesc": "Try adjusting the filters.",
+      "loading": "Loading logs..."
+    },
+    "toast": {
+      "fetchError": "Failed to load logs",
+      "fetchErrorDesc": "The audit log could not be loaded. Try again later.",
+      "summaryError": "Failed to load summary",
+      "summaryErrorDesc": "The overview data could not be loaded. Try again later."
     }
+  },
+  "users": {
+    "subtitle": "Manage users, their status and access permissions.",
+    "search": {
+      "placeholder": "Search by username"
+    },
+    "filters": {
+      "all": "All statuses",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "permFilters": {
+      "allPerms": "All permissions",
+      "canUpload": "Can upload",
+      "noUpload": "Cannot upload",
+      "canDelete": "Can delete own files",
+      "noDelete": "Cannot delete own files"
+    },
+    "role": {
+      "owner": "Owner",
+      "visitor": "Visitor"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "canUpload": "Can upload",
+    "canDelete": "Can delete own files",
+    "hasLimits": "Restrict upload size",
+    "limitOf": "{{size}} limit",
+    "noLimit": "No limit",
+    "actions": {
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "perms": "Edit permissions",
+      "resetPassword": "Reset password",
+      "delete": "Delete"
+    },
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "status": "Status",
+      "permissions": "Permissions",
+      "created": "Created",
+      "actions": "Actions",
+      "noUsers": "No users found",
+      "noUsersDesc": "Try adjusting the search or filters.",
+      "loading": "Loading users..."
+    },
+    "permsModal": {
+      "title": "Edit permissions",
+      "subtitle": "Adjust the permissions of {{name}}"
+    },
+    "deleteModal": {
+      "title": "Delete user",
+      "confirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+      "confirmButton": "Delete"
+    },
+    "resetPassword": {
+      "title": "Reset password",
+      "subtitle": "Set a new password for \"{{name}}\"",
+      "passwordLabel": "New password",
+      "passwordPlaceholder": "Enter new password",
+      "confirmLabel": "Confirm password",
+      "confirmPlaceholder": "Re-enter new password",
+      "button": "Reset password",
+      "match": "Passwords match",
+      "mismatch": "Passwords do not match",
+      "toast": {
+        "missingFields": "Please fill in all fields",
+        "missingFieldsDesc": "Both password fields are required.",
+        "mismatch": "Passwords do not match",
+        "mismatchDesc": "Make sure both passwords match before saving."
+      }
+    },
+    "cancel": "Cancel",
+    "save": "Save changes",
+    "createUser": {
+      "button": "New user",
+      "title": "Create user",
+      "subtitle": "Register a new visitor account.",
+      "usernameLabel": "Username",
+      "usernamePlaceholder": "Enter username",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter password",
+      "permissionsTitle": "Permissions",
+      "save": "Create user",
+      "toast": {
+        "missingFields": "Please fill in all fields",
+        "success": "User created",
+        "successDesc": "\"{{name}}\" was created successfully.",
+        "error": "Could not create user",
+        "missingFieldsDesc": "Username and password are required."
+      }
+    },
+    "uploadLimitLabel": "Upload limit (bytes)",
+    "uploadLimitPlaceholder": "No limit",
+    "toast": {
+      "fetchError": "Failed to load users",
+      "toggleSuccess": "User updated",
+      "toggleSuccessDesc": "\"{{name}}\" was updated.",
+      "toggleError": "Could not update user",
+      "invalidLimit": "Invalid limit value",
+      "permsSuccess": "Permissions saved",
+      "permsSuccessDesc": "The permissions of \"{{name}}\" were saved.",
+      "permsError": "Could not save permissions",
+      "deleteSuccess": "User deleted",
+      "deleteSuccessDesc": "\"{{name}}\" was deleted.",
+      "deleteError": "Could not delete user",
+      "resetSuccess": "Password reset",
+      "resetSuccessDesc": "The password of \"{{name}}\" was changed.",
+      "resetError": "Could not reset password",
+      "invalidLimitDesc": "The upload limit must be a non-negative number.",
+      "fetchErrorDesc": "The user list could not be loaded. Try again later."
+    }
+  },
+  "pagination": {
+    "showing": "Showing {{start}}-{{end}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next"
   },
   "notFound": {
     "title": "404: This page does not exist",

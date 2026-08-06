@@ -34,7 +34,7 @@
     "title": "Menú",
     "upload": "Subir",
     "download": "Descargar",
-    "config": "Config",
+    "config": "Configuración",
     "users": "Usuarios"
   },
   "topbar": {
@@ -52,6 +52,7 @@
     }
   },
   "upload": {
+    "noPermission": "No tienes permiso para subir archivos. Contacta al administrador.",
     "dropZone": {
       "title": "Subir archivos",
       "description": "Arrastra tus archivos aquí o selecciónalos manualmente",
@@ -92,7 +93,10 @@
       "fileUploaded": "Archivo subido",
       "fileUploadedDesc": "El archivo \"{{name}}\" se subió correctamente.",
       "uploadError": "Error de subida",
-      "uploadErrorDesc": "No se pudo subir {{name}}."
+      "uploadErrorDesc": "No se pudo subir {{name}}.",
+      "uploadSummary": "Resumen de subida",
+      "uploadSummaryAll": "Los {{count}} archivo(s) se subieron correctamente.",
+      "uploadSummaryPartial": "Se subieron {{success}} de {{total}} archivos. {{failed}} fallaron."
     }
   },
   "setup": {
@@ -161,15 +165,25 @@
   "download": {
     "filters": {
       "search": "Buscar archivos...",
-      "nameLabel": "Nombre del archivo",
-      "namePlaceholder": "Buscar por nombre",
+      "filtersButton": "Filtros",
+      "title": "Filtros",
+      "subtitle": "Refina la lista de archivos",
       "minSize": "Tamaño mínimo (bytes)",
       "maxSize": "Tamaño máximo (bytes)",
       "startDate": "Fecha desde",
       "endDate": "Fecha hasta",
       "apply": "Aplicar filtros",
       "clear": "Limpiar filtros",
-      "toggleFilters": "Alternar filtros"
+      "user": "Usuario",
+      "allUsers": "Todos los usuarios",
+      "visibility": "Visibilidad",
+      "all": "Todos",
+      "public": "Público",
+      "private": "Privado"
+    },
+    "actionBar": {
+      "selected": "seleccionados",
+      "clear": "Limpiar"
     },
     "table": {
       "fileName": "Nombre del archivo",
@@ -186,7 +200,9 @@
     "actions": {
       "download": "Descargar",
       "delete": "Eliminar",
-      "permissions": "Permisos"
+      "permissions": "Permisos",
+      "makePublic": "Hacer público",
+      "makePrivate": "Hacer privado"
     },
     "pagination": {
       "showing": "Mostrando {{start}}-{{end}} de {{total}}",
@@ -197,7 +213,8 @@
       "title": "Eliminar archivo",
       "confirm": "¿Estás seguro de que deseas eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
       "cancel": "Cancelar",
-      "confirmButton": "Eliminar"
+      "confirmButton": "Eliminar",
+      "multiName": "{{count}} archivos"
     },
     "permissions": {
       "title": "Permisos del archivo",
@@ -210,7 +227,13 @@
       "collaborator": "Colaborador",
       "grantButton": "Conceder",
       "revokeButton": "Revocar",
-      "close": "Cerrar"
+      "multiRevokeHint": "Revocar aplica a todos los archivos seleccionados",
+      "close": "Cerrar",
+      "noPermission": "No tienes permiso para gestionar estos archivos"
+    },
+    "visibility": {
+      "title": "Visibilidad",
+      "appliedTo": "Aplicado a {{count}} archivos"
     },
     "toast": {
       "downloaded": "Descarga iniciada",
@@ -223,8 +246,222 @@
       "permRevoked": "Permiso revocado",
       "permRevokedDesc": "El acceso del usuario fue revocado.",
       "permListError": "Error al cargar permisos",
-      "fetchError": "Error al cargar archivos"
+      "operationFailed": "La operación falló en {{count}} archivos",
+      "fetchError": "Error al cargar archivos",
+      "madePublic": "El archivo ahora es público",
+      "madePrivate": "El archivo ahora es privado",
+      "fetchErrorDesc": "No se pudo cargar la lista de archivos. Inténtalo de nuevo.",
+      "madePublicDesc": "\"{{name}}\" ahora es visible para todos.",
+      "madePrivateDesc": "\"{{name}}\" ahora es privado."
+    },
+    "uploadedBy": "Subido por {{name}}"
+  },
+  "config": {
+    "subtitle": "Revisa las preferencias de interfaz y los registros de actividad del sistema.",
+    "summary": {
+      "title": "Resumen",
+      "subtitle": "Un vistazo rápido a tu espacio y actividad.",
+      "files": "Archivos accesibles",
+      "space": "Espacio usado",
+      "mySpace": "Mi espacio",
+      "mySpaceDesc": "Subido por ti",
+      "activeUsers": "Usuarios activos",
+      "quota": "Cuota de subida",
+      "noLimit": "Sin límite"
+    },
+    "account": {
+      "title": "Mi cuenta",
+      "subtitle": "Tu perfil y permisos de acceso.",
+      "canUpload": "Puede subir",
+      "canDeleteOwn": "Puede borrar sus archivos",
+      "limitsEnabled": "Límite de subida: {{limit}}",
+      "noLimits": "Sin límite de subida",
+      "fullAccess": "Acceso total: el rol de propietario omite todas las comprobaciones de permisos.",
+      "quotaLabel": "Almacenamiento usado"
+    },
+    "ui": {
+      "title": "Preferencias de interfaz",
+      "subtitle": "Personaliza la apariencia y el idioma de la interfaz.",
+      "theme": "Tema",
+      "themeLight": "Claro",
+      "themeDark": "Oscuro",
+      "language": "Idioma",
+      "lowDetail": "Modo de bajo detalle",
+      "lowDetailDesc": "Deshace los efectos de desenfoque para mejorar el rendimiento en dispositivos lentos.",
+      "toastNotifications": "Notificaciones",
+      "toastNotificationsDesc": "Mostrar notificaciones para acciones como subidas y cambios de usuario."
+    },
+    "filters": {
+      "title": "Registros de actividad",
+      "subtitle": "Filtra los registros de actividad del sistema.",
+      "activeFilters": "Filtros activos",
+      "noActiveFilters": "Sin filtros activos",
+      "eventType": "Tipo de evento",
+      "allEvents": "Todos los eventos",
+      "status": "Estado",
+      "allStatus": "Todos",
+      "user": "Usuario",
+      "allUsers": "Todos los usuarios",
+      "startDate": "Fecha desde",
+      "endDate": "Fecha hasta",
+      "apply": "Aplicar filtros",
+      "clear": "Limpiar filtros"
+    },
+    "status": {
+      "success": "Correcto",
+      "failed": "Fallido"
+    },
+    "eventTypes": {
+      "FILE_UPLOAD": "Subida de archivo",
+      "FILE_SOFT_DELETE": "Archivo eliminado",
+      "FILE_RESTORE": "Archivo restaurado",
+      "PERMISSION_GRANT": "Permiso concedido",
+      "PERMISSION_UPDATE": "Permiso actualizado",
+      "PERMISSION_REVOKE": "Permiso revocado",
+      "USER_PERM_UPDATE": "Permisos de usuario actualizados",
+      "USER_ACTIVE_UPDATE": "Estado de usuario actualizado",
+      "USER_SOFT_DELETE": "Usuario eliminado",
+      "USER_RESTORE": "Usuario restaurado",
+      "OWNER_RESET_VISITOR_PASSWORD": "Contraseña restablecida por el propietario"
+    },
+    "table": {
+      "timestamp": "Fecha",
+      "user": "Usuario",
+      "event": "Evento",
+      "description": "Detalles",
+      "file": "Archivo",
+      "ip": "Dirección IP",
+      "status": "Estado",
+      "noLogs": "No se encontró actividad",
+      "noLogsDesc": "Intenta ajustar los filtros.",
+      "loading": "Cargando registros..."
+    },
+    "toast": {
+      "fetchError": "Error al cargar los registros",
+      "fetchErrorDesc": "No se pudieron cargar los registros de auditoría. Inténtalo de nuevo.",
+      "summaryError": "Error al cargar el resumen",
+      "summaryErrorDesc": "No se pudieron cargar los datos del resumen. Inténtalo de nuevo."
     }
+  },
+  "users": {
+    "subtitle": "Gestiona usuarios, su estado y permisos de acceso.",
+    "search": {
+      "placeholder": "Buscar por nombre de usuario"
+    },
+    "filters": {
+      "all": "Todos los estados",
+      "active": "Activos",
+      "inactive": "Inactivos"
+    },
+    "permFilters": {
+      "allPerms": "Todos los permisos",
+      "canUpload": "Puede subir",
+      "noUpload": "No puede subir",
+      "canDelete": "Puede eliminar sus archivos",
+      "noDelete": "No puede eliminar sus archivos"
+    },
+    "role": {
+      "owner": "Propietario",
+      "visitor": "Visitante"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo"
+    },
+    "canUpload": "Puede subir",
+    "canDelete": "Puede eliminar sus archivos",
+    "hasLimits": "Restringir tamaño de subida",
+    "limitOf": "Límite de {{size}}",
+    "noLimit": "Sin límite",
+    "actions": {
+      "activate": "Activar",
+      "deactivate": "Desactivar",
+      "perms": "Editar permisos",
+      "resetPassword": "Restablecer contraseña",
+      "delete": "Eliminar"
+    },
+    "table": {
+      "user": "Usuario",
+      "role": "Rol",
+      "status": "Estado",
+      "permissions": "Permisos",
+      "created": "Creado",
+      "actions": "Acciones",
+      "noUsers": "No se encontraron usuarios",
+      "noUsersDesc": "Intenta ajustar la búsqueda o los filtros.",
+      "loading": "Cargando usuarios..."
+    },
+    "permsModal": {
+      "title": "Editar permisos",
+      "subtitle": "Ajusta los permisos de {{name}}"
+    },
+    "deleteModal": {
+      "title": "Eliminar usuario",
+      "confirm": "¿Estás seguro de que deseas eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
+      "confirmButton": "Eliminar"
+    },
+    "resetPassword": {
+      "title": "Restablecer contraseña",
+      "subtitle": "Establece una nueva contraseña para \"{{name}}\"",
+      "passwordLabel": "Nueva contraseña",
+      "passwordPlaceholder": "Ingresa la nueva contraseña",
+      "confirmLabel": "Confirmar contraseña",
+      "confirmPlaceholder": "Repite la nueva contraseña",
+      "button": "Restablecer contraseña",
+      "match": "Las contraseñas coinciden",
+      "mismatch": "Las contraseñas no coinciden",
+      "toast": {
+        "missingFields": "Completa todos los campos",
+        "missingFieldsDesc": "Ambos campos de contraseña son obligatorios.",
+        "mismatch": "Las contraseñas no coinciden",
+        "mismatchDesc": "Asegúrate de que ambas contraseñas coincidan antes de guardar."
+      }
+    },
+    "cancel": "Cancelar",
+    "save": "Guardar cambios",
+    "createUser": {
+      "button": "Nuevo usuario",
+      "title": "Crear usuario",
+      "subtitle": "Registrar una nueva cuenta de visitante.",
+      "usernameLabel": "Usuario",
+      "usernamePlaceholder": "Ingresa el nombre de usuario",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Ingresa la contraseña",
+      "permissionsTitle": "Permisos",
+      "save": "Crear usuario",
+      "toast": {
+        "missingFields": "Completa todos los campos",
+        "success": "Usuario creado",
+        "successDesc": "\"{{name}}\" fue creado correctamente.",
+        "error": "No se pudo crear el usuario",
+        "missingFieldsDesc": "El nombre de usuario y la contraseña son obligatorios."
+      }
+    },
+    "uploadLimitLabel": "Límite de subida (bytes)",
+    "uploadLimitPlaceholder": "Sin límite",
+    "toast": {
+      "fetchError": "Error al cargar los usuarios",
+      "toggleSuccess": "Usuario actualizado",
+      "toggleSuccessDesc": "\"{{name}}\" fue actualizado.",
+      "toggleError": "No se pudo actualizar el usuario",
+      "invalidLimit": "Valor de límite inválido",
+      "permsSuccess": "Permisos guardados",
+      "permsSuccessDesc": "Los permisos de \"{{name}}\" fueron guardados.",
+      "permsError": "No se pudieron guardar los permisos",
+      "deleteSuccess": "Usuario eliminado",
+      "deleteSuccessDesc": "\"{{name}}\" fue eliminado.",
+      "deleteError": "No se pudo eliminar el usuario",
+      "resetSuccess": "Contraseña restablecida",
+      "resetSuccessDesc": "La contraseña de \"{{name}}\" fue cambiada.",
+      "resetError": "No se pudo restablecer la contraseña",
+      "invalidLimitDesc": "El límite de subida debe ser un número no negativo.",
+      "fetchErrorDesc": "No se pudo cargar la lista de usuarios. Inténtalo de nuevo."
+    }
+  },
+  "pagination": {
+    "showing": "Mostrando {{start}}-{{end}} de {{total}}",
+    "previous": "Anterior",
+    "next": "Siguiente"
   },
   "notFound": {
     "title": "404: Esta página no existe",

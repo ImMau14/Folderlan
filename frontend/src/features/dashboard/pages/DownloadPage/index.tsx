@@ -1,74 +1,98 @@
+/**
+ * DownloadPage — the main "Downloads" screen of the dashboard.
+ *
+ * Responsibilities:
+ * - Fetches and paginates the file list from the API (25 files per page).
+ * - Keeps local state for the current page, active filters and the set of
+ *   files selected by the user.
+ * - Exposes bulk actions (download, permissions, delete) through the
+ *   floating ActionBar and opens the corresponding modals.
+ *
+ * All child components live in this folder and communicate exclusively
+ * through props, so this page acts as the single source of truth.
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { motion } from "framer-motion"
 
 import { useAuth } from "@auth/context/AuthContext"
 import { useToast } from "@toast/context/ToastContext"
 import { useI18n } from "@i18n/context/I18nContext"
+import { useModal } from "@modal/context/ModalContext"
 import ApiClient from "@shared/utils/ApiClient"
-import type { FileItem, FilePermission, User } from "@shared/utils/ApiClient/types"
+import type { FileItem, User } from "@shared/utils/ApiClient/types"
+import { setPageName } from "@shared/utils/setPageName"
 
-import SearchBar from "./SearchBar"
-import FileTable from "./FileTable"
-import Pagination from "./Pagination"
+import FilterBar from "./FilterBar"
+import FiltersModal from "./FiltersModal"
+import FileGrid from "./FileGrid"
+import ActionBar from "./ActionBar"
 import DeleteModal from "./DeleteModal"
 import PermissionModal from "./PermissionModal"
+import Pagination from "../../components/Pagination"
 
 const PAGE_SIZE = 25
 
+/**
+ * Filters applied to the file list. An empty string means "no filter" and
+ * each value maps 1:1 to a query parameter of the list endpoint.
+ */
 export interface FileFilters {
   name: string
   min_size: string
   max_size: string
   start_date: string
   end_date: string
+  visibility: string
+  uploaded_by: string
 }
 
 export default function DownloadPage() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const { toast } = useToast()
   const { t } = useI18n()
+  const { openComponent } = useModal()
 
+  // The API client is created once per auth token; a new token yields a new client.
   const apiClient = useMemo(() => {
     const client = new ApiClient()
     if (token) client.setToken(token)
     return client
   }, [token])
 
+  useEffect(() => {
+    setPageName(t("menu.download"))
+  }, [t])
+
   const [files, setFiles] = useState<FileItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [offset, setOffset] = useState(0)
   const [fetchKey, setFetchKey] = useState(0)
-  const [showFilters, setShowFilters] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const scrollRef = useRef<HTMLDivElement | null>(null)
   const [filters, setFilters] = useState<FileFilters>({
     name: "",
     min_size: "",
     max_size: "",
     start_date: "",
     end_date: "",
+    visibility: "",
+    uploaded_by: "",
   })
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const filtersRef = useRef(filters)
   filtersRef.current = filters
 
-  const [permModal, setPermModal] = useState<{
-    open: boolean
-    fileId: number | null
-    fileName: string
-  }>({ open: false, fileId: null, fileName: "" })
-  const [permissions, setPermissions] = useState<FilePermission[]>([])
-  const [loadingPerms, setLoadingPerms] = useState(false)
-  const [users, setUsers] = useState<User[]>([])
-  const [grantUserId, setGrantUserId] = useState("")
-  const [grantLevel, setGrantLevel] = useState<"viewer" | "collaborator">("viewer")
+  // Reset to the first page and force a refetch of the current list.
+  const refreshList = useCallback(() => {
+    setOffset(0)
+    setFetchKey((k) => k + 1)
+  }, [])
 
-  const [deleteModal, setDeleteModal] = useState<{
-    open: boolean
-    fileId: number | null
-    fileName: string
-  }>({ open: false, fileId: null, fileName: "" })
-  const [deleting, setDeleting] = useState(false)
-
+  /**
+   * Fetches one page of files from the API and stores both the rows and the
+   * total count. Only filters with an actual value are sent as query params.
+   */
   const fetchFiles = useCallback(
     async (off: number, f: FileFilters) => {
       setLoading(true)
@@ -81,28 +105,53 @@ export default function DownloadPage() {
       if (f.max_size) params.max_size = Number(f.max_size)
       if (f.start_date) params.start_date = f.start_date
       if (f.end_date) params.end_date = f.end_date
+      if (f.visibility) params.visibility = f.visibility
+      if (f.uploaded_by) params.uploaded_by = Number(f.uploaded_by)
 
       const result = await apiClient.listFiles(params)
       if (result.success && result.data.data) {
         const data = result.data.data
         setFiles(data.items ?? [])
-        setTotal(data.total)
+        setTotal(data.total ?? 0)
       } else {
-        toast({ type: "error", title: t("download.toast.fetchError"), duration: 4000 })
+        toast({
+          type: "error",
+          title: t("download.toast.fetchError"),
+          description: t("download.toast.fetchErrorDesc"),
+          duration: 4000,
+        })
       }
       setLoading(false)
     },
     [apiClient, toast, t]
   )
 
+  // Refetch whenever the page changes or something requests a refresh.
   useEffect(() => {
     fetchFiles(offset, filtersRef.current)
   }, [offset, fetchKey, fetchFiles])
 
-  const handleFilterChange = useCallback((key: keyof FileFilters, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }))
-  }, [])
+  // Prefetch the user list on mount so the permission and filter modals can
+  // open instantly without waiting for a fetch of their own.
+  const [prefetchedUsers, setPrefetchedUsers] = useState<User[]>([])
+  useEffect(() => {
+    let active = true
+    apiClient
+      .getUsers({ limit: 200 })
+      .then((result) => {
+        if (active && result.success) {
+          setPrefetchedUsers(result.data.data?.items ?? [])
+        }
+      })
+      .catch(() => {
+        // Prefetch is best-effort; modals fall back to their own fetch.
+      })
+    return () => {
+      active = false
+    }
+  }, [apiClient])
 
+  // Debounce the search input: wait until the user stops typing before refetching.
   const handleNameSearch = useCallback((value: string) => {
     setFilters((prev) => ({ ...prev, name: value }))
     if (searchTimeout.current) clearTimeout(searchTimeout.current)
@@ -112,18 +161,66 @@ export default function DownloadPage() {
     }, 400)
   }, [])
 
-  const applyFilters = useCallback(() => {
-    setOffset(0)
-    setFetchKey((k) => k + 1)
+  // Count of active filters (everything except the search box).
+  const activeFilterCount = useMemo(() => {
+    const { name: _name, ...rest } = filters
+    return Object.values(rest).filter((v) => v !== "").length
+  }, [filters])
+
+  // A file can be managed (delete, share, toggle public) when the caller has
+  // collaborator or owner access on it. Falls back to the role if the backend
+  // does not send `my_access` yet.
+  const canManageFile = useCallback(
+    (file: FileItem) => {
+      const level = file.my_access ?? (user?.role === "owner" ? "owner" : "viewer")
+      return level === "owner" || level === "collaborator"
+    },
+    [user?.role]
+  )
+
+  // Bulk management actions are only offered when EVERY selected file supports
+  // them, so the buttons never lead to partial 403 errors.
+  const selectedCanManage = useMemo(() => {
+    const selected = files.filter((f) => selectedIds.has(f.id))
+    return selected.length > 0 && selected.every(canManageFile)
+  }, [files, selectedIds, canManageFile])
+
+  // Open the filters modal; applying new filters resets pagination and refetches.
+  const handleOpenFilters = useCallback(() => {
+    openComponent(
+      FiltersModal,
+      {
+        filters,
+        apiClient,
+        initialUsers: prefetchedUsers,
+        onApply: (next) => {
+          setFilters(next)
+          setOffset(0)
+          setFetchKey((k) => k + 1)
+        },
+      },
+      { paddingless: true }
+    )
+  }, [openComponent, filters, apiClient, prefetchedUsers])
+
+  // Toggle a file in/out of the current selection.
+  const handleSelectFile = useCallback((file: FileItem) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(file.id)) {
+        next.delete(file.id)
+      } else {
+        next.add(file.id)
+      }
+      return next
+    })
   }, [])
 
-  const clearFilters = useCallback(() => {
-    setFilters({ name: "", min_size: "", max_size: "", start_date: "", end_date: "" })
-    setOffset(0)
-    setFetchKey((k) => k + 1)
-  }, [])
-
-  const handleDownload = useCallback(
+  /**
+   * Download a single file: fetch its blob, create a temporary anchor element
+   * and click it so the browser starts the download.
+   */
+  const handleDoubleClick = useCallback(
     async (file: FileItem) => {
       const result = await apiClient.downloadFile(file.id)
       if (result.success) {
@@ -153,192 +250,201 @@ export default function DownloadPage() {
     [apiClient, toast, t]
   )
 
-  const handleDeleteConfirm = useCallback(async () => {
-    if (!deleteModal.fileId) return
-    setDeleting(true)
-    const result = await apiClient.deleteFile(deleteModal.fileId)
-    if (result.success) {
-      toast({
-        type: "success",
-        title: t("download.toast.deleteSuccess"),
-        description: t("download.toast.deleteSuccessDesc", { name: deleteModal.fileName }),
-        duration: 3000,
-      })
-      setFiles((prev) => prev.filter((f) => f.id !== deleteModal.fileId))
-      setTotal((prev) => prev - 1)
-    } else {
-      toast({
-        type: "error",
-        title: t("download.toast.deleteError"),
-        description: result.error.message,
-        duration: 4000,
-      })
-    }
-    setDeleting(false)
-    setDeleteModal({ open: false, fileId: null, fileName: "" })
-  }, [deleteModal, apiClient, toast, t])
-
-  const openPermModal = useCallback(
+  // Flip a single file's visibility and update the row in place.
+  const handleToggleVisibility = useCallback(
     async (file: FileItem) => {
-      setPermModal({ open: true, fileId: file.id, fileName: file.name })
-      setGrantUserId("")
-      setGrantLevel("viewer")
-      setLoadingPerms(true)
-      const [permsResult, usersResult] = await Promise.all([
-        apiClient.listFilePerms(file.id),
-        apiClient.getUsers({ limit: 200 }),
-      ])
-      if (permsResult.success) {
-        setPermissions(permsResult.data.data ?? [])
-      } else {
-        toast({ type: "error", title: t("download.toast.permListError"), duration: 4000 })
-        setPermissions([])
-      }
-      if (usersResult.success) {
-        setUsers(usersResult.data.data?.items ?? [])
-      }
-      setLoadingPerms(false)
-    },
-    [apiClient, toast, t]
-  )
-
-  const closePermModal = useCallback(() => {
-    setPermModal({ open: false, fileId: null, fileName: "" })
-    setPermissions([])
-  }, [])
-
-  const handleGrant = useCallback(async () => {
-    if (!permModal.fileId || !grantUserId) return
-    const userId = Number(grantUserId)
-    if (Number.isNaN(userId)) return
-
-    const result = await apiClient.grantFilePerms(permModal.fileId, {
-      user_id: userId,
-      access_level: grantLevel,
-    })
-    if (result.success) {
-      toast({
-        type: "success",
-        title: t("download.toast.permGranted"),
-        description: t("download.toast.permGrantedDesc", { level: grantLevel }),
-        duration: 3000,
-      })
-      setGrantUserId("")
-      const permsResult = await apiClient.listFilePerms(permModal.fileId)
-      if (permsResult.success) setPermissions(permsResult.data.data ?? [])
-    } else {
-      toast({
-        type: "error",
-        title: t("download.toast.permListError"),
-        description: result.error.message,
-        duration: 4000,
-      })
-    }
-  }, [permModal.fileId, grantUserId, grantLevel, apiClient, toast, t])
-
-  const handleRevoke = useCallback(
-    async (userId: number) => {
-      if (!permModal.fileId) return
-      const result = await apiClient.revokeFilePerm(permModal.fileId, userId)
+      const newValue = !file.is_public
+      const result = await apiClient.toggleFilePublic(file.id, newValue)
       if (result.success) {
-        toast({ type: "success", title: t("download.toast.permRevoked"), duration: 3000 })
-        setPermissions((prev) => prev.filter((p) => p.user_id !== userId))
+        setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, is_public: newValue } : f)))
+        toast({
+          type: "success",
+          title: newValue ? t("download.toast.madePublic") : t("download.toast.madePrivate"),
+          description: t(
+            newValue ? "download.toast.madePublicDesc" : "download.toast.madePrivateDesc",
+            { name: file.name }
+          ),
+          duration: 2500,
+        })
       } else {
         toast({
           type: "error",
-          title: t("download.toast.permListError"),
+          title: t("download.toast.fetchError"),
           description: result.error.message,
           duration: 4000,
         })
       }
     },
-    [permModal.fileId, apiClient, toast, t]
+    [apiClient, toast, t]
   )
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
-  const currentPage = Math.floor(offset / PAGE_SIZE) + 1
+  // Download every selected file sequentially to avoid flooding the server.
+  const handleDownloadSelected = useCallback(async () => {
+    if (selectedIds.size === 0) return
+    for (const fileId of selectedIds) {
+      const file = files.find((f) => f.id === fileId)
+      if (file) {
+        await handleDoubleClick(file)
+      }
+    }
+  }, [selectedIds, files, handleDoubleClick])
+
+  // Re-fetch the current page without resetting pagination (used by modals).
+  const refetchCurrent = useCallback(() => {
+    setFetchKey((key) => key + 1)
+  }, [])
+
+  /**
+   * Derives the initial visibility state for the selected files so the
+   * permissions modal can preselect the matching button:
+   * - all selected files public   -> true
+   * - all selected files private  -> false
+   * - a combination of both       -> "mixed"
+   * - selection unknown to the list -> undefined (no button preselected)
+   */
+  const initialVisibility = useMemo(() => {
+    const selected = files.filter((f) => selectedIds.has(f.id))
+    if (selected.length === 0) return undefined
+    const publicCount = selected.filter((f) => f.is_public).length
+    if (publicCount === 0) return false
+    if (publicCount === selected.length) return true
+    return "mixed"
+  }, [files, selectedIds])
+
+  // Open the permissions modal for all selected files.
+  const handleVisibilitySelected = useCallback(() => {
+    if (selectedIds.size === 0) return
+    openComponent(
+      PermissionModal,
+      {
+        fileIds: Array.from(selectedIds),
+        apiClient,
+        initialVisibility,
+        canManage: selectedCanManage,
+        initialUsers: prefetchedUsers,
+        onRefresh: refetchCurrent,
+      },
+      { paddingless: true }
+    )
+  }, [
+    selectedIds,
+    openComponent,
+    apiClient,
+    initialVisibility,
+    selectedCanManage,
+    prefetchedUsers,
+    refetchCurrent,
+  ])
+
+  // Open the delete confirmation modal for all selected files.
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedIds.size === 0) return
+    openComponent(DeleteModal, {
+      fileIds: Array.from(selectedIds),
+      apiClient,
+      onRefresh: refreshList,
+    })
+  }, [selectedIds, openComponent, apiClient, refreshList])
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set())
+  }, [])
+
+  const currentPage = useMemo(() => Math.floor(offset / PAGE_SIZE) + 1, [offset])
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PAGE_SIZE)), [total])
+
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })
+  }, [])
+
+  const handlePrevPage = useCallback(() => {
+    setOffset((prev) => Math.max(0, prev - PAGE_SIZE))
+    clearSelection()
+    scrollToTop()
+  }, [clearSelection, scrollToTop])
+
+  const handleNextPage = useCallback(() => {
+    setOffset((prev) => Math.min((totalPages - 1) * PAGE_SIZE, prev + PAGE_SIZE))
+    clearSelection()
+    scrollToTop()
+  }, [totalPages, clearSelection, scrollToTop])
+
+  // Clear the selection when clicking anywhere outside the cards, the
+  // floating action bar or an open modal.
+  useEffect(() => {
+    const onDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (
+        target.closest("[data-file-card]") ||
+        target.closest("[data-action-bar]") ||
+        target.closest("[data-modal]")
+      ) {
+        return
+      }
+      setSelectedIds((prev) => (prev.size > 0 ? new Set() : prev))
+    }
+    document.addEventListener("click", onDocumentClick)
+    return () => document.removeEventListener("click", onDocumentClick)
+  }, [])
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto scrollbar scrollbar-thin scrollbar-thumb-ui-border scrollbar-track-transparent">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 p-4 sm:gap-6 sm:p-6">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
-          style={{ opacity: 0 }}
-        >
-          <SearchBar
-            filters={filters}
-            showFilters={showFilters}
-            onToggleFilters={() => setShowFilters((s) => !s)}
-            onNameSearch={handleNameSearch}
-            onFilterChange={handleFilterChange}
-            onApplyFilters={applyFilters}
-            onClearFilters={clearFilters}
-          />
-        </motion.div>
+    <div
+      ref={scrollRef}
+      className="flex h-full flex-col overflow-y-auto bg-ui-back scrollbar scrollbar-thin"
+    >
+      {/* Toolbar: search + filters trigger */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
+        style={{ opacity: 0 }}
+      >
+        <FilterBar
+          filters={filters}
+          onNameSearch={handleNameSearch}
+          onOpenFilters={handleOpenFilters}
+          activeFilterCount={activeFilterCount}
+        />
+      </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.2, 0, 0, 1], delay: 0.12 }}
-          style={{ opacity: 0 }}
-        >
-          <FileTable
-            files={files}
-            loading={loading}
-            onDownload={handleDownload}
-            onOpenPermModal={openPermModal}
-            onOpenDeleteModal={(file) =>
-              setDeleteModal({ open: true, fileId: file.id, fileName: file.name })
-            }
-          />
-        </motion.div>
+      {/* Content: file grid + pagination */}
+      {/*
+        Constant bottom clearance on mobile (pb-28) so the fixed nav / floating
+        action bar overlay content without changing the scroll container's height,
+        which would otherwise cause a scroll jump when the selection toggles.
+      */}
+      <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-6 p-4 pb-28 sm:p-6 sm:pb-0 lg:p-8">
+        <FileGrid
+          files={files}
+          loading={loading}
+          selectedIds={selectedIds}
+          onSelect={handleSelectFile}
+          onDoubleClick={handleDoubleClick}
+          onToggleVisibility={handleToggleVisibility}
+        />
 
-        {total > PAGE_SIZE && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: [0.2, 0, 0, 1], delay: 0.2 }}
-            style={{ opacity: 0 }}
-          >
-            <Pagination
-              total={total}
-              offset={offset}
-              pageSize={PAGE_SIZE}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPrevPage={() => setOffset((p) => Math.max(0, p - PAGE_SIZE))}
-              onNextPage={() =>
-                setOffset((p) => Math.min((totalPages - 1) * PAGE_SIZE, p + PAGE_SIZE))
-              }
-            />
-          </motion.div>
+        {files.length > 0 && (
+          <Pagination
+            total={total}
+            offset={offset}
+            pageSize={PAGE_SIZE}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPrevPage={handlePrevPage}
+            onNextPage={handleNextPage}
+          />
         )}
-
-        <DeleteModal
-          open={deleteModal.open}
-          fileName={deleteModal.fileName}
-          deleting={deleting}
-          onConfirm={handleDeleteConfirm}
-          onClose={() => setDeleteModal({ open: false, fileId: null, fileName: "" })}
-        />
-
-        <PermissionModal
-          open={permModal.open}
-          fileName={permModal.fileName}
-          permissions={permissions}
-          users={users}
-          loadingPerms={loadingPerms}
-          grantUserId={grantUserId}
-          grantLevel={grantLevel}
-          onGrantUserIdChange={setGrantUserId}
-          onGrantLevelChange={setGrantLevel}
-          onGrant={handleGrant}
-          onRevoke={handleRevoke}
-          onClose={closePermModal}
-        />
       </div>
+
+      {/* Floating bulk actions (only when files are selected) */}
+      <ActionBar
+        selectedCount={selectedIds.size}
+        canManage={selectedCanManage}
+        onDownload={handleDownloadSelected}
+        onVisibility={handleVisibilitySelected}
+        onDelete={handleDeleteSelected}
+        onClear={clearSelection}
+      />
     </div>
   )
 }

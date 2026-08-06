@@ -27,7 +27,7 @@ export default function Pagination({
   return (
     <div className="flex w-full flex-col items-center gap-3 sm:flex-row sm:justify-between">
       <p className="font-body text-sm text-ui-text-muted">
-        {t("download.pagination.showing", {
+        {t("pagination.showing", {
           start: offset + 1,
           end: Math.min(offset + pageSize, total),
           total,
@@ -41,7 +41,7 @@ export default function Pagination({
           className="flex items-center gap-1 rounded-full border-2 border-ui-border px-3 py-1.5 font-body text-sm font-semibold text-ui-text transition-all hover:border-ui-primary disabled:opacity-40"
         >
           <FaChevronLeft className="text-xs" />
-          {t("download.pagination.previous")}
+          {t("pagination.previous")}
         </motion.button>
         <motion.span
           key={currentPage}
@@ -58,7 +58,7 @@ export default function Pagination({
           whileTap={offset + pageSize < total ? { scale: 0.95 } : undefined}
           className="flex items-center gap-1 rounded-full border-2 border-ui-border px-3 py-1.5 font-body text-sm font-semibold text-ui-text transition-all hover:border-ui-primary disabled:opacity-40"
         >
-          {t("download.pagination.next")}
+          {t("pagination.next")}
           <FaChevronRight className="text-xs" />
         </motion.button>
       </div>

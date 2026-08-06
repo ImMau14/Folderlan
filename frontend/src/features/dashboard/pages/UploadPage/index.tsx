@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type FC } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "react"
 import type { CancelTokenSource } from "axios"
 
 import { useAuth } from "@auth/context/AuthContext"
@@ -6,6 +6,7 @@ import { useToast } from "@toast/context/ToastContext"
 import { useI18n } from "@i18n/context/I18nContext"
 
 import ApiClient from "@shared/utils/ApiClient"
+import { setPageName } from "@shared/utils/setPageName"
 import DropZone from "./DropZone"
 import FileQueue, { type UploadQueueItem } from "./FileQueue"
 
@@ -19,12 +20,27 @@ const createQueueItem = (file: File): UploadQueueItem => ({
 })
 
 export const UploadPage: FC = () => {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const { toast } = useToast()
   const { t } = useI18n()
 
+  useEffect(() => {
+    setPageName(t("menu.upload"))
+  }, [t])
+
   const cancelTokenMap = useRef<Record<string, CancelTokenSource | null>>({})
   const [files, setFiles] = useState<UploadQueueItem[]>([])
+  const uploadResultsRef = useRef<{
+    success: number
+    failed: number
+    total: number
+    startedCount: number
+  }>({
+    success: 0,
+    failed: 0,
+    total: 0,
+    startedCount: 0,
+  })
 
   const apiClient = useMemo(() => {
     const client = new ApiClient()
@@ -72,6 +88,39 @@ export const UploadPage: FC = () => {
     [updateFile]
   )
 
+  const showSummary = useCallback(() => {
+    const { success, failed, total } = uploadResultsRef.current
+    if (total === 0) return
+
+    if (failed === 0) {
+      toast({
+        type: "success",
+        title: t("upload.toast.uploadSummary"),
+        description: t("upload.toast.uploadSummaryAll", { count: success }),
+        duration: 5000,
+      })
+    } else {
+      toast({
+        type: failed === total ? "error" : "warning",
+        title: t("upload.toast.uploadSummary"),
+        description: t("upload.toast.uploadSummaryPartial", {
+          success: String(success),
+          total: String(total),
+          failed: String(failed),
+        }),
+        duration: 6000,
+      })
+    }
+  }, [toast, t])
+
+  const checkAllDone = useCallback(() => {
+    const current = uploadResultsRef.current
+    if (current.total === 0) return
+    if (current.startedCount > 0 && current.total < current.startedCount) return
+    showSummary()
+    uploadResultsRef.current = { success: 0, failed: 0, total: 0, startedCount: 0 }
+  }, [showSummary])
+
   const uploadOneFile = useCallback(
     async (key: string) => {
       const item = files.find((file) => file.key === key)
@@ -93,6 +142,10 @@ export const UploadPage: FC = () => {
       cancelTokenMap.current[key] = source
       updateFile(key, { status: "uploading", progress: 0, error: undefined })
 
+      if (uploadResultsRef.current.startedCount === 0) {
+        uploadResultsRef.current.startedCount = 1
+      }
+
       const result = await apiClient.uploadFile(item.file, {
         cancelToken: source.token,
         onUploadProgress: (event) => {
@@ -107,13 +160,9 @@ export const UploadPage: FC = () => {
 
       if (result.success) {
         updateFile(key, { status: "done", progress: 100, error: undefined })
-
-        toast({
-          type: "success",
-          title: t("upload.toast.fileUploaded"),
-          description: t("upload.toast.fileUploadedDesc", { name: item.file.name }),
-          duration: 3500,
-        })
+        uploadResultsRef.current.success++
+        uploadResultsRef.current.total++
+        checkAllDone()
         return
       }
 
@@ -126,15 +175,11 @@ export const UploadPage: FC = () => {
         status: "error",
         error: result.error?.message ?? t("upload.toast.uploadErrorDesc", { name: item.file.name }),
       })
-
-      toast({
-        type: "error",
-        title: t("upload.toast.uploadError"),
-        description: t("upload.toast.uploadErrorDesc", { name: item.file.name }),
-        duration: 5000,
-      })
+      uploadResultsRef.current.failed++
+      uploadResultsRef.current.total++
+      checkAllDone()
     },
-    [apiClient, files, token, toast, updateFile, t]
+    [apiClient, files, token, toast, updateFile, t, checkAllDone]
   )
 
   const handleToggleFile = useCallback(
@@ -149,10 +194,17 @@ export const UploadPage: FC = () => {
   )
 
   const handleStartAll = useCallback(() => {
-    files.forEach((item) => {
-      if (item.status !== "done" && item.status !== "uploading") {
-        uploadOneFile(item.key)
-      }
+    const pendingFiles = files.filter(
+      (item) => item.status !== "done" && item.status !== "uploading"
+    )
+    uploadResultsRef.current = {
+      success: 0,
+      failed: 0,
+      total: 0,
+      startedCount: pendingFiles.length,
+    }
+    pendingFiles.forEach((item) => {
+      uploadOneFile(item.key)
     })
   }, [files, uploadOneFile])
 
@@ -166,15 +218,23 @@ export const UploadPage: FC = () => {
 
   return (
     <div className="grid grid-cols-1 gap-6 p-6 lg:h-full lg:min-h-0 lg:grid-cols-2 lg:grid-rows-[1fr]">
-      <DropZone onFilesChange={addFiles} files={files.map((item) => item.file)} />
+      {user && !user.can_upload ? (
+        <div className="col-span-full flex flex-col items-center justify-center gap-4 py-16">
+          <p className="font-body text-sm text-ui-text-muted">{t("upload.noPermission")}</p>
+        </div>
+      ) : (
+        <>
+          <DropZone onFilesChange={addFiles} files={files.map((item) => item.file)} />
 
-      <FileQueue
-        files={files}
-        onRemoveFile={removeFile}
-        onToggleFile={handleToggleFile}
-        onStartAll={handleStartAll}
-        onPauseAll={handlePauseAll}
-      />
+          <FileQueue
+            files={files}
+            onRemoveFile={removeFile}
+            onToggleFile={handleToggleFile}
+            onStartAll={handleStartAll}
+            onPauseAll={handlePauseAll}
+          />
+        </>
+      )}
     </div>
   )
 }

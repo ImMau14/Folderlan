@@ -41,21 +41,20 @@ export const SimpleMessageSchema = ApiResponseSchema(z.object({}))
 export const AuditEntrySchema = z.object({
   id: z.number(),
   timestamp: z.string(),
-  user_id: z.number().optional(),
-  username: z.string().optional(),
+  user_id: z.number().nullable().optional(),
+  username: z.string().nullable().optional(),
   event_type: z.string().optional(),
-  description: z.string().optional(),
-  ip_address: z.string().optional(),
-  file_id: z.number().optional(),
-  file_name: z.string().optional(),
+  description: z.string().nullable().optional(),
+  ip_address: z.string().nullable().optional(),
+  file_id: z.number().nullable().optional(),
+  file_name: z.string().nullable().optional(),
   success: z.boolean().optional(),
+  total_count: z.number().optional(),
 })
 
-export const AuditListSchema = ApiResponseSchema(
-  z.object({
-    data: z.array(AuditEntrySchema),
-  })
-)
+// Backend returns the audit log rows directly inside the `data` payload:
+// { success, message, data: [AuditLogRow] }
+export const AuditListSchema = ApiResponseSchema(z.array(AuditEntrySchema))
 
 export const FileItemSchema = z.object({
   id: z.number(),
@@ -66,6 +65,8 @@ export const FileItemSchema = z.object({
   uploaded_by: z.union([z.string(), z.number()]).nullable().optional(),
   is_public: z.boolean(),
   uploaded_at: z.string().nullable().optional(),
+  /** Caller's access level on this file: "owner", "collaborator" or "viewer". */
+  my_access: z.enum(["owner", "collaborator", "viewer"]).optional(),
   total_count: z.number().optional(),
 })
 
@@ -108,7 +109,8 @@ export const UserSchema = z.object({
   has_upload_limits: z.union([z.boolean(), z.number()]).transform((v) => Boolean(v)),
   upload_limit: z.number(),
   created_at: z.string().optional(),
-  last_login_at: z.string().optional(),
+  last_login_at: z.string().nullable().optional(),
+  total_count: z.number().optional(),
 })
 
 export const UsersListSchema = ApiResponseSchema(
@@ -124,13 +126,27 @@ export const AccessibleFileSchema = z.object({
   id: z.number(),
   name: z.string(),
   size_bytes: z.number(),
-  mime_type: z.string(),
+  mime_type: z.string().nullable().optional(),
   uploaded_by: z.number(),
   uploaded_at: z.string(),
   access_type: z.enum(["owner", "viewer", "collaborator"]),
 })
 
 export const AccessibleFilesSchema = ApiResponseSchema(z.array(AccessibleFileSchema))
+
+export const MeSchema = ApiResponseSchema(
+  z.object({
+    id: z.number(),
+    username: z.string(),
+    role: z.string(),
+    can_upload: z.union([z.boolean(), z.number()]).transform((v) => Boolean(v)),
+    can_delete_own_files: z.union([z.boolean(), z.number()]).transform((v) => Boolean(v)),
+    has_upload_limits: z.union([z.boolean(), z.number()]).transform((v) => Boolean(v)),
+    upload_limit: z.number(),
+  })
+)
+
+export const TogglePublicSchema = ApiResponseSchema(z.object({}))
 
 // ==================== INFERRED TYPES ====================
 
@@ -152,6 +168,9 @@ export type User = z.infer<typeof UserSchema>
 export type UsersListResponse = z.infer<typeof UsersListSchema>
 export type AccessibleFile = z.infer<typeof AccessibleFileSchema>
 export type AccessibleFilesResponse = z.infer<typeof AccessibleFilesSchema>
+export type MeData = z.infer<typeof MeSchema>
+export type MeResponse = MeData
+export type TogglePublicResponse = z.infer<typeof TogglePublicSchema>
 
 // ==================== API RESULT TYPES ====================
 

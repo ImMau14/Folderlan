@@ -46,7 +46,7 @@ export const BottomNav: FC<BottomNavProps> = ({ isOwner = false }) => {
   const visibleItems = ITEMS.filter((item) => !item.adminOnly || isOwner)
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-ui-border bg-ui-base pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-ui-border bg-ui-base shadow-lg backdrop-blur-md">
       <ul className="flex h-16 items-center justify-around px-2">
         {visibleItems.map((item) => {
           const isActive = activeView === item.name

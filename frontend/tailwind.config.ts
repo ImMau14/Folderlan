@@ -21,110 +21,114 @@ const palettePlugin = plugin(({ addBase }) => {
     // Light mode (default) – all colors use HSL with commas for maximum compatibility
     ":root": {
       /* Backgrounds */
-      "--bg-dark": "hsl(144, 7%, 89%)",
-      "--bg": "hsl(144, 13%, 94%)",
-      "--bg-light": "hsl(144, 100%, 100%)",
+      "--bg-dark": "144 7% 89%",
+      "--bg": "144 13% 94%",
+      "--bg-light": "144 100% 100%",
       /* Text */
-      "--text": "hsl(145, 24%, 4%)",
-      "--text-muted": "hsl(144, 4%, 28%)",
-      "--highlight": "hsl(144, 100%, 99%)",
+      "--text": "145 24% 4%",
+      "--text-muted": "144 4% 28%",
+      "--highlight": "144 100% 99%",
       /* Borders */
-      "--border": "hsl(144, 3%, 50%)",
-      "--border-muted": "hsl(144, 4%, 62%)",
+      "--border": "144 3% 50%",
+      "--border-muted": "144 4% 62%",
       /* Semantic colors */
-      "--primary": "hsl(160, 100%, 13%)",
-      "--secondary": "hsl(318, 38%, 30%)",
-      "--danger": "hsl(9, 21%, 41%)",
-      "--warning": "hsl(52, 23%, 34%)",
-      "--success": "hsl(147, 19%, 36%)",
-      "--info": "hsl(217, 22%, 41%)",
+      "--primary": "160 100% 13%",
+      "--secondary": "318 38% 30%",
+      "--danger": "9 21% 41%",
+      "--warning": "52 23% 34%",
+      "--success": "147 19% 36%",
+      "--info": "217 22% 41%",
+      "--scrollbar": "hsl(144, 4%, 15.8%)",
 
       /* Light mode hover & active variants */
       "--bg-dark-hover": "hsl(144, 7%, 92%)",
       "--bg-hover": "hsl(144, 13%, 98%)",
       "--bg-light-hover": "hsl(144, 100%, 100%)",
-      "--primary-hover": "hsl(160, 100%, 20%)",
-      "--primary-active": "hsl(160, 100%, 25%)",
-      "--secondary-hover": "hsl(318, 38%, 40%)",
-      "--secondary-active": "hsl(318, 38%, 45%)",
-      "--danger-hover": "hsl(9, 21%, 48%)",
-      "--danger-active": "hsl(9, 21%, 55%)",
-      "--warning-hover": "hsl(52, 23%, 40%)",
-      "--warning-active": "hsl(52, 23%, 47%)",
-      "--success-hover": "hsl(147, 19%, 43%)",
-      "--success-active": "hsl(147, 19%, 50%)",
-      "--info-hover": "hsl(217, 22%, 48%)",
-      "--info-active": "hsl(217, 22%, 55%)",
+      "--primary-hover": "160 100% 20%",
+      "--primary-active": "160 100% 25%",
+      "--secondary-hover": "318 38% 40%",
+      "--secondary-active": "318 38% 45%",
+      "--danger-hover": "9 21% 48%",
+      "--danger-active": "9 21% 55%",
+      "--warning-hover": "52 23% 40%",
+      "--warning-active": "52 23% 47%",
+      "--success-hover": "147 19% 43%",
+      "--success-active": "147 19% 50%",
+      "--info-hover": "217 22% 48%",
+      "--info-active": "217 22% 55%",
 
       /* Card shadows */
       "--shadow-card":
-        "inset 0px 2px 0px var(--highlight), inset 0px -2px 0px rgba(0,0,0,7%), 0px 2px 3px rgba(0,0,0,7%)",
+        "inset 0px 2px 0px hsl(var(--highlight)), inset 0px -2px 0px rgba(0,0,0,7%), 0px 2px 3px rgba(0,0,0,7%)",
       "--shadow-card-hover":
-        "inset 0px 2px 0px var(--highlight), inset 0px -2px 0px rgba(0,0,0,7%), 0px 3px 5px rgba(0,0,0,20%)",
-      "--border-card": "var(--border)",
-      "--border-card-hover": "var(--primary)",
+        "inset 0px 2px 0px hsl(var(--highlight)), inset 0px -2px 0px rgba(0,0,0,7%), 0px 3px 5px rgba(0,0,0,20%)",
+      "--border-card": "hsl(var(--border))",
+      "--border-card-hover": "hsl(var(--primary))",
 
       /* Glassmorphism variables – light mode */
       "--glass-bg": "hsla(144, 100%, 100%, 0.75)", // increased opacity for better readability
       "--glass-bg-smoked": "hsla(144, 7%, 89%, 0.8)",
       "--glass-border": "hsla(144, 4%, 62%, 0.3)",
-      "--shadow-glass": "inset 0px 2px 0px var(--highlight), 0 8px 32px rgba(0, 0, 0, 0.1)",
-      "--shadow-glass-smoked": "inset 0px 2px 0px var(--highlight), 0 8px 32px rgba(0, 0, 0, 0.25)",
+      "--shadow-glass": "inset 0px 2px 0px hsl(var(--highlight)), 0 8px 32px rgba(0, 0, 0, 0.1)",
+      "--shadow-glass-smoked":
+        "inset 0px 2px 0px hsl(var(--highlight)), 0 8px 32px rgba(0, 0, 0, 0.25)",
       "--glass-text-shadow": "0 1px 2px rgba(0,0,0,0.15)", // subtle shadow to improve text contrast
     },
 
     // Dark mode overrides – activated when a parent has `.dark`
     ".dark": {
       /* Backgrounds */
-      "--bg-dark": "hsl(144, 18%, 1%)",
-      "--bg": "hsl(145, 11%, 4%)",
-      "--bg-light": "hsl(144, 6%, 8%)",
+      "--bg-dark": "144 18% 1%",
+      "--bg": "145 11% 4%",
+      "--bg-light": "144 6% 8%",
       /* Text */
-      "--text": "hsl(144, 25%, 94%)",
-      "--text-muted": "hsl(144, 4%, 69%)",
-      "--highlight": "hsl(144, 3%, 38%)",
+      "--text": "144 25% 94%",
+      "--text-muted": "144 4% 69%",
+      "--highlight": "144 3% 38%",
       /* Borders */
-      "--border": "hsl(144, 4%, 28%)",
-      "--border-muted": "hsl(145, 6%, 17%)",
+      "--border": "144 4% 28%",
+      "--border-muted": "145 6% 17%",
       /* Semantic colors */
-      "--primary": "hsl(149, 41%, 62%)",
-      "--secondary": "hsl(320, 50%, 73%)",
-      "--danger": "hsl(9, 26%, 64%)",
-      "--warning": "hsl(52, 19%, 57%)",
-      "--success": "hsl(146, 17%, 59%)",
-      "--info": "hsl(217, 28%, 65%)",
+      "--primary": "149 41% 62%",
+      "--secondary": "320 50% 73%",
+      "--danger": "9 26% 64%",
+      "--warning": "52 19% 57%",
+      "--success": "146 17% 59%",
+      "--info": "217 28% 65%",
+      "--scrollbar": "hsl(144, 0%, 88.6%)",
 
       /* Dark mode hover & active variants */
       "--bg-dark-hover": "hsl(144, 18%, 6%)",
       "--bg-hover": "hsl(145, 11%, 9%)",
       "--bg-light-hover": "hsl(144, 6%, 13%)",
-      "--primary-hover": "hsl(149, 41%, 72%)",
-      "--primary-active": "hsl(149, 41%, 77%)",
-      "--secondary-hover": "hsl(320, 50%, 83%)",
-      "--secondary-active": "hsl(320, 50%, 88%)",
-      "--danger-hover": "hsl(9, 26%, 74%)",
-      "--danger-active": "hsl(9, 26%, 79%)",
-      "--warning-hover": "hsl(52, 19%, 67%)",
-      "--warning-active": "hsl(52, 19%, 72%)",
-      "--success-hover": "hsl(146, 17%, 69%)",
-      "--success-active": "hsl(146, 17%, 74%)",
-      "--info-hover": "hsl(217, 28%, 75%)",
-      "--info-active": "hsl(217, 28%, 80%)",
+      "--primary-hover": "149 41% 72%",
+      "--primary-active": "149 41% 77%",
+      "--secondary-hover": "320 50% 83%",
+      "--secondary-active": "320 50% 88%",
+      "--danger-hover": "9 26% 74%",
+      "--danger-active": "9 26% 79%",
+      "--warning-hover": "52 19% 67%",
+      "--warning-active": "52 19% 72%",
+      "--success-hover": "146 17% 69%",
+      "--success-active": "146 17% 74%",
+      "--info-hover": "217 28% 75%",
+      "--info-active": "217 28% 80%",
 
       /* Card shadows */
       "--shadow-card":
-        "inset 0px 2px 0px var(--highlight), inset 0px -2px 0px rgba(0,0,0,20%), 0px 2px 3px rgba(0,0,0,25%)",
+        "inset 0px 2px 0px hsl(var(--highlight)), inset 0px -2px 0px rgba(0,0,0,20%), 0px 2px 3px rgba(0,0,0,25%)",
       "--shadow-card-hover":
-        "inset 0px 2px 0px var(--highlight), inset 0px -2px 0px rgba(0,0,0,20%), 0px 3px 5px rgba(0,0,0,20%)",
-      "--border-card": "var(--border-muted)",
-      "--border-card-hover": "var(--primary)",
+        "inset 0px 2px 0px hsl(var(--highlight)), inset 0px -2px 0px rgba(0,0,0,20%), 0px 3px 5px rgba(0,0,0,20%)",
+      "--border-card": "hsl(var(--border-muted))",
+      "--border-card-hover": "hsl(var(--primary))",
 
       /* Glassmorphism variables – dark mode */
       "--glass-bg": "hsla(145, 11%, 4%, 0.7)", // slightly more opaque for dark backgrounds
       "--glass-bg-smoked": "hsla(0, 0%, 0%, 0.75)",
       "--glass-border": "hsla(144, 4%, 28%, 0.4)",
-      "--shadow-glass": "inset 0px 2px 0px var(--highlight), 0 8px 32px rgba(0, 0, 0, 0.3)",
-      "--shadow-glass-smoked": "inset 0px 2px 0px var(--highlight), 0 8px 32px rgba(0, 0, 0, 0.5)",
+      "--shadow-glass": "inset 0px 2px 0px hsl(var(--highlight)), 0 8px 32px rgba(0, 0, 0, 0.3)",
+      "--shadow-glass-smoked":
+        "inset 0px 2px 0px hsl(var(--highlight)), 0 8px 32px rgba(0, 0, 0, 0.5)",
       "--glass-text-shadow": "0 1px 2px rgba(255,255,255,0.15)", // subtle glow for dark mode text
     },
   })
@@ -135,12 +139,13 @@ const scrollbarPlugin = plugin(({ addBase, addUtilities, matchUtilities, theme }
   addBase({
     ":root": {
       "--scrollbar-hover-brightness": "0.85",
-      "--scrollbar-thumb": "auto",
+      "--scrollbar-thumb": "hsl(144, 4%, 60%)",
       "--scrollbar-track": "transparent",
       "--scrollbar-width": "8px",
     },
     ".dark": {
       "--scrollbar-hover-brightness": "1.25",
+      "--scrollbar-thumb": "hsl(144, 4%, 30%)",
     },
   })
 
@@ -175,8 +180,16 @@ const scrollbarPlugin = plugin(({ addBase, addUtilities, matchUtilities, theme }
 
   matchUtilities(
     {
-      "scrollbar-thumb": (value) => ({ "--scrollbar-thumb": value }),
-      "scrollbar-track": (value) => ({ "--scrollbar-track": value }),
+      // ui.* colors are hsl() templates with an <alpha-value> placeholder.
+      // Without an opacity modifier Tailwind hands matchUtilities the alpha
+      // template as a function; resolve it with full opacity so the emitted
+      // CSS var stays a valid color instead of leaking the raw template.
+      "scrollbar-thumb": (value) => ({
+        "--scrollbar-thumb": typeof value === "function" ? value({ opacityValue: 1 }) : value,
+      }),
+      "scrollbar-track": (value) => ({
+        "--scrollbar-track": typeof value === "function" ? value({ opacityValue: 1 }) : value,
+      }),
     },
     {
       values: flattenColorPalette(theme("colors")),
@@ -276,7 +289,8 @@ const componentsPlugin = plugin(({ addComponents }) => {
       borderWidth: "2px",
       padding: "1.5rem",
       transition: "all 75ms ease-in-out",
-      background: "linear-gradient(to bottom, var(--bg-light), var(--bg), var(--bg))",
+      background:
+        "linear-gradient(to bottom, hsl(var(--bg-light)), hsl(var(--bg)), hsl(var(--bg)))",
       boxShadow: "var(--shadow-card)",
       borderColor: "var(--border-card)",
       "&:hover": {
@@ -291,16 +305,12 @@ const componentsPlugin = plugin(({ addComponents }) => {
     // ─── Glass containers (with highlight shadow) ─────────────────
     ".glass": {
       background: "var(--glass-bg)",
-      backdropFilter: "blur(12px)",
-      WebkitBackdropFilter: "blur(12px)", // Safari
       border: "1px solid var(--glass-border)",
       boxShadow: "var(--shadow-glass)",
       borderRadius: "1rem",
     },
     ".glass-smoked": {
       background: "var(--glass-bg-smoked)",
-      backdropFilter: "blur(16px)",
-      WebkitBackdropFilter: "blur(16px)",
       border: "1px solid var(--glass-border)",
       boxShadow: "var(--shadow-glass-smoked)",
       borderRadius: "1rem",
@@ -314,11 +324,9 @@ const componentsPlugin = plugin(({ addComponents }) => {
       gap: "0.5rem",
       borderRadius: "1rem",
       background: "var(--glass-bg)",
-      backdropFilter: "blur(12px)",
-      WebkitBackdropFilter: "blur(12px)",
       border: "1px solid var(--glass-border)",
       boxShadow: "var(--shadow-glass)",
-      color: "var(--text)",
+      color: "hsl(var(--text))",
       fontWeight: "600",
       fontSize: "0.875rem",
       lineHeight: "1.25rem",
@@ -354,6 +362,18 @@ export const config: Config = {
         heading: ["Montserrat Variable"],
         body: ["Inter Variable"],
       },
+      // Modular type scale (ratio 1.25, base 16px). Line-height rides inside
+      // each token so sizes never ship without a sensible line-height.
+      fontSize: {
+        xs: ["0.75rem", { lineHeight: "1.4" }], // 12 – captions, labels, table meta
+        sm: ["0.875rem", { lineHeight: "1.5" }], // 14 – secondary UI text
+        base: ["1rem", { lineHeight: "1.6" }], // 16 – body
+        lg: ["1.125rem", { lineHeight: "1.6" }], // 18 – lead paragraphs
+        xl: ["1.25rem", { lineHeight: "1.3", letterSpacing: "-0.01em" }], // 20 – section titles
+        "2xl": ["1.5625rem", { lineHeight: "1.25", letterSpacing: "-0.015em" }], // 25 – page titles
+        "3xl": ["1.9375rem", { lineHeight: "1.2", letterSpacing: "-0.02em" }], // 31 – hero-ish
+        "4xl": ["2.4375rem", { lineHeight: "1.1", letterSpacing: "-0.025em" }], // 39 – display
+      },
       spacing: {
         128: "32rem",
         144: "36rem",
@@ -361,32 +381,32 @@ export const config: Config = {
       },
       colors: {
         ui: {
-          back: "var(--bg-dark)",
-          base: "var(--bg)",
-          front: "var(--bg-light)",
-          text: "var(--text)",
-          "text-muted": "var(--text-muted)",
-          highlight: "var(--highlight)",
-          border: "var(--border)",
-          "border-muted": "var(--border-muted)",
-          primary: "var(--primary)",
-          "primary-hover": "var(--primary-hover)",
-          "primary-active": "var(--primary-active)",
-          secondary: "var(--secondary)",
-          "secondary-hover": "var(--secondary-hover)",
-          "secondary-active": "var(--secondary-active)",
-          danger: "var(--danger)",
-          "danger-hover": "var(--danger-hover)",
-          "danger-active": "var(--danger-active)",
-          warning: "var(--warning)",
-          "warning-hover": "var(--warning-hover)",
-          "warning-active": "var(--warning-active)",
-          success: "var(--success)",
-          "success-hover": "var(--success-hover)",
-          "success-active": "var(--success-active)",
-          info: "var(--info)",
-          "info-hover": "var(--info-hover)",
-          "info-active": "var(--info-active)",
+          back: "hsl(var(--bg-dark) / <alpha-value>)",
+          base: "hsl(var(--bg) / <alpha-value>)",
+          front: "hsl(var(--bg-light) / <alpha-value>)",
+          text: "hsl(var(--text) / <alpha-value>)",
+          "text-muted": "hsl(var(--text-muted) / <alpha-value>)",
+          highlight: "hsl(var(--highlight) / <alpha-value>)",
+          border: "hsl(var(--border) / <alpha-value>)",
+          "border-muted": "hsl(var(--border-muted) / <alpha-value>)",
+          primary: "hsl(var(--primary) / <alpha-value>)",
+          "primary-hover": "hsl(var(--primary-hover) / <alpha-value>)",
+          "primary-active": "hsl(var(--primary-active) / <alpha-value>)",
+          secondary: "hsl(var(--secondary) / <alpha-value>)",
+          "secondary-hover": "hsl(var(--secondary-hover) / <alpha-value>)",
+          "secondary-active": "hsl(var(--secondary-active) / <alpha-value>)",
+          danger: "hsl(var(--danger) / <alpha-value>)",
+          "danger-hover": "hsl(var(--danger-hover) / <alpha-value>)",
+          "danger-active": "hsl(var(--danger-active) / <alpha-value>)",
+          warning: "hsl(var(--warning) / <alpha-value>)",
+          "warning-hover": "hsl(var(--warning-hover) / <alpha-value>)",
+          "warning-active": "hsl(var(--warning-active) / <alpha-value>)",
+          success: "hsl(var(--success) / <alpha-value>)",
+          "success-hover": "hsl(var(--success-hover) / <alpha-value>)",
+          "success-active": "hsl(var(--success-active) / <alpha-value>)",
+          info: "hsl(var(--info) / <alpha-value>)",
+          "info-hover": "hsl(var(--info-hover) / <alpha-value>)",
+          "info-active": "hsl(var(--info-active) / <alpha-value>)",
         },
       },
       keyframes: {
@@ -420,7 +440,7 @@ export const config: Config = {
         ui: "var(--shadow-card)",
         "2ui": "var(--shadow-card-hover)",
         "3ui":
-          "inset 0px 2px 0px var(--highlight), inset 0px -2px 0px rgba(0,0,0,15%), 0px 2px 3px rgba(0,0,0,7%)",
+          "inset 0px 2px 0px hsl(var(--highlight)), inset 0px -2px 0px rgba(0,0,0,15%), 0px 2px 3px rgba(0,0,0,7%)",
         dui: "var(--shadow-card)",
       },
       screens: {

@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
         "@theme": path.resolve(__dirname, "./src/features/theme"),
         "@database": path.resolve(__dirname, "./src/features/database"),
         "@toast": path.resolve(__dirname, "./src/features/toast"),
+        "@modal": path.resolve(__dirname, "./src/features/modal"),
       },
     },
   }

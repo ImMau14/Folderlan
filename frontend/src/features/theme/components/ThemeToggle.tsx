@@ -21,7 +21,7 @@ export const ThemeToggle: FC<ThemeToggleProps> = ({ variant = "default", classNa
   const isDark = theme === "dark"
 
   const buttonClasses = clsx(
-    "group btn-glass relative flex items-center justify-center rounded-full text-ui-text",
+    "group btn-glass relative flex items-center justify-center rounded-full text-ui-text backdrop-blur-md",
     variant === "mobile" ? "h-10 w-10" : "h-11 w-11",
     className
   )

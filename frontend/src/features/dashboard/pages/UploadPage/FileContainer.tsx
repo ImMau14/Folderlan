@@ -110,7 +110,11 @@ export const FileContainer: FC<FileContainerProps> = ({
         </div>
       </div>
 
-      {isError && error ? <p className="text-xs text-ui-danger">{error}</p> : null}
+      {isError && error ? (
+        <p className="truncate text-xs text-ui-danger" title={error}>
+          {error}
+        </p>
+      ) : null}
     </article>
   )
 }
