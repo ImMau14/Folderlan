@@ -1,3 +1,18 @@
+/**
+ * ConfigPage — the main "Settings" screen of the dashboard.
+ *
+ * Responsibilities:
+ * - Renders the page header with the current page name in the title bar.
+ * - Loads the summary stats (accessible files/bytes, active users) for the
+ *   current user and feeds them into SummarySection.
+ * - Hosts the UI preferences (theme, language, low-detail mode, toasts) and
+ *   the account card, both in a two-column layout.
+ * - For owners, additionally renders the audit-log filters, the paginated
+ *   logs table and its pagination controls.
+ *
+ * All child components live in this folder and communicate exclusively
+ * through props, so this page acts as the single source of truth.
+ */
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react"
 import { motion } from "framer-motion"
 import { FaGear, FaPalette } from "react-icons/fa6"

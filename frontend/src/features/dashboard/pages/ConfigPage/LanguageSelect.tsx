@@ -1,3 +1,10 @@
+/**
+ * LanguageSelect — dropdown to switch the app language.
+ *
+ * Renders a Headless UI listbox with every supported locale, highlighting
+ * the active one. Options appear with a staggered entrance animation and
+ * each change is persisted through the I18n context.
+ */
 import { Fragment, useMemo } from "react"
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from "@headlessui/react"
 import { motion } from "framer-motion"

@@ -1,3 +1,10 @@
+/**
+ * AccountSection — card summarizing the currently logged-in account.
+ *
+ * Shows the user avatar, username and role. For visitors it lists their
+ * permissions (upload, delete own files) plus an upload-quota progress bar;
+ * for owners it shows a "full access" banner instead.
+ */
 import { motion } from "framer-motion"
 import type { ReactNode } from "react"
 import {

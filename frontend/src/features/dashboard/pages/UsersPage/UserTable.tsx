@@ -1,3 +1,11 @@
+/**
+ * UserTable — owner-only list of users.
+ *
+ * Renders a desktop table and a mobile card list of the fetched users with
+ * animated enter/exit transitions. Each row shows avatar, username, role,
+ * status, permission chips and per-user actions (activate/deactivate, edit
+ * permissions, delete); the owner row is protected from the destructive ones.
+ */
 import { AnimatePresence, motion } from "framer-motion"
 import { FaBan, FaCheck, FaGear, FaTrash, FaUser } from "react-icons/fa6"
 import clsx from "clsx"

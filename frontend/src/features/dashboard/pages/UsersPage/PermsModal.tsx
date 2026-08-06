@@ -1,3 +1,10 @@
+/**
+ * PermsModal — modal to edit a user's permissions.
+ *
+ * Lets the owner toggle upload/delete-own-files rights and set an optional
+ * upload limit, prefilled from the current user. Saves through the API and
+ * triggers a list refresh on success via onRefresh.
+ */
 import { useState, useCallback } from "react"
 import { motion } from "framer-motion"
 import { FaGear } from "react-icons/fa6"

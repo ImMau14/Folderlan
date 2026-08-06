@@ -1,3 +1,10 @@
+/**
+ * LogFilters — owner-only filter bar for the audit log.
+ *
+ * Lets the owner narrow down logs by event type, success status, acting
+ * user and a date range. Reports active filters via a status badge and
+ * exposes Apply/Clear actions; filtering itself happens in ConfigPage.
+ */
 import { FaFilter } from "react-icons/fa6"
 import clsx from "clsx"
 

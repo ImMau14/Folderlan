@@ -1,3 +1,11 @@
+/**
+ * LogsTable — owner-only list of audit-log entries.
+ *
+ * Renders a desktop table and a mobile card list of the fetched audit
+ * entries with animated enter/exit transitions. Each entry shows timestamp,
+ * user, event type (color-coded), description, file, IP and success status.
+ * Falls back to loading and empty states when appropriate.
+ */
 import { AnimatePresence, motion } from "framer-motion"
 import { FaListCheck } from "react-icons/fa6"
 import clsx from "clsx"

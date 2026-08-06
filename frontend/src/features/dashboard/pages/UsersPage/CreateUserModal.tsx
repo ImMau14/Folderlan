@@ -1,3 +1,11 @@
+/**
+ * CreateUserModal — modal to register a new visitor account.
+ *
+ * Collects a username, password and the initial permission set (upload,
+ * delete own files, optional upload limit), validating the input before
+ * calling the API. On success it fires the onSuccess callback, shows a
+ * toast and closes the modal.
+ */
 import { useState, useCallback } from "react"
 import { motion } from "framer-motion"
 import { FaUserPlus } from "react-icons/fa6"

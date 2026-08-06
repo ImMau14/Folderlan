@@ -1,3 +1,17 @@
+/**
+ * UsersPage — the main "Users" screen of the dashboard (owner only).
+ *
+ * Responsibilities:
+ * - Fetches and paginates the user list from the API (10 users per page).
+ * - Keeps local state for the current page, the active search/filters and
+ *   the last fetch key used to trigger reloads.
+ * - Debounces the name search and re-fetches on filter changes.
+ * - Handles toggling a user's active status and opens the create, permissions
+ *   and delete modals through the modal context.
+ *
+ * All child components live in this folder and communicate exclusively
+ * through props, so this page acts as the single source of truth.
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { motion } from "framer-motion"
 import { FaMagnifyingGlass, FaUserPlus, FaUsers } from "react-icons/fa6"

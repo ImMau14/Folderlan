@@ -1,3 +1,10 @@
+/**
+ * DeleteModal — confirmation dialog for deleting a user.
+ *
+ * Asks for confirmation before soft-deleting the given user. On success it
+ * shows a success toast, otherwise the API error; either way it refreshes
+ * the list via onRefresh and closes.
+ */
 import { useCallback, useState } from "react"
 import { motion } from "framer-motion"
 import { FaTriangleExclamation, FaTrash } from "react-icons/fa6"

@@ -1,3 +1,10 @@
+/**
+ * SummarySection — overview cards with storage and quota statistics.
+ *
+ * Renders stat cards for accessible files, used space, active users (owner
+ * only) and the upload-quota usage. The quota card derives its tone from
+ * how full the quota is; every card animates in with a slight stagger.
+ */
 import type { ReactNode } from "react"
 import { motion } from "framer-motion"
 import { FaFolderOpen, FaHardDrive, FaUsers, FaGaugeHigh, FaFileLines } from "react-icons/fa6"
@@ -50,7 +57,7 @@ function StatCard({ icon, label, value, sub, tone }: StatCardProps) {
         <p className="truncate font-body text-xs font-semibold uppercase tracking-wider text-ui-text-muted">
           {label}
         </p>
-        <p className="mt-0.5 truncate font-heading text-xl font-bold tracking-tight text-ui-text tabular-nums">
+        <p className="mt-0.5 truncate font-heading text-xl font-bold tabular-nums tracking-tight text-ui-text">
           {value}
         </p>
         {sub ? (

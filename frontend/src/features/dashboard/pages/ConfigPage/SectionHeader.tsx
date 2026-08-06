@@ -1,3 +1,9 @@
+/**
+ * SectionHeader — icon + title + subtitle block used to open cards.
+ *
+ * Small presentational helper shared across the ConfigPage sections to
+ * keep the icon badge, heading and description layout consistent.
+ */
 import type { ReactNode } from "react"
 
 interface SectionHeaderProps {
