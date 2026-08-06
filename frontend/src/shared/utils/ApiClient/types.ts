@@ -109,7 +109,7 @@ export const UserSchema = z.object({
   has_upload_limits: z.union([z.boolean(), z.number()]).transform((v) => Boolean(v)),
   upload_limit: z.number(),
   created_at: z.string().optional(),
-  last_login_at: z.string().optional(),
+  last_login_at: z.string().nullable().optional(),
   total_count: z.number().optional(),
 })
 
