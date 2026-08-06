@@ -321,7 +321,8 @@
       "USER_PERM_UPDATE": "User permissions updated",
       "USER_ACTIVE_UPDATE": "User status updated",
       "USER_SOFT_DELETE": "User deleted",
-      "USER_RESTORE": "User restored"
+      "USER_RESTORE": "User restored",
+      "OWNER_RESET_VISITOR_PASSWORD": "Password reset by owner"
     },
     "table": {
       "timestamp": "Date",
@@ -376,6 +377,7 @@
       "activate": "Activate",
       "deactivate": "Deactivate",
       "perms": "Edit permissions",
+      "resetPassword": "Reset password",
       "delete": "Delete"
     },
     "table": {
@@ -397,6 +399,23 @@
       "title": "Delete user",
       "confirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
       "confirmButton": "Delete"
+    },
+    "resetPassword": {
+      "title": "Reset password",
+      "subtitle": "Set a new password for \"{{name}}\"",
+      "passwordLabel": "New password",
+      "passwordPlaceholder": "Enter new password",
+      "confirmLabel": "Confirm password",
+      "confirmPlaceholder": "Re-enter new password",
+      "button": "Reset password",
+      "match": "Passwords match",
+      "mismatch": "Passwords do not match",
+      "toast": {
+        "missingFields": "Please fill in all fields",
+        "missingFieldsDesc": "Both password fields are required.",
+        "mismatch": "Passwords do not match",
+        "mismatchDesc": "Make sure both passwords match before saving."
+      }
     },
     "cancel": "Cancel",
     "save": "Save changes",
@@ -432,6 +451,9 @@
       "deleteSuccess": "User deleted",
       "deleteSuccessDesc": "\"{{name}}\" was deleted.",
       "deleteError": "Could not delete user",
+      "resetSuccess": "Password reset",
+      "resetSuccessDesc": "The password of \"{{name}}\" was changed.",
+      "resetError": "Could not reset password",
       "invalidLimitDesc": "The upload limit must be a non-negative number.",
       "fetchErrorDesc": "The user list could not be loaded. Try again later."
     }

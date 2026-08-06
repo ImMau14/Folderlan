@@ -31,6 +31,7 @@ import UserTable from "./UserTable"
 import PermsModal from "./PermsModal"
 import DeleteModal from "./DeleteModal"
 import CreateUserModal from "./CreateUserModal"
+import ResetPasswordModal from "./ResetPasswordModal"
 
 const PAGE_SIZE = 10
 
@@ -172,6 +173,13 @@ export default function UsersPage() {
     [openComponent, apiClient, refreshList]
   )
 
+  const openResetPasswordModal = useCallback(
+    (user: User) => {
+      openComponent(ResetPasswordModal, { user, apiClient })
+    },
+    [openComponent, apiClient]
+  )
+
   const openCreateUserModal = useCallback(() => {
     openComponent(CreateUserModal, { apiClient, onSuccess: refreshList })
   }, [openComponent, apiClient, refreshList])
@@ -269,6 +277,7 @@ export default function UsersPage() {
             busyId={busyId}
             onToggle={handleToggle}
             onEditPerms={openPermsModal}
+            onResetPassword={openResetPasswordModal}
             onDelete={openDeleteModal}
           />
         </motion.div>

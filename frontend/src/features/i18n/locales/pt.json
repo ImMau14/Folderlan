@@ -321,7 +321,8 @@
       "USER_PERM_UPDATE": "Permissões de usuário atualizadas",
       "USER_ACTIVE_UPDATE": "Status de usuário atualizado",
       "USER_SOFT_DELETE": "Usuário excluído",
-      "USER_RESTORE": "Usuário restaurado"
+      "USER_RESTORE": "Usuário restaurado",
+      "OWNER_RESET_VISITOR_PASSWORD": "Senha redefinida pelo proprietário"
     },
     "table": {
       "timestamp": "Data",
@@ -376,6 +377,7 @@
       "activate": "Ativar",
       "deactivate": "Desativar",
       "perms": "Editar permissões",
+      "resetPassword": "Redefinir senha",
       "delete": "Excluir"
     },
     "table": {
@@ -397,6 +399,23 @@
       "title": "Excluir usuário",
       "confirm": "Tem certeza que deseja excluir \"{{name}}\"? Esta ação não pode ser desfeita.",
       "confirmButton": "Excluir"
+    },
+    "resetPassword": {
+      "title": "Redefinir senha",
+      "subtitle": "Defina uma nova senha para \"{{name}}\"",
+      "passwordLabel": "Nova senha",
+      "passwordPlaceholder": "Digite a nova senha",
+      "confirmLabel": "Confirmar senha",
+      "confirmPlaceholder": "Repita a nova senha",
+      "button": "Redefinir senha",
+      "match": "As senhas coincidem",
+      "mismatch": "As senhas não coincidem",
+      "toast": {
+        "missingFields": "Preencha todos os campos",
+        "missingFieldsDesc": "Ambos os campos de senha são obrigatórios.",
+        "mismatch": "As senhas não coincidem",
+        "mismatchDesc": "Certifique-se de que ambas as senhas coincidam antes de salvar."
+      }
     },
     "cancel": "Cancelar",
     "save": "Salvar alterações",
@@ -432,6 +451,9 @@
       "deleteSuccess": "Usuário excluído",
       "deleteSuccessDesc": "\"{{name}}\" foi excluído.",
       "deleteError": "Não foi possível excluir o usuário",
+      "resetSuccess": "Senha redefinida",
+      "resetSuccessDesc": "A senha de \"{{name}}\" foi alterada.",
+      "resetError": "Não foi possível redefinir a senha",
       "invalidLimitDesc": "O limite de upload deve ser um número não negativo.",
       "fetchErrorDesc": "Não foi possível carregar a lista de usuários. Tente novamente mais tarde."
     }

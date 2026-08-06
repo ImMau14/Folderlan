@@ -40,6 +40,7 @@ export const EVENT_TYPES = [
   "USER_ACTIVE_UPDATE",
   "USER_SOFT_DELETE",
   "USER_RESTORE",
+  "OWNER_RESET_VISITOR_PASSWORD",
 ]
 
 interface LogFiltersProps {

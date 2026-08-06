@@ -321,7 +321,8 @@
       "USER_PERM_UPDATE": "Permessi utente aggiornati",
       "USER_ACTIVE_UPDATE": "Stato utente aggiornato",
       "USER_SOFT_DELETE": "Utente eliminato",
-      "USER_RESTORE": "Utente ripristinato"
+      "USER_RESTORE": "Utente ripristinato",
+      "OWNER_RESET_VISITOR_PASSWORD": "Password reimpostata dal proprietario"
     },
     "table": {
       "timestamp": "Data",
@@ -376,6 +377,7 @@
       "activate": "Attiva",
       "deactivate": "Disattiva",
       "perms": "Modifica permessi",
+      "resetPassword": "Reimposta password",
       "delete": "Elimina"
     },
     "table": {
@@ -397,6 +399,23 @@
       "title": "Elimina utente",
       "confirm": "Sei sicuro di voler eliminare \"{{name}}\"? Questa azione non può essere annullata.",
       "confirmButton": "Elimina"
+    },
+    "resetPassword": {
+      "title": "Reimposta password",
+      "subtitle": "Imposta una nuova password per \"{{name}}\"",
+      "passwordLabel": "Nuova password",
+      "passwordPlaceholder": "Inserisci la nuova password",
+      "confirmLabel": "Conferma password",
+      "confirmPlaceholder": "Ripeti la nuova password",
+      "button": "Reimposta password",
+      "match": "Le password coincidono",
+      "mismatch": "Le password non coincidono",
+      "toast": {
+        "missingFields": "Compila tutti i campi",
+        "missingFieldsDesc": "Entrambi i campi password sono obbligatori.",
+        "mismatch": "Le password non coincidono",
+        "mismatchDesc": "Assicurati che entrambe le password coincidano prima di salvare."
+      }
     },
     "cancel": "Annulla",
     "save": "Salva modifiche",
@@ -432,6 +451,9 @@
       "deleteSuccess": "Utente eliminato",
       "deleteSuccessDesc": "\"{{name}}\" è stato eliminato.",
       "deleteError": "Impossibile eliminare l'utente",
+      "resetSuccess": "Password reimpostata",
+      "resetSuccessDesc": "La password di \"{{name}}\" è stata modificata.",
+      "resetError": "Impossibile reimpostare la password",
       "invalidLimitDesc": "Il limite di caricamento deve essere un numero non negativo.",
       "fetchErrorDesc": "Impossibile caricare l'elenco degli utenti. Riprova più tardi."
     }

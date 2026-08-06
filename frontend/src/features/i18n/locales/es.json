@@ -321,7 +321,8 @@
       "USER_PERM_UPDATE": "Permisos de usuario actualizados",
       "USER_ACTIVE_UPDATE": "Estado de usuario actualizado",
       "USER_SOFT_DELETE": "Usuario eliminado",
-      "USER_RESTORE": "Usuario restaurado"
+      "USER_RESTORE": "Usuario restaurado",
+      "OWNER_RESET_VISITOR_PASSWORD": "Contraseña restablecida por el propietario"
     },
     "table": {
       "timestamp": "Fecha",
@@ -376,6 +377,7 @@
       "activate": "Activar",
       "deactivate": "Desactivar",
       "perms": "Editar permisos",
+      "resetPassword": "Restablecer contraseña",
       "delete": "Eliminar"
     },
     "table": {
@@ -397,6 +399,23 @@
       "title": "Eliminar usuario",
       "confirm": "¿Estás seguro de que deseas eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
       "confirmButton": "Eliminar"
+    },
+    "resetPassword": {
+      "title": "Restablecer contraseña",
+      "subtitle": "Establece una nueva contraseña para \"{{name}}\"",
+      "passwordLabel": "Nueva contraseña",
+      "passwordPlaceholder": "Ingresa la nueva contraseña",
+      "confirmLabel": "Confirmar contraseña",
+      "confirmPlaceholder": "Repite la nueva contraseña",
+      "button": "Restablecer contraseña",
+      "match": "Las contraseñas coinciden",
+      "mismatch": "Las contraseñas no coinciden",
+      "toast": {
+        "missingFields": "Completa todos los campos",
+        "missingFieldsDesc": "Ambos campos de contraseña son obligatorios.",
+        "mismatch": "Las contraseñas no coinciden",
+        "mismatchDesc": "Asegúrate de que ambas contraseñas coincidan antes de guardar."
+      }
     },
     "cancel": "Cancelar",
     "save": "Guardar cambios",
@@ -432,6 +451,9 @@
       "deleteSuccess": "Usuario eliminado",
       "deleteSuccessDesc": "\"{{name}}\" fue eliminado.",
       "deleteError": "No se pudo eliminar el usuario",
+      "resetSuccess": "Contraseña restablecida",
+      "resetSuccessDesc": "La contraseña de \"{{name}}\" fue cambiada.",
+      "resetError": "No se pudo restablecer la contraseña",
       "invalidLimitDesc": "El límite de subida debe ser un número no negativo.",
       "fetchErrorDesc": "No se pudo cargar la lista de usuarios. Inténtalo de nuevo."
     }

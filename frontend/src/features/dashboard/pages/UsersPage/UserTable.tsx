@@ -7,7 +7,7 @@
  * permissions, delete); the owner row is protected from the destructive ones.
  */
 import { AnimatePresence, motion } from "framer-motion"
-import { FaBan, FaCheck, FaGear, FaTrash, FaUser } from "react-icons/fa6"
+import { FaBan, FaCheck, FaGear, FaKey, FaTrash, FaUser } from "react-icons/fa6"
 import clsx from "clsx"
 
 import { useI18n } from "@i18n/context/I18nContext"
@@ -22,6 +22,7 @@ interface UserTableProps {
   busyId: number | null
   onToggle: (user: User) => void
   onEditPerms: (user: User) => void
+  onResetPassword: (user: User) => void
   onDelete: (user: User) => void
 }
 
@@ -72,6 +73,7 @@ export default function UserTable({
   busyId,
   onToggle,
   onEditPerms,
+  onResetPassword,
   onDelete,
 }: UserTableProps) {
   const { t } = useI18n()
@@ -221,6 +223,13 @@ export default function UserTable({
                           />
                           <ActionButton
                             disabled={isOwner(user) || busyId === user.id}
+                            onClick={() => onResetPassword(user)}
+                            className="text-ui-warning hover:bg-ui-front"
+                            title={t("users.actions.resetPassword")}
+                            action={<FaKey className="text-sm" />}
+                          />
+                          <ActionButton
+                            disabled={isOwner(user) || busyId === user.id}
                             onClick={() => onDelete(user)}
                             className="text-ui-danger hover:bg-ui-front"
                             title={t("users.actions.delete")}
@@ -298,6 +307,13 @@ export default function UserTable({
                       className="text-ui-info hover:bg-ui-front"
                       title={t("users.actions.perms")}
                       action={<FaGear className="text-sm" />}
+                    />
+                    <ActionButton
+                      disabled={isOwner(user) || busyId === user.id}
+                      onClick={() => onResetPassword(user)}
+                      className="text-ui-warning hover:bg-ui-front"
+                      title={t("users.actions.resetPassword")}
+                      action={<FaKey className="text-sm" />}
                     />
                     <ActionButton
                       disabled={isOwner(user) || busyId === user.id}
