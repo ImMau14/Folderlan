@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Builds
+frontend/dist/
+backend/dist/
+backend/target/
+docs/*.tmp
+
+# Runtime data (created by the server)
+backend/db/
+backend/uploads/
+
+# Environment files
+.env
+.env.*
+!.env.template
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
