@@ -6,7 +6,7 @@ and permissions. Security is taken seriously.
 ## Supported versions
 
 Only the **latest stable release** is supported with security fixes. Please
-upgrade to the newest release (`v1.x` line) as soon as possible.
+upgrade to the newest release as soon as possible.
 
 ## Reporting a vulnerability
 

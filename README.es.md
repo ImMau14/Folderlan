@@ -8,7 +8,7 @@ Folderlan es una plataforma de intercambio de archivos autoalojada. Un servidor,
 
 ---
 
-<img width="1024" height="600" alt="Panel de Folderlan" src="https://pbdecn9fvkmyynkh.public.blob.vercel-storage.com/285shots_so.webp" />
+<img width="1200" height="630" alt="Panel de Folderlan" src="docs/screenshot.webp" />
 
 ---
 
@@ -45,7 +45,7 @@ El caso de uso original: dos dispositivos en el mismo Wi‑Fi, cero internet.
 
 - Envía documentos, fotos, vídeos y archivos grandes entre tu portátil, móvil y escritorio.
 - Funciona totalmente sin conexión — los datos nunca salen de tu red.
-- Ideal para aeropuertos, oficinas, residencias o lugares con internet poco fiable.
+- Ideal para hogares, oficinas o viajes con internet poco fiable.
 
 ### ☁️ Nube privada en un VPS — tu propio "Google Drive" minimalista
 
@@ -147,6 +147,9 @@ El servidor crea una base de datos SQLite (`db/app.db` por defecto) y una carpet
 2. Desde cualquier dispositivo en el mismo Wi‑Fi, abre `http://<ip‑del‑servidor>:8080` en el navegador.
 3. Los visitantes acceden con las cuentas creadas por el propietario (sección Users del panel).
 4. Para crear cuentas de visitante, entra como propietario → **Users** → *Create user* y establece los permisos (subir, eliminar archivos propios, cuota de almacenamiento).
+
+> [!WARNING]
+> Folderlan se sirve sobre HTTP plano, no TLS. Úsalo solo en redes de confianza — en Wi‑Fi público o compartido, las contraseñas y los archivos transferidos pueden ser interceptados. Para datos sensibles, prefiere el despliegue [VPS + HTTPS](#despliegue-como-nube-privada-vps).
 
 > [!TIP]
 > En Windows, permite el puerto en el firewall (`netsh advfirewall firewall add rule name="Folderlan" dir=in action=allow protocol=TCP localport=8080`) para que otros dispositivos puedan conectarse.

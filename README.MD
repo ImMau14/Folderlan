@@ -8,7 +8,7 @@ Folderlan is a self‑hosted file‑sharing platform. One server, any device wit
 
 ---
 
-<img width="1024" height="600" alt="Folderlan dashboard" src="https://pbdecn9fvkmyynkh.public.blob.vercel-storage.com/285shots_so.webp" />
+<img width="1200" height="630" alt="Folderlan dashboard" src="docs/screenshot.webp" />
 
 ---
 
@@ -45,7 +45,7 @@ The original use case: two devices on the same Wi‑Fi, zero internet.
 
 - Send documents, photos, videos and large files between your laptop, phone and desktop.
 - Works fully offline — data never leaves your network.
-- Ideal for airports, offices, dorms, or places with unreliable internet.
+- Ideal for private homes, offices, or trips with unreliable internet.
 
 ### ☁️ Private cloud on a VPS — your own minimal "Google Drive"
 
@@ -147,6 +147,9 @@ The server creates a SQLite database (`db/app.db` by default) and an `uploads/` 
 2. From any device on the same Wi‑Fi, open `http://<server‑ip>:8080` in the browser.
 3. Visitors log in with accounts created by the owner (Users section in the dashboard).
 4. To create visitor accounts, log in as owner → **Users** → *Create user* and set the permissions (upload, delete own files, storage quota).
+
+> [!WARNING]
+> Folderlan is served over plain HTTP, not TLS. Use it only on networks you trust — on public or shared Wi‑Fi, passwords and transferred files can be intercepted. For anything sensitive, prefer the [VPS + HTTPS](#deploying-as-a-private-cloud-vps) deployment.
 
 > [!TIP]
 > On Windows, allow the port through the firewall (`netsh advfirewall firewall add rule name="Folderlan" dir=in action=allow protocol=TCP localport=8080`) so other devices can connect.
