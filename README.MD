@@ -32,9 +32,6 @@ Folderlan is a **client‑server application packaged as a single binary**. The 
 
 You run one program, open `http://<host>:8080` in any browser, and you have a fully functional file‑sharing server with users, permissions, quotas and an audit trail.
 
-> [!NOTE]
-> Folderlan is currently in **alpha**. The core technology is operational, but some edge‑case features are still being refined.
-
 ---
 
 ## Use Cases
@@ -136,11 +133,14 @@ Folderlan watches its `uploads/` directory in real time.
 
 The server creates a SQLite database (`db/app.db` by default) and an `uploads/` folder next to the binary. All files you upload land in `uploads/`.
 
+> [!TIP]
+> At startup the server prints the addresses where the web UI is available — `Local` (same machine) and `Network` (your LAN IP, e.g. `http://192.168.1.50:8080`). Use the Network address to open Folderlan from other devices.
+
 ---
 
 ## Accessing from Other Devices (LAN)
 
-1. Find the server's IP on the network (e.g. `ip addr` on Linux, `ipconfig` on Windows).
+1. Find the server's IP on the network — the easiest way: copy it from the **Network** URL printed at startup.
 2. From any device on the same Wi‑Fi, open `http://<server‑ip>:8080` in the browser.
 3. Visitors log in with accounts created by the owner (Users section in the dashboard).
 4. To create visitor accounts, log in as owner → **Users** → *Create user* and set the permissions (upload, delete own files, storage quota).
