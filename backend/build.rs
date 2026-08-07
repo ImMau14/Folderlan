@@ -29,7 +29,7 @@ fn main() {
         );
         res.set("ProductName", "Folderlan");
         res.set("OriginalFilename", "Folderlan.exe");
-        res.set("LegalCopyright", "© 2025 ImMau14");
+        res.set("LegalCopyright", "© 2025-2026 ImMau14");
 
         // Numeric version values from Cargo.toml
         let ver = env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "0.0.0".into());
