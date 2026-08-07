@@ -7,9 +7,18 @@ use backend::{
 };
 use rand::{RngCore, rngs::OsRng};
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
+use std::net::{IpAddr, UdpSocket};
 use std::path::{Path, PathBuf};
 use tracing_actix_web::TracingLogger;
 use tracing_subscriber::{EnvFilter, fmt, prelude::*};
+
+/// Best-effort detection of the machine's LAN IP using the UDP connect trick
+/// (selects the default route without actually sending any packet).
+fn detect_lan_ip() -> Option<IpAddr> {
+    let socket = UdpSocket::bind("0.0.0.0:0").ok()?;
+    socket.connect("8.8.8.8:80").ok()?;
+    socket.local_addr().ok().map(|addr| addr.ip())
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -94,7 +103,15 @@ async fn main() -> std::io::Result<()> {
     });
     let jwt_cfg = JwtConfig { secret: secret_jwt };
 
-    tracing::info!("Server will bind to http://{}:{}", address, port);
+    tracing::info!("➜  Local:   http://localhost:{}", port);
+    if address == "0.0.0.0" || address == "::" {
+        match detect_lan_ip() {
+            Some(ip) => tracing::info!("➜  Network: http://{}:{}", ip, port),
+            None => tracing::warn!("➜  Network: could not detect the machine's LAN IP"),
+        }
+    } else {
+        tracing::info!("➜  Network: http://{}:{}", address, port);
+    }
 
     // Choose uploads directory
     let uploads_dir = PathBuf::from("./uploads");
