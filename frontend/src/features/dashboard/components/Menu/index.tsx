@@ -78,7 +78,7 @@ export const Menu: FC<MenuProps> = ({ basePath = "/dashboard", isOwner = false }
 
       <div className="flex px-8 pb-6 pt-4">
         <span className="rounded-full bg-ui-front px-3 py-1 font-body text-[11px] font-semibold text-ui-text-muted shadow-sm">
-          v1.0.0
+          v{import.meta.env.APP_VERSION}
         </span>
       </div>
     </aside>

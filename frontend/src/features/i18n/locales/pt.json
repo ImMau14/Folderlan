@@ -146,7 +146,7 @@
   "login": {
     "sidebarTitle": "Bem-vindo ao Folderlan!",
     "sidebarDescription": "Compartilhe arquivos de forma privada, rápida e simples com o Folderlan: um aplicativo nativo com Rust, Actix-web e uma bela interface React.",
-    "sidebarVersion": "ImMau14 · Folderlan 0.1.0-alpha",
+    "sidebarVersion": "Folderlan {{version}}",
     "formTitle": "Entrar",
     "usernameLabel": "Nome de usuário",
     "usernamePlaceholder": "jhon.cena",

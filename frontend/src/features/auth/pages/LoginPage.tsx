@@ -163,7 +163,9 @@ export const LoginPage: FC = () => {
                 className="flex items-center gap-4 text-ui-text transition hover:text-ui-primary active:text-ui-primary-hover"
               >
                 <FaGithub className="text-4xl" />
-                <p className="font-body text-sm">{t("login.sidebarVersion")}</p>
+                <p className="font-body text-sm">
+                  {t("login.sidebarVersion", { version: import.meta.env.APP_VERSION })}
+                </p>
               </a>
             </div>
           </footer>
