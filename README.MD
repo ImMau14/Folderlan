@@ -4,6 +4,8 @@
 
 Folderlan is a self‑hosted file‑sharing platform. One server, any device with a browser. No internet required on your LAN, no third‑party cloud, no subscription — your files stay on your hardware.
 
+**English** · [Español](README.es.md) · [Italiano](README.it.md) · [Português](README.pt.md)
+
 ---
 
 <img width="1024" height="600" alt="Folderlan dashboard" src="https://pbdecn9fvkmyynkh.public.blob.vercel-storage.com/285shots_so.webp" />
@@ -22,6 +24,7 @@ Folderlan is a self‑hosted file‑sharing platform. One server, any device wit
 - [How It Works](#how-it-works)
 - [Security & Privacy](#security--privacy)
 - [Build from Source](#build-from-source)
+- [Maintenance](#maintenance)
 - [License](#license)
 
 ---
@@ -384,6 +387,16 @@ The following tools are required for the build scripts to work properly. The ver
 4. Open `http://localhost:8080` and complete the first‑run setup.
 
 </details>
+
+---
+
+## Maintenance
+
+Folderlan is a **personal side project** built to solve a personal need and
+maintained on free time. It is stable, but issues and pull requests may take a
+while to get a response. Bug reports and security issues are handled through the
+[issue templates](.github/ISSUE_TEMPLATE/), and the [security policy](SECURITY.md)
+applies — expectations should stay aligned with a single‑maintainer hobby project.
 
 ---
 

@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest an idea for Folderlan
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting! Before opening, please search the
+        [existing issues](https://github.com/ImMau14/Folderlan/issues) to avoid duplicates.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the scenario that motivates this feature. Why is it useful?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior you would like. How should it work?
+      placeholder: "e.g. A `--read-only` flag that serves files without the web UI..."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else have you tried (workarounds, other tools)?
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, links, or anything else that supports the request.

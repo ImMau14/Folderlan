@@ -1,0 +1,58 @@
+name: Bug report
+description: Report a bug to help us improve Folderlan
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report. Before opening, please
+        search the [existing issues](https://github.com/ImMau14/Folderlan/issues) to
+        avoid duplicates.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug clearly. What did you expect to happen?
+      placeholder: Tell us what you saw...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to trigger the bug.
+      placeholder: |
+        1. Start the server with...
+        2. Log in as...
+        3. Upload/download...
+        4. See error...
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Fill in what applies to you.
+      value: |
+        - OS: [e.g. Ubuntu 24.04, Windows 11]
+        - Browser (frontend bug only): [e.g. Firefox 136, Chrome 136]
+        - Folderlan version: [e.g. v1.0.0]
+        - Deployment: [pre-built binary / built from source / VPS]
+        - Port/address: [e.g. 8080, 0.0.0.0]
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Backend logs
+      description: Paste the relevant server logs (startup output shows the Local and Network URLs). Remove any secrets before pasting.
+      placeholder: "INFO ➜  Local:   http://localhost:8080 ..."
+      render: shell
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Screenshots, related issues, anything else that helps.
