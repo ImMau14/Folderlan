@@ -7,6 +7,7 @@ import { RequireOwner } from "@auth/guards/RequireOwner"
 import { SetupGuard } from "@database/guards/SetupGuard"
 import DashboardLayout from "@dashboard" // features/dashboard/index
 import LoginPage from "@auth/pages/LoginPage"
+import OwnerRecoverPage from "@auth/pages/OwnerRecoverPage"
 import SetupPage from "@setup"
 import NotFoundPage from "@shared/pages/NotFoundPage"
 import UploadPage from "@dashboard/pages/UploadPage"
@@ -35,6 +36,14 @@ export const router = createBrowserRouter([
     element: (
       <RequireDb>
         <LoginPage />
+      </RequireDb>
+    ),
+  },
+  {
+    path: "/owner-recover",
+    element: (
+      <RequireDb>
+        <OwnerRecoverPage />
       </RequireDb>
     ),
   },

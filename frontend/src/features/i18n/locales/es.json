@@ -162,6 +162,28 @@
       "networkErrorDescription": "Error de red. Inténtalo nuevamente más tarde."
     }
   },
+  "ownerRecover": {
+    "title": "Restablecer contraseña del propietario",
+    "subtitle": "¿Olvidaste la contraseña del propietario? Puedes restablecerla desde aquí.",
+    "localOnly": "Esta acción solo puede realizarse desde el dispositivo donde se ejecuta Folderlan.",
+    "newPasswordLabel": "Nueva contraseña",
+    "newPasswordPlaceholder": "••••••••",
+    "confirmPasswordLabel": "Confirmar nueva contraseña",
+    "confirmPasswordPlaceholder": "••••••••",
+    "submit": "Restablecer contraseña",
+    "backToLogin": "Volver al inicio de sesión",
+    "toast": {
+      "successTitle": "Contraseña restablecida",
+      "successDescription": "Tu contraseña se actualizó correctamente. Ahora puedes iniciar sesión.",
+      "errorTitle": "No se pudo restablecer la contraseña",
+      "errorDescription": "{{message}}",
+      "mismatchTitle": "Las contraseñas no coinciden",
+      "mismatchDescription": "Las dos contraseñas deben ser idénticas.",
+      "missingFieldsTitle": "Campos incompletos",
+      "missingFieldsDescription": "Completa ambos campos de contraseña.",
+      "networkErrorDescription": "Error de red. Inténtalo nuevamente más tarde."
+    }
+  },
   "download": {
     "filters": {
       "search": "Buscar archivos...",

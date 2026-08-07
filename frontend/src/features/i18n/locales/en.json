@@ -162,6 +162,28 @@
       "networkErrorDescription": "Network error. Please try again later."
     }
   },
+  "ownerRecover": {
+    "title": "Reset owner password",
+    "subtitle": "Forgot your owner password? You can reset it from here.",
+    "localOnly": "This action can only be performed from the device where Folderlan is running.",
+    "newPasswordLabel": "New password",
+    "newPasswordPlaceholder": "••••••••",
+    "confirmPasswordLabel": "Confirm new password",
+    "confirmPasswordPlaceholder": "••••••••",
+    "submit": "Reset password",
+    "backToLogin": "Back to login",
+    "toast": {
+      "successTitle": "Password reset",
+      "successDescription": "Your password has been updated successfully. You can now log in.",
+      "errorTitle": "Password reset failed",
+      "errorDescription": "{{message}}",
+      "mismatchTitle": "Passwords do not match",
+      "mismatchDescription": "The two passwords must be identical.",
+      "missingFieldsTitle": "Missing fields",
+      "missingFieldsDescription": "Fill in both password fields.",
+      "networkErrorDescription": "Network error. Please try again later."
+    }
+  },
   "download": {
     "filters": {
       "search": "Search files...",

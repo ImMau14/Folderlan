@@ -162,6 +162,28 @@
       "networkErrorDescription": "Erro de rede. Tente novamente mais tarde."
     }
   },
+  "ownerRecover": {
+    "title": "Redefinir senha do proprietário",
+    "subtitle": "Esqueceu a senha do proprietário? Você pode redefini-la aqui.",
+    "localOnly": "Esta ação só pode ser feita no dispositivo onde o Folderlan está em execução.",
+    "newPasswordLabel": "Nova senha",
+    "newPasswordPlaceholder": "••••••••",
+    "confirmPasswordLabel": "Confirmar nova senha",
+    "confirmPasswordPlaceholder": "••••••••",
+    "submit": "Redefinir senha",
+    "backToLogin": "Voltar ao login",
+    "toast": {
+      "successTitle": "Senha redefinida",
+      "successDescription": "Sua senha foi atualizada com sucesso. Agora você pode entrar.",
+      "errorTitle": "Falha ao redefinir a senha",
+      "errorDescription": "{{message}}",
+      "mismatchTitle": "As senhas não coincidem",
+      "mismatchDescription": "As duas senhas devem ser idênticas.",
+      "missingFieldsTitle": "Campos incompletos",
+      "missingFieldsDescription": "Preencha ambos os campos de senha.",
+      "networkErrorDescription": "Erro de rede. Tente novamente mais tarde."
+    }
+  },
   "download": {
     "filters": {
       "search": "Pesquisar arquivos...",

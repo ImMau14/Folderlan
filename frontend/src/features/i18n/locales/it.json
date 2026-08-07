@@ -162,6 +162,28 @@
       "networkErrorDescription": "Errore di rete. Riprova più tardi."
     }
   },
+  "ownerRecover": {
+    "title": "Reimposta password del proprietario",
+    "subtitle": "Hai dimenticato la password del proprietario? Puoi reimpostarla da qui.",
+    "localOnly": "Questa azione può essere eseguita solo dal dispositivo in cui è in esecuzione Folderlan.",
+    "newPasswordLabel": "Nuova password",
+    "newPasswordPlaceholder": "••••••••",
+    "confirmPasswordLabel": "Conferma nuova password",
+    "confirmPasswordPlaceholder": "••••••••",
+    "submit": "Reimposta password",
+    "backToLogin": "Torna al login",
+    "toast": {
+      "successTitle": "Password reimpostata",
+      "successDescription": "La tua password è stata aggiornata correttamente. Ora puoi accedere.",
+      "errorTitle": "Reimpostazione password non riuscita",
+      "errorDescription": "{{message}}",
+      "mismatchTitle": "Le password non corrispondono",
+      "mismatchDescription": "Le due password devono essere identiche.",
+      "missingFieldsTitle": "Campi mancanti",
+      "missingFieldsDescription": "Compila entrambi i campi password.",
+      "networkErrorDescription": "Errore di rete. Riprova più tardi."
+    }
+  },
   "download": {
     "filters": {
       "search": "Cerca file...",

@@ -4,7 +4,7 @@
  */
 
 import { useRef, useState, useCallback, useEffect, type FC, type FormEvent } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { motion } from "framer-motion"
 
 import { FaUserCircle, FaGithub, FaLock, FaUnlock } from "react-icons/fa"
@@ -226,12 +226,12 @@ export const LoginPage: FC = () => {
             </form>
 
             <div className="flex items-center justify-center">
-              <a
-                href="/owner-recover"
+              <Link
+                to="/owner-recover"
                 className="text-center font-body text-sm text-ui-primary transition hover:text-ui-primary-hover active:text-ui-primary-active"
               >
                 {t("login.forgotOwner")}
-              </a>
+              </Link>
             </div>
           </div>
         </AnimatedBackground>
