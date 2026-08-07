@@ -30,9 +30,6 @@ REST API for the Folderlan file‑sharing platform — handles authentication, u
 
 ## Overview
 
-<details>
-<summary><strong>What is Folderlan Backend?</strong></summary>
-
 Folderlan Backend is the server‑side component of the Folderlan file‑sharing application. It exposes a RESTful API built with **Actix‑web** and **SQLite**.  
 Its responsibilities include:
 
@@ -46,8 +43,6 @@ Its responsibilities include:
 - Exposing the authenticated user's profile via `/api/user/me`.
 
 The backend does **not** include a graphical interface. It is designed to be consumed by the [Folderlan frontend](https://github.com/ImMau14/Folderlan) or any HTTP client.
-
-</details>
 
 <details>
 <summary><strong>Project structure</strong></summary>
@@ -73,8 +68,7 @@ backend/
 
 ## Quick Start
 
-<details>
-<summary><strong>First run – step by step</strong></summary>
+### First run – step by step
 
 1. **Clone the repository and enter the backend directory**  
    ```bash
@@ -115,8 +109,6 @@ backend/
      -d '{"username":"alice","password":"alice123","can_upload":true,"can_delete_own_files":true,"has_upload_limits":false,"upload_limit":0}'
    ```
 
-</details>
-
 ---
 
 ## Configuration – Environment Variables
@@ -149,7 +141,7 @@ These control the real‑time monitor that watches the `uploads/` directory.
 | `WATCHER_PRUNE_INTERVAL_SECS`    | u64   | `10`    | How often the watcher cleans up expired internal structures. |
 | `WATCHER_CHANNEL_CAPACITY`       | usize | `64`    | Size of the internal event channel buffer. |
 
-> **Note:** For remote or slow filesystems (NFS, SMB), consider increasing stability values to avoid processing incomplete files.
+For remote or slow filesystems (NFS, SMB), consider increasing stability values to avoid processing incomplete files.
 
 </details>
 
@@ -193,9 +185,11 @@ When a user tries to access a file (list, download, delete, change permissions, 
    - `collaborator` satisfies `MinLevel::Collaborator`
 5. **None of the above** → `403 Forbidden`.
 
-> **Warning:** An uploader without `can_delete_own_files = true` **cannot delete their own files**, share them, or change their public status, because those actions require `collaborator` rights. The uploader is effectively limited to viewing and downloading.
->
-> **Note:** `can_delete_own_files` only affects **files uploaded by the visitor themselves**. It grants no rights over files uploaded by others (or by the file watcher, which assigns ownership to the owner): for those, the visitor needs an explicit `collaborator` permission in `FilePermissions` — the flag alone will still return `403`.
+> [!WARNING]
+> An uploader without `can_delete_own_files = true` **cannot delete their own files**, share them, or change their public status, because those actions require `collaborator` rights. The uploader is effectively limited to viewing and downloading.
+
+> [!NOTE]
+> `can_delete_own_files` only affects **files uploaded by the visitor themselves**. It grants no rights over files uploaded by others (or by the file watcher, which assigns ownership to the owner): for those, the visitor needs an explicit `collaborator` permission in `FilePermissions` — the flag alone will still return `403`.
 
 ### Authentication & Authorization Flow
 
@@ -245,7 +239,7 @@ When a user tries to access a file (list, download, delete, change permissions, 
   `id`, `timestamp`, `user_id` (nullable), `event_type`, `description`, `ip_address`, `file_id` (nullable), `success`.  
   Populated by explicit insertions in handlers and by database triggers (e.g., on `is_active` toggle).
 
-> **Note:** SQLite optimisations `WAL` journal mode and `busy_timeout = 30000` are applied automatically at startup.
+SQLite optimisations `WAL` journal mode and `busy_timeout = 30000` are applied automatically at startup.
 
 </details>
 
