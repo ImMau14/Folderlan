@@ -414,16 +414,27 @@ async fn test_full_api_workflow() {
         .expect("Delete file failed");
     assert!(delete_resp.status().is_success());
 
-    let accessible_after_delete = app
-        .list_accessible_files(&visitor_token, visitor_id)
-        .await
-        .expect("Get accessible files after delete failed");
+    let mut deleted_visible = true;
+    for _ in 0..60 {
+        let accessible_after_delete = app
+            .list_accessible_files(&visitor_token, visitor_id)
+            .await
+            .expect("Get accessible files after delete failed");
 
-    let filenames_after: Vec<String> = accessible_after_delete
-        .iter()
-        .map(|f| f.name.clone())
-        .collect();
-    assert!(!filenames_after.contains(&"test_document.txt".to_string()));
+        let filenames_after: Vec<String> = accessible_after_delete
+            .iter()
+            .map(|f| f.name.clone())
+            .collect();
+        if !filenames_after.contains(&"test_document.txt".to_string()) {
+            deleted_visible = false;
+            break;
+        }
+        sleep(Duration::from_millis(150)).await;
+    }
+    assert!(
+        !deleted_visible,
+        "API delete did not propagate to accessible files in time"
+    );
 
     // Phase 11: User deletion
     let delete_user_resp = app

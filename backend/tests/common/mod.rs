@@ -1,3 +1,7 @@
+// Shared test infrastructure used by every integration test binary.
+// Helpers are intentionally shared; unused ones vary per binary.
+#![allow(dead_code)]
+
 mod api_client;
 mod test_app;
 mod test_db;

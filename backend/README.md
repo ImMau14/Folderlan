@@ -122,7 +122,8 @@ backend/
 | `ADDRESS`     | string | `0.0.0.0`   | Bind address. Use `127.0.0.1` for local‑only exposure. |
 | `SQLITE_FILE` | string | `db/app.db` | Path to the SQLite database file. Parent directories are created automatically. |
 | `SECRET_JWT`  | string | *random hex* | Secret key for signing JWTs (HS256). If not set, a new random key is generated **on every start**, invalidating previous tokens. Set it explicitly for persistence. |
-| `OFF_CORS`    | bool   | `false`     | If `true`, allows all origins (`Cors::permissive()`). If `false`, restricts CORS to `http://{ADDRESS}:{PORT}` with methods `GET, POST, DELETE, PATCH, OPTIONS` and headers `Content-Type, Authorization`. |
+| `OFF_CORS`            | bool   | `false`     | If `true`, allows all origins (`Cors::permissive()`). If `false`, allows `http://{ADDRESS}:{PORT}`, `http://localhost:{PORT}`, `http://127.0.0.1:{PORT}`, and the detected LAN IP when bound to all interfaces, with methods `GET, POST, DELETE, PATCH, OPTIONS` and headers `Content-Type, Authorization`. |
+| `CORS_ALLOWED_ORIGINS` | string | *(empty)*   | Comma‑separated list of extra origins to allow (e.g. `http://192.168.1.50:5173`). Ignored when `OFF_CORS=true`. |
 | `LOCAL_ONLY`  | bool   | `true`      | If `true`, endpoints guarded by `LocalOnly` middleware only accept requests from `127.0.0.1` or `::1`. Set to `false` to disable this protection (e.g., when behind a reverse proxy). |
 
 </details>
@@ -132,14 +133,13 @@ backend/
 
 These control the real‑time monitor that watches the `uploads/` directory.
 
-| Variable                         | Type  | Default | Description |
-|----------------------------------|-------|---------|-------------|
-| `WATCHER_IGNORE_TTL_SECS`        | u64   | `30`    | Seconds to ignore a file that was recently processed (avoids duplicate events). |
-| `WATCHER_STABILITY_CHECK_MS`     | u64   | `300`   | Milliseconds between consecutive size checks while waiting for a file to stop growing. |
-| `WATCHER_STABILITY_REQUIRED`     | usize | `3`     | Number of consecutive stable‑size checks required before a file is considered completely written. |
-| `WATCHER_LOCK_TTL_SECS`          | u64   | `300`   | Seconds an idle per‑file lock stays alive before being pruned from memory. |
-| `WATCHER_PRUNE_INTERVAL_SECS`    | u64   | `10`    | How often the watcher cleans up expired internal structures. |
-| `WATCHER_CHANNEL_CAPACITY`       | usize | `64`    | Size of the internal event channel buffer. |
+| Variable                      | Type  | Default | Description |
+|-------------------------------|-------|---------|-------------|
+| `WATCHER_STABILITY_CHECK_MS`  | u64   | `300`   | Milliseconds between consecutive size checks while waiting for a file to stop growing. |
+| `WATCHER_STABILITY_REQUIRED`  | usize | `3`     | Number of consecutive stable‑size checks required before a file is considered completely written. |
+| `WATCHER_LOCK_TTL_SECS`       | u64   | `300`   | Seconds an idle per‑file lock stays alive before being pruned from memory. |
+| `WATCHER_PRUNE_INTERVAL_SECS` | u64   | `10`    | How often the watcher cleans up expired internal structures. |
+| `WATCHER_CHANNEL_CAPACITY`    | usize | `64`    | Size of the internal event channel buffer. |
 
 For remote or slow filesystems (NFS, SMB), consider increasing stability values to avoid processing incomplete files.
 
@@ -253,11 +253,11 @@ A background task powered by the `notify` crate watches the `uploads/` directory
 - **Events processed:** `Create`, `Modify`, `Remove`.
 - **Ignored:** directories, and any path inside a temporary subdirectory (configured via `tmp_subdir_name`; currently unused but ready).
 - **Stability check:** before registering a newly created or modified file, the watcher repeatedly checks its size every `WATCHER_STABILITY_CHECK_MS` ms. It requires `WATCHER_STABILITY_REQUIRED` consecutive checks with the same size to confirm the file is fully written.
-- **Deduplication:** a global `HANDLED_REGISTRY` (in‑memory) holds recently processed paths for `WATCHER_IGNORE_TTL_SECS` seconds. If a path is already in the registry, the event is skipped.
-- **Per‑file locking:** each file being handled acquires an asynchronous mutex (`FILE_LOCKS` map) to prevent race conditions between overlapping events.
-- **Database actions (if DB pool is provided):**
-  - New stable file → `INSERT OR IGNORE INTO Files …` with `uploaded_by` set to the `owner_user_id` (default `1`). This means manually copied files appear as owned by the system owner.
-  - Removed file → `UPDATE Files SET is_deleted = 1 WHERE internal_path = ?`.
+- **Removal detection:** plain deletions arrive as `Remove` events; a file that is moved or renamed out of the watched tree is detected when its path can no longer be resolved and is treated as removed as well.
+- **Per‑file locking:** each file being handled acquires an asynchronous mutex (`FILE_LOCKS` map) to prevent race conditions between overlapping events. The file's presence on disk is re-verified while holding the lock before the database is updated, so an API delete racing with a queued watcher event cannot resurrect a deleted row.
+- **Database actions (if DB pool is provided):** the watcher merges the on-disk state with the database using an upsert keyed on `internal_path`:
+  - File present on disk → insert the row, or restore/re‑refresh it if a soft‑deleted row already exists (`is_deleted = 0`, old `uploaded_by` is preserved so watcher events never clobber the uploader attribution).
+  - File absent → `UPDATE Files SET is_deleted = 1 WHERE internal_path = ?`. Manually copied files appear as owned by the system owner (`owner_user_id`, default `1`).
 - **Without database:** events are simply logged with `info!()`, and a metric `files_detected_no_db` is incremented.
 - **Metrics:** internal counters (files registered, events processed, remove events, etc.) are periodically logged every prune interval.
 
@@ -446,7 +446,7 @@ All file endpoints require a valid JWT (except where noted) and respect the perm
 - Sanitises the original filename (`sanitize_filename` crate).
 - If a file with the same name already exists in the uploads root, a counter is appended (e.g., `report (1).pdf`).
 - **Quota enforcement:** if the user has `has_upload_limits = 1`, the server calculates used space as `SUM(size_bytes) FROM Files WHERE uploaded_by = <user> AND is_deleted = 0`. If `used + new_file_size > upload_limit`, the request is rejected with `400` and any partially written file is removed.
-- After successful write, the file is registered in the database using `INSERT OR IGNORE`. The internal path is added to the watcher’s handled registry to prevent a duplicate registration.
+- After successful write, the file is registered in the database using an upsert keyed on `internal_path`. If a soft‑deleted row already exists for the same path (e.g. the file was deleted earlier and is being re‑uploaded with the same name), the row is restored and refreshed instead of being ignored.
 - On transient DB errors (5xx) the registration is retried up to 3 times. If all fail, the uploaded file is deleted.
 
 **Response 201** (from `register_file`):
@@ -456,7 +456,7 @@ All file endpoints require a valid JWT (except where noted) and respect the perm
   "message": "Saved file successfully"
 }
 ```
-or `200` with `"File already registered"` if the file record already existed (INSERT OR IGNORE was a no‑op).
+or `200` with `"File already registered"` if the stored row did not change (the upsert matched identical metadata).
 
 **Errors:** `401` (no token), `403` (missing `can_upload`), `400` (invalid filename, quota exceeded, no file provided), `500`.
 

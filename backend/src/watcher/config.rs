@@ -1,9 +1,6 @@
 use std::env;
 use std::time::Duration;
 
-// Time-to-live for handled file entries in the registry (default)
-pub const DEFAULT_IGNORE_TTL_SECS: u64 = 30;
-
 // Delay between file stability checks during write operations (default ms)
 pub const DEFAULT_STABILITY_CHECK_MS: u64 = 300;
 
@@ -18,14 +15,6 @@ pub const DEFAULT_PRUNE_INTERVAL_SECS: u64 = 10;
 
 // Default channel capacity for notify -> tokio channel
 pub const DEFAULT_CHANNEL_CAPACITY: usize = 64;
-
-pub fn ignore_ttl() -> Duration {
-    env::var("WATCHER_IGNORE_TTL_SECS")
-        .ok()
-        .and_then(|s| s.parse::<u64>().ok())
-        .map(Duration::from_secs)
-        .unwrap_or_else(|| Duration::from_secs(DEFAULT_IGNORE_TTL_SECS))
-}
 
 pub fn stability_check_delay() -> Duration {
     env::var("WATCHER_STABILITY_CHECK_MS")

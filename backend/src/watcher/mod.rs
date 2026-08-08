@@ -12,8 +12,7 @@ use tokio::task::JoinHandle;
 use tracing::{error, info, warn};
 
 use config::{channel_capacity, prune_interval_secs};
-pub use locks::mark_handled_internal_path;
-use locks::{FILE_LOCKS, HANDLED_REGISTRY, prune_file_locks_locked, prune_handled_registry_locked};
+use locks::{FILE_LOCKS, prune_file_locks_locked};
 use metrics::METRICS;
 use processing::handle_notify_event;
 
@@ -66,10 +65,6 @@ pub async fn start_watcher(
         loop {
             tokio::select! {
                 _ = prune_interval.tick() => {
-                    {
-                        let mut reg = HANDLED_REGISTRY.lock().unwrap();
-                        prune_handled_registry_locked(&mut reg);
-                    }
                     {
                         let mut locks = FILE_LOCKS.lock().unwrap();
                         prune_file_locks_locked(&mut locks);

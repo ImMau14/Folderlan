@@ -6,7 +6,7 @@ use tracing::{debug, error, info, warn};
 
 use super::config::{stability_check_delay, stability_required};
 use super::db_ops::{mark_file_deleted, register_file_in_db};
-use super::locks::{get_file_lock_for, is_recently_handled, mark_handled_internal_path};
+use super::locks::get_file_lock_for;
 use super::metrics::incr_metric;
 
 /// Process a single filesystem event.
@@ -41,8 +41,36 @@ pub async fn handle_notify_event(
 
                 let canon = match p.canonicalize() {
                     Ok(c) => c,
-                    Err(e) => {
-                        warn!("Failed to canonicalize {}: {}", p.display(), e);
+                    Err(_) => {
+                        // The path no longer exists. This is what notify reports
+                        // when a file is moved out of the watched tree (e.g.
+                        // dragged to the trash or renamed to another folder).
+                        // Treat it as a removal.
+                        debug!(
+                            "Path gone on {:?} event, treating as removal: {}",
+                            event.kind,
+                            p.display()
+                        );
+                        if let Some(pool) = &pool_opt
+                            && let Some(internal) = compute_internal_for_remove(&p, &uploads_root)
+                        {
+                            let key = internal.clone();
+                            let lock = get_file_lock_for(&key);
+                            let _guard = lock.lock().await;
+                            // The file may have been re-created while the event
+                            // was in flight; in that case it is not a removal.
+                            if tokio::fs::metadata(&p).await.is_ok() {
+                                continue;
+                            }
+                            if let Err(e) = mark_file_deleted(pool, &internal).await {
+                                error!(
+                                    "DB error while marking is_deleted for {}: {:?}",
+                                    internal, e
+                                );
+                            }
+                            incr_metric("remove_events");
+                            incr_metric("events_processed");
+                        }
                         continue;
                     }
                 };
@@ -60,11 +88,6 @@ pub async fn handle_notify_event(
                     }
                 };
 
-                if is_recently_handled(&internal_path) {
-                    debug!("Skipping recently handled: {}", internal_path);
-                    continue;
-                }
-
                 if !wait_for_stable_file(&canon).await {
                     warn!("File not stable: {}", canon.display());
                     continue;
@@ -74,11 +97,21 @@ pub async fn handle_notify_event(
                 let lock = get_file_lock_for(&key);
                 let _guard = lock.lock().await;
 
-                if is_recently_handled(&internal_path) {
-                    debug!(
-                        "After lock, internal path already marked: {}",
-                        internal_path
-                    );
+                // Re-check existence after acquiring the lock: the file may have
+                // been removed while this event was waiting (e.g. an API delete
+                // that removed the physical file right after our stability
+                // check). Registering it again would resurrect a deleted row.
+                if tokio::fs::metadata(&canon).await.is_err() {
+                    if let Some(pool) = &pool_opt {
+                        if let Err(e) = mark_file_deleted(pool, &internal_path).await {
+                            error!(
+                                "DB error while marking is_deleted for {}: {:?}",
+                                internal_path, e
+                            );
+                        }
+                        incr_metric("remove_events");
+                    }
+                    incr_metric("events_processed");
                     continue;
                 }
 
@@ -91,15 +124,9 @@ pub async fn handle_notify_event(
                         }
                     };
                     let owner_id = owner_user_id_opt.unwrap_or(1);
-                    if register_file_in_db(pool, &internal_path, file_size, owner_id)
-                        .await
-                        .is_ok()
-                    {
-                        // registration already calls mark_handled_internal_path
-                    }
+                    let _ = register_file_in_db(pool, &internal_path, file_size, owner_id).await;
                 } else {
                     info!("New file detected (no DB): {}", internal_path);
-                    mark_handled_internal_path(&internal_path);
                     incr_metric("files_detected_no_db");
                 }
                 incr_metric("events_processed");
@@ -113,8 +140,10 @@ pub async fn handle_notify_event(
                     let lock = get_file_lock_for(&key);
                     let _guard = lock.lock().await;
 
-                    if is_recently_handled(&internal) {
-                        debug!("Skipping recently handled remove: {}", internal);
+                    // If the file already exists again (re-created before the
+                    // removal event was processed), keep it registered.
+                    if tokio::fs::metadata(&p).await.is_ok() {
+                        debug!("Removed path exists again, skipping: {}", p.display());
                         continue;
                     }
 
@@ -127,7 +156,6 @@ pub async fn handle_notify_event(
                         }
                     } else {
                         info!("File removed (no DB): {}", internal);
-                        mark_handled_internal_path(&internal);
                     }
                     incr_metric("remove_events");
                     incr_metric("events_processed");

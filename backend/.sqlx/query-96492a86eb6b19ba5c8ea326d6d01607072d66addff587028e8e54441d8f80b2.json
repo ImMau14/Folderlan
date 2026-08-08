@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO Files (\n                name,\n                internal_path,\n                size_bytes,\n                mime_type,\n                uploaded_by\n            ) VALUES (?, ?, ?, ?, ?)\n            ON CONFLICT(internal_path) DO UPDATE SET\n                name = excluded.name,\n                size_bytes = excluded.size_bytes,\n                mime_type = excluded.mime_type,\n                uploaded_by = excluded.uploaded_by,\n                is_deleted = 0,\n                deleted_at = NULL,\n                uploaded_at = CASE\n                    WHEN Files.is_deleted = 1 THEN CURRENT_TIMESTAMP\n                    ELSE Files.uploaded_at\n                END\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "96492a86eb6b19ba5c8ea326d6d01607072d66addff587028e8e54441d8f80b2"
+}

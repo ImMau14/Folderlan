@@ -103,10 +103,6 @@ pub async fn upload_file(
             // Resolve a unique filename in the base directory.
             let (relative_path, full_path) = resolve_unique_filename(&base, &safe_name).await;
 
-            // Mark the path as handled immediately to prevent the file watcher from
-            // registering it before this endpoint finishes its own database insertion.
-            crate::watcher::mark_handled_internal_path(&relative_path);
-
             // Store full path for potential cleanup on failure
             full_path_for_cleanup = Some(full_path.clone());
 
