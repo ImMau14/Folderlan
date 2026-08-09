@@ -294,6 +294,16 @@ impl TestApp {
             .map_err(|e| format!("delete request failed: {e}"))
     }
 
+    pub async fn delete_files_batch(&self, token: &str, ids: &[i64]) -> Result<Response, String> {
+        self.api
+            .delete("/api/files")
+            .with_token(token)
+            .with_json(&serde_json::json!({ "ids": ids }))
+            .send()
+            .await
+            .map_err(|e| format!("batch delete request failed: {e}"))
+    }
+
     pub async fn download_file_bytes(&self, token: &str, file_id: i64) -> Result<Vec<u8>, String> {
         let resp = self
             .download_file(token, file_id)

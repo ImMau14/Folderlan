@@ -1,4 +1,5 @@
 pub mod delete_file;
+pub mod delete_files_batch;
 pub mod download_file;
 pub mod get_files;
 pub mod grant_permission;
@@ -8,6 +9,7 @@ pub mod toggle_public;
 pub mod upload_file;
 
 pub use delete_file::delete_file;
+pub use delete_files_batch::delete_files_batch;
 pub use download_file::download_file;
 pub use get_files::get_files;
 pub use grant_permission::grant_permission;

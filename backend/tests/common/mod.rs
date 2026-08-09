@@ -8,4 +8,6 @@ mod test_db;
 mod test_fs;
 mod test_server;
 
-pub use test_app::{TestApp, VisitorOptions};
+pub use test_app::TestApp;
+#[allow(unused_imports)]
+pub use test_app::VisitorOptions;

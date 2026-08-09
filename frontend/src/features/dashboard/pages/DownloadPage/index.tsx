@@ -336,19 +336,22 @@ export default function DownloadPage() {
     refetchCurrent,
   ])
 
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set())
+  }, [])
+
   // Open the delete confirmation modal for all selected files.
   const handleDeleteSelected = useCallback(() => {
     if (selectedIds.size === 0) return
     openComponent(DeleteModal, {
       fileIds: Array.from(selectedIds),
       apiClient,
-      onRefresh: refreshList,
+      onRefresh: () => {
+        refreshList()
+        clearSelection()
+      },
     })
-  }, [selectedIds, openComponent, apiClient, refreshList])
-
-  const clearSelection = useCallback(() => {
-    setSelectedIds(new Set())
-  }, [])
+  }, [selectedIds, openComponent, apiClient, refreshList, clearSelection])
 
   const currentPage = useMemo(() => Math.floor(offset / PAGE_SIZE) + 1, [offset])
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PAGE_SIZE)), [total])

@@ -42,7 +42,9 @@ export default function DeleteModal({
   )
 
   /**
-   * Deletes every target file one by one and reports the outcome with toasts.
+   * Deletes every target file and reports the outcome with toasts.
+   * A single file still goes through DELETE /api/files/{id}; multiple
+   * files are deleted in one batch request.
    * The modal closes automatically once the operation finishes.
    */
   const handleConfirm = useCallback(async () => {
@@ -52,12 +54,20 @@ export default function DeleteModal({
     let successCount = 0
     let failCount = 0
 
-    for (const id of idsToDelete) {
-      const result = await apiClient.deleteFile(id)
+    if (idsToDelete.length === 1) {
+      const result = await apiClient.deleteFile(idsToDelete[0])
       if (result.success) {
-        successCount++
+        successCount = 1
       } else {
-        failCount++
+        failCount = 1
+      }
+    } else {
+      const result = await apiClient.deleteFilesBatch(idsToDelete)
+      if (result.success && result.data.data) {
+        successCount = result.data.data.deleted
+        failCount = result.data.data.skipped
+      } else {
+        failCount = idsToDelete.length
       }
     }
 

@@ -159,6 +159,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
+  useEffect(() => {
+    const handleExpired = () => logout()
+    window.addEventListener("auth:expired", handleExpired)
+    return () => window.removeEventListener("auth:expired", handleExpired)
+  }, [logout])
+
   const refresh = useCallback(() => {
     if (!isTokenValid()) {
       logout()

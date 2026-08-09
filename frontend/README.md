@@ -232,7 +232,9 @@ Guards:
 - **Blob downloads:** `requestBlob()` fetches with `responseType: "blob"` and parses `Content-Disposition` to recover the server filename; JSON error payloads are still extracted and surfaced with the correct message.
 - **FormData handling:** `Content-Type` is explicitly unset when the payload is `FormData` so the browser sets the multipart boundary.
 
-The client exposes one method per backend endpoint: `checkDb`, `initDb`, `login`, `registerVisitor`, `ownerRegister`, `ownerResetPassword`, `visitorResetPassword`, `getAudit`, `uploadFile`, `listFiles`, `deleteFile`, `downloadFile`, `grantFilePerms`, `listFilePerms`, `revokeFilePerm`, `getUsers`, `deleteUser`, `toggleUser`, `updateUserPerms`, `getAccessibleFiles`, `getMe`, `toggleFilePublic`.
+The client exposes one method per backend endpoint: `checkDb`, `initDb`, `login`, `registerVisitor`, `ownerRegister`, `ownerResetPassword`, `visitorResetPassword`, `getAudit`, `uploadFile`, `listFiles`, `deleteFile`, `deleteFilesBatch`, `downloadFile`, `grantFilePerms`, `listFilePerms`, `revokeFilePerm`, `getUsers`, `deleteUser`, `toggleUser`, `updateUserPerms`, `getAccessibleFiles`, `getMe`, `toggleFilePublic`.
+
+**Session expiry:** the response interceptor detects `401` responses and dispatches an `auth:expired` window event; `AuthContext` listens for it and clears the session, forcing a re-login instead of leaving buttons silently failing on an expired token.
 
 **Important:** boolean fields like `is_active`, `can_upload`, etc. arrive from the backend as **integers (0/1)**. The Zod schemas normalize them with `.transform(v => Boolean(v))` — always type them accordingly when consuming raw API data.
 
@@ -396,6 +398,7 @@ Each upload is a **single streaming multipart request** to `POST /api/files/uplo
 - **Search:** name search is **debounced 400 ms**; the other filters open in a modal: size range (min/max bytes), date range (start/end), visibility (public/private) and uploader.
 - **Selection:** click toggles a file into the selection `Set`; clicking elsewhere (outside `[data-file-card]`, `[data-action-bar]`, `[data-modal]`) clears it.
 - **Floating ActionBar:** appears only when files are selected, with bulk _download_ (sequential, to avoid flooding the server), _visibility_ (open the permission modal) and _delete_.
+- **Bulk delete:** a multi‑file selection deletes through a **single `DELETE /api/files` request** carrying all ids (`deleteFilesBatch` in `ApiClient`); the backend soft‑deletes them in one transaction and reports per‑id status. The modal counts `deleted` vs `skipped` (`not_found`/`forbidden`) instead of firing 40 one‑by‑one requests, so an expired session shows as one failure instead of a storm of 401s.
 - **Management gating:** a file is manageable when `my_access` (returned by the backend per file) is `owner` or `collaborator`; bulk buttons only enable when **every** selected file is manageable, preventing partial 403s. Falls back to the user's role when the field is absent.
 - **Download:** double‑click fetches the blob, creates a temporary `<a download>` and clicks it; the server filename from `Content-Disposition` is preferred.
 - **Visibility:** per‑file public/private toggle; the permission modal precomputes the state of the selection (`true` / `false` / `"mixed"`).

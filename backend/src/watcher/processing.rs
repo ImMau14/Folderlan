@@ -1,11 +1,10 @@
 use notify::{Event, EventKind};
-use sqlx::SqlitePool;
 use std::path::{Path, PathBuf};
 use tokio::time::sleep;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
 use super::config::{stability_check_delay, stability_required};
-use super::db_ops::{mark_file_deleted, register_file_in_db};
+use super::db::{DbJob, DbQueue};
 use super::locks::get_file_lock_for;
 use super::metrics::incr_metric;
 
@@ -14,7 +13,7 @@ pub async fn handle_notify_event(
     event: Event,
     uploads_root: PathBuf,
     tmp_dir: Option<PathBuf>,
-    pool_opt: Option<SqlitePool>,
+    queue: Option<DbQueue>,
     owner_user_id_opt: Option<i64>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     if event.paths.is_empty() {
@@ -51,7 +50,7 @@ pub async fn handle_notify_event(
                             event.kind,
                             p.display()
                         );
-                        if let Some(pool) = &pool_opt
+                        if let Some(queue) = &queue
                             && let Some(internal) = compute_internal_for_remove(&p, &uploads_root)
                         {
                             let key = internal.clone();
@@ -62,12 +61,9 @@ pub async fn handle_notify_event(
                             if tokio::fs::metadata(&p).await.is_ok() {
                                 continue;
                             }
-                            if let Err(e) = mark_file_deleted(pool, &internal).await {
-                                error!(
-                                    "DB error while marking is_deleted for {}: {:?}",
-                                    internal, e
-                                );
-                            }
+                            queue.enqueue(DbJob::MarkDeleted {
+                                internal_path: internal,
+                            });
                             incr_metric("remove_events");
                             incr_metric("events_processed");
                         }
@@ -102,20 +98,17 @@ pub async fn handle_notify_event(
                 // that removed the physical file right after our stability
                 // check). Registering it again would resurrect a deleted row.
                 if tokio::fs::metadata(&canon).await.is_err() {
-                    if let Some(pool) = &pool_opt {
-                        if let Err(e) = mark_file_deleted(pool, &internal_path).await {
-                            error!(
-                                "DB error while marking is_deleted for {}: {:?}",
-                                internal_path, e
-                            );
-                        }
+                    if let Some(queue) = &queue {
+                        queue.enqueue(DbJob::MarkDeleted {
+                            internal_path: internal_path.clone(),
+                        });
                         incr_metric("remove_events");
                     }
                     incr_metric("events_processed");
                     continue;
                 }
 
-                if let Some(pool) = &pool_opt {
+                if let Some(queue) = &queue {
                     let file_size = match tokio::fs::metadata(&canon).await {
                         Ok(md) => md.len(),
                         Err(e) => {
@@ -124,7 +117,11 @@ pub async fn handle_notify_event(
                         }
                     };
                     let owner_id = owner_user_id_opt.unwrap_or(1);
-                    let _ = register_file_in_db(pool, &internal_path, file_size, owner_id).await;
+                    queue.enqueue(DbJob::Register {
+                        internal_path: internal_path.clone(),
+                        size_bytes: file_size,
+                        owner_user_id: owner_id,
+                    });
                 } else {
                     info!("New file detected (no DB): {}", internal_path);
                     incr_metric("files_detected_no_db");
@@ -147,13 +144,10 @@ pub async fn handle_notify_event(
                         continue;
                     }
 
-                    if let Some(pool) = &pool_opt {
-                        if let Err(e) = mark_file_deleted(pool, &internal).await {
-                            error!(
-                                "DB error while marking is_deleted for {}: {:?}",
-                                internal, e
-                            );
-                        }
+                    if let Some(queue) = &queue {
+                        queue.enqueue(DbJob::MarkDeleted {
+                            internal_path: internal,
+                        });
                     } else {
                         info!("File removed (no DB): {}", internal);
                     }

@@ -1,8 +1,9 @@
 use sqlx::{
     SqlitePool,
-    sqlite::{SqliteConnectOptions, SqlitePoolOptions},
+    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions},
 };
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 pub async fn create_test_db() -> (SqlitePool, PathBuf) {
     let test_id = chrono::Utc::now().timestamp_nanos_opt().unwrap();
@@ -15,7 +16,9 @@ pub async fn create_test_db() -> (SqlitePool, PathBuf) {
 
     let opts = SqliteConnectOptions::new()
         .filename(&db_path)
-        .create_if_missing(true);
+        .create_if_missing(true)
+        .journal_mode(SqliteJournalMode::Wal)
+        .busy_timeout(Duration::from_secs(30));
 
     let pool = SqlitePoolOptions::new()
         .max_connections(10)

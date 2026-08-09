@@ -87,6 +87,19 @@ export const DeleteFileSchema = ApiResponseSchema(
   })
 )
 
+export const BatchDeleteItemSchema = z.object({
+  id: z.number(),
+  status: z.enum(["deleted", "not_found", "forbidden"]),
+})
+
+export const BatchDeleteSummarySchema = z.object({
+  deleted: z.number(),
+  skipped: z.number(),
+  items: z.array(BatchDeleteItemSchema),
+})
+
+export const BatchDeleteSchema = ApiResponseSchema(BatchDeleteSummarySchema)
+
 export const FilePermissionSchema = z.object({
   user_id: z.number(),
   username: z.string(),
@@ -161,6 +174,9 @@ export type FilesListData = z.infer<typeof FilesListDataSchema>
 export type FilesListResponse = z.infer<typeof FilesListSchema>
 export type UploadFileResponse = z.infer<typeof UploadFileSchema>
 export type DeleteFileResponse = z.infer<typeof DeleteFileSchema>
+export type BatchDeleteItem = z.infer<typeof BatchDeleteItemSchema>
+export type BatchDeleteSummary = z.infer<typeof BatchDeleteSummarySchema>
+export type BatchDeleteResponse = z.infer<typeof BatchDeleteSchema>
 export type FilePermission = z.infer<typeof FilePermissionSchema>
 export type FilePermsResponse = z.infer<typeof FilePermsListSchema>
 export type GrantPermissionResponse = z.infer<typeof GrantPermissionSchema>

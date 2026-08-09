@@ -1,5 +1,5 @@
 mod config;
-mod db_ops;
+mod db;
 mod locks;
 mod metrics;
 mod processing;
@@ -12,6 +12,7 @@ use tokio::task::JoinHandle;
 use tracing::{error, info, warn};
 
 use config::{channel_capacity, prune_interval_secs};
+use db::DbQueue;
 use locks::{FILE_LOCKS, prune_file_locks_locked};
 use metrics::METRICS;
 use processing::handle_notify_event;
@@ -58,6 +59,10 @@ pub async fn start_watcher(
 
     recommended_watcher.watch(uploads_root.as_path(), RecursiveMode::Recursive)?;
 
+    // Single-writer database queue: watcher tasks enqueue and the worker
+    // serializes writes, so SQLite never sees concurrent writers.
+    let db_queue = pool_opt.map(DbQueue::spawn);
+
     let handle = tokio::spawn(async move {
         let mut prune_interval = tokio::time::interval(Duration::from_secs(prune_interval_secs()));
         prune_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
@@ -87,10 +92,13 @@ pub async fn start_watcher(
                         Some(Ok(event)) => {
                             let uploads_root = uploads_root.clone();
                             let tmp_dir = tmp_dir_canon.clone();
-                            let pool_clone = pool_opt.clone();
+                            let queue = db_queue.clone();
                             let owner = owner_user_id_opt;
                             tokio::spawn(async move {
-                                if let Err(e) = handle_notify_event(event, uploads_root, tmp_dir, pool_clone, owner).await {
+                                if let Err(e) =
+                                    handle_notify_event(event, uploads_root, tmp_dir, queue, owner)
+                                        .await
+                                {
                                     error!("Watcher processing error: {:?}", e);
                                 }
                             });

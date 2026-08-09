@@ -540,6 +540,48 @@ Every row also includes `my_access`, the caller’s effective access level on th
 </details>
 
 <details>
+<summary><code>DELETE /api/files</code> – Batch delete files</summary>
+
+**Access:** authenticated, requires `collaborator` level on each target file (see permission rules).
+
+**Body:**
+```json
+{
+  "ids": [77, 78, 79]
+}
+```
+- Up to **500 ids** per request; duplicate ids are silently collapsed.
+- Empty payload (`[]`) returns `400`.
+- Each id is permission‑checked individually; the soft‑delete runs as a **single `UPDATE ... IN (...)` within one transaction**, then each physical file is removed (a failed physical removal is reported but is not fatal, matching the single‑delete semantics).
+- If the file is already soft‑deleted (or does not exist), its status is `not_found` instead of failing the whole request.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Files deleted: 2",
+  "data": {
+    "deleted": 2,
+    "skipped": 2,
+    "items": [
+      { "id": 77, "status": "deleted" },
+      { "id": 78, "status": "deleted" },
+      { "id": 999, "status": "not_found" },
+      { "id": 50, "status": "forbidden" }
+    ]
+  }
+}
+```
+`status` is one of `deleted`, `not_found`, or `forbidden`. `skipped` counts ids that were neither found nor permitted.
+
+**Errors:** `400` (empty or too many ids), `403` (may be reported per‑id via `forbidden`), `500`.
+
+> [!TIP]
+> Re‑deleting an already soft‑deleted file returns `not_found` per id — the frontend treats `not_found`/`forbidden` as skipped and never re‑sends the request, avoiding the repeated `404`s that happen when deleting one by one.
+
+</details>
+
+<details>
 <summary><code>GET /api/files/download/{id}</code> – Download a file</summary>
 
 **Access:** authenticated, requires at least `viewer` level.

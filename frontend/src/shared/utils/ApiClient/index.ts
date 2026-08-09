@@ -21,6 +21,7 @@ import {
   UploadFileSchema,
   FilesListSchema,
   DeleteFileSchema,
+  BatchDeleteSchema,
   FilePermsListSchema,
   GrantPermissionSchema,
   UsersListSchema,
@@ -41,6 +42,7 @@ import {
   type UploadFileResponse,
   type FilesListResponse,
   type DeleteFileResponse,
+  type BatchDeleteResponse,
   type FilePermsResponse,
   type GrantPermissionResponse,
   type UsersListResponse,
@@ -88,6 +90,10 @@ export class ApiClient {
         }
         if (!error.response) {
           throw new ApiError(0, "Network error", error.message)
+        }
+        if (error.response.status === 401) {
+          // Token invalid or expired: notify the app so it can force a re-login.
+          window.dispatchEvent(new CustomEvent("auth:expired"))
         }
         return Promise.reject(error)
       }
@@ -460,6 +466,17 @@ export class ApiClient {
 
   async deleteFile(id: number): Promise<ApiResult<DeleteFileResponse>> {
     return this.delete(`/api/files/${id}`, DeleteFileSchema)
+  }
+
+  async deleteFilesBatch(ids: number[]): Promise<ApiResult<BatchDeleteResponse>> {
+    return this.request(
+      {
+        method: "DELETE",
+        url: "/api/files",
+        data: { ids },
+      },
+      BatchDeleteSchema
+    )
   }
 
   async downloadFile(id: number, options?: ApiRequestOptions): Promise<ApiResult<BlobResult>> {

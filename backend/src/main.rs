@@ -6,9 +6,13 @@ use backend::{
     models::types::UploadsPath,
 };
 use rand::{RngCore, rngs::OsRng};
-use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
+use sqlx::{
+    SqlitePool,
+    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous},
+};
 use std::net::{IpAddr, UdpSocket};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 use tracing_actix_web::TracingLogger;
 use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
@@ -23,8 +27,13 @@ fn detect_lan_ip() -> Option<IpAddr> {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Initialize tracing subsystem for structured logging
-    let env_filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("info,actix_server=warn,actix_web=info"));
+    // Logging is silenced by default: only errors print. Set RUST_LOG to see
+    // everything, e.g. `RUST_LOG=backend=info cargo run` (or `RUST_LOG=off`
+    // for total silence).
+    let env_filter = match EnvFilter::try_from_default_env() {
+        Ok(f) => f,
+        Err(_) => EnvFilter::new("error"),
+    };
 
     let fmt_layer =
         fmt::layer().event_format(fmt::format().compact().without_time().with_target(false));
@@ -72,28 +81,20 @@ async fn main() -> std::io::Result<()> {
         std::fs::create_dir_all(parent_dir).expect("Failed to create database directory");
     }
 
+    // Options apply to EVERY connection the pool creates (busy_timeout and
+    // journal_mode are per-connection; setting them via one-off PRAGMA queries
+    // only affected a single pooled connection).
     let connect_opts = SqliteConnectOptions::new()
         .filename(&db_file)
-        .create_if_missing(true);
+        .create_if_missing(true)
+        .journal_mode(SqliteJournalMode::Wal)
+        .busy_timeout(Duration::from_secs(30))
+        .synchronous(SqliteSynchronous::Normal)
+        .foreign_keys(true);
 
     let pool = SqlitePool::connect_with(connect_opts)
         .await
         .expect("Could not connect to SQLite");
-
-    // Apply database performance optimizations
-    if let Err(e) = sqlx::query("PRAGMA journal_mode = WAL;")
-        .execute(&pool)
-        .await
-    {
-        tracing::warn!("Could not set journal_mode=WAL: {}", e);
-    }
-    // Use a longer busy timeout to prevent "database is locked" errors under concurrent writes
-    if let Err(e) = sqlx::query("PRAGMA busy_timeout = 30000;")
-        .execute(&pool)
-        .await
-    {
-        tracing::warn!("Could not set busy_timeout: {}", e);
-    }
 
     // Configure JWT authentication
     let secret_jwt: String = std::env::var("SECRET_JWT").unwrap_or_else(|_| {
@@ -103,14 +104,15 @@ async fn main() -> std::io::Result<()> {
     });
     let jwt_cfg = JwtConfig { secret: secret_jwt };
 
-    tracing::info!("➜  Local:   http://localhost:{}", port);
+    // Startup banner stays visible even with logs silenced (RUST_LOG unset).
+    eprintln!("➜  Local:   http://localhost:{}", port);
     if address == "0.0.0.0" || address == "::" {
         match detect_lan_ip() {
-            Some(ip) => tracing::info!("➜  Network: http://{}:{}", ip, port),
-            None => tracing::warn!("➜  Network: could not detect the machine's LAN IP"),
+            Some(ip) => eprintln!("➜  Network: http://{}:{}", ip, port),
+            None => eprintln!("➜  Network: could not detect the machine's LAN IP"),
         }
     } else {
-        tracing::info!("➜  Network: http://{}:{}", address, port);
+        eprintln!("➜  Network: http://{}:{}", address, port);
     }
 
     // Choose uploads directory
