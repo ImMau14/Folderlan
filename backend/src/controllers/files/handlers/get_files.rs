@@ -49,7 +49,7 @@ pub async fn get_files(
 ) -> HttpResponse {
     let user_id = match get_user_id(req.clone()) {
         Ok(id) => id,
-        Err(e) => return e,
+        Err(e) => return *e,
     };
     // SQLite does not support u64 parameters.
     let user_id_i64 = user_id as i64;

@@ -20,7 +20,7 @@ pub async fn revoke_permission(
     let file_id = file_id_u64 as i64;
     let user_id = match get_user_id(req.clone()) {
         Ok(id) => id,
-        Err(e) => return e,
+        Err(e) => return *e,
     };
 
     // Authorization: must have collaborator permission.
@@ -28,7 +28,7 @@ pub async fn revoke_permission(
         check_file_permission(pool.get_ref(), user_id, file_id_u64, MinLevel::Collaborator).await;
     match perm_check {
         Ok(_) => {}
-        Err(resp) => return resp,
+        Err(resp) => return *resp,
     }
 
     let mut tx = match pool.begin().await {

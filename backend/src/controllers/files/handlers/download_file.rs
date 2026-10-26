@@ -22,7 +22,7 @@ pub async fn download_file(
     let file_id = *path as i64;
     let user_id = match get_user_id(req.clone()) {
         Ok(id) => id,
-        Err(e) => return e,
+        Err(e) => return *e,
     };
 
     // Check file exists and not deleted.
@@ -45,7 +45,7 @@ pub async fn download_file(
     let (internal_path, filename) =
         match check_file_permission(pool.get_ref(), user_id, *path, MinLevel::Viewer).await {
             Ok(p) => p,
-            Err(resp) => return resp,
+            Err(resp) => return *resp,
         };
 
     let base = upload_path.get_ref().get();

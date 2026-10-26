@@ -23,13 +23,13 @@ pub async fn toggle_public(
     let file_id = *path as i64;
     let user_id = match get_user_id(req.clone()) {
         Ok(id) => id,
-        Err(e) => return e,
+        Err(e) => return *e,
     };
 
     let _internal_path =
         match check_file_permission(pool.get_ref(), user_id, *path, MinLevel::Collaborator).await {
             Ok(p) => p.0,
-            Err(resp) => return resp,
+            Err(resp) => return *resp,
         };
 
     let mut tx = match pool.begin().await {

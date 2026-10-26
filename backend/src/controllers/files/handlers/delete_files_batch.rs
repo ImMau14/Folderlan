@@ -41,7 +41,7 @@ pub async fn delete_files_batch(
 ) -> HttpResponse {
     let user_id = match get_user_id(req.clone()) {
         Ok(id) => id,
-        Err(e) => return e,
+        Err(e) => return *e,
     };
 
     if payload.ids.is_empty() {
@@ -91,7 +91,7 @@ pub async fn delete_files_batch(
                     id,
                     status: "forbidden",
                 }),
-                _ => return resp,
+                _ => return *resp,
             },
         }
     }

@@ -24,7 +24,7 @@ pub async fn check_file_permission(
     current_user_id: u64,
     file_id: u64,
     min_level: MinLevel,
-) -> Result<(String, Option<String>), HttpResponse> {
+) -> Result<(String, Option<String>), Box<HttpResponse>> {
     #[derive(sqlx::FromRow)]
     struct PermCheckRow {
         internal_path: String,
@@ -71,9 +71,11 @@ pub async fn check_file_permission(
     let row = match rec_opt {
         Some(r) => r,
         None => {
-            return Err(ApiResponse::<()>::builder()
-                .message("File not found or is deleted")
-                .not_found());
+            return Err(Box::new(
+                ApiResponse::<()>::builder()
+                    .message("File not found or is deleted")
+                    .not_found(),
+            ));
         }
     };
 
@@ -96,9 +98,11 @@ pub async fn check_file_permission(
             if row.requester_can_delete_own_files == Some(true) {
                 return Ok((row.internal_path, row.name));
             } else {
-                return Err(ApiResponse::<()>::builder()
-                    .message("Uploader lacks permission to perform this action")
-                    .forbidden());
+                return Err(Box::new(
+                    ApiResponse::<()>::builder()
+                        .message("Uploader lacks permission to perform this action")
+                        .forbidden(),
+                ));
             }
         } else {
             // Uploaders can always view their own files
@@ -119,7 +123,9 @@ pub async fn check_file_permission(
     }
 
     // Default deny
-    Err(ApiResponse::<()>::builder()
-        .message("File not found or insufficient permissions")
-        .forbidden())
+    Err(Box::new(
+        ApiResponse::<()>::builder()
+            .message("File not found or insufficient permissions")
+            .forbidden(),
+    ))
 }

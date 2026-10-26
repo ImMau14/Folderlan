@@ -30,7 +30,7 @@ pub async fn list_permissions(
     let file_id = *path as i64;
     let user_id = match get_user_id(req.clone()) {
         Ok(id) => id,
-        Err(e) => return e,
+        Err(e) => return *e,
     };
     // Convert to i64 for SQLite compatibility.
     let _user_id_i64 = user_id as i64;
@@ -40,7 +40,7 @@ pub async fn list_permissions(
         check_file_permission(pool.get_ref(), user_id, *path, MinLevel::Collaborator).await;
     match perm_check {
         Ok(_) => {}
-        Err(resp) => return resp,
+        Err(resp) => return *resp,
     }
 
     let rows = match sqlx::query_as!(

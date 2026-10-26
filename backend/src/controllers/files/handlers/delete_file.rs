@@ -20,14 +20,14 @@ pub async fn delete_file(
     let file_id = *path as i64;
     let user_id = match get_user_id(req.clone()) {
         Ok(id) => id,
-        Err(e) => return e,
+        Err(e) => return *e,
     };
 
     // Verify user has collaborator permission.
     let (internal_path, _) =
         match check_file_permission(pool.get_ref(), user_id, *path, MinLevel::Collaborator).await {
             Ok(p) => p,
-            Err(resp) => return resp,
+            Err(resp) => return *resp,
         };
 
     let mut tx = match pool.begin().await {

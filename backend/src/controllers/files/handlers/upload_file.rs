@@ -23,7 +23,7 @@ pub async fn upload_file(
     let base = upload_path.get_ref().get();
     let user_id = match get_user_id(req.clone()) {
         Ok(id) => id,
-        Err(e) => return e,
+        Err(e) => return *e,
     };
     let user_id_i64 = user_id as i64;
 
